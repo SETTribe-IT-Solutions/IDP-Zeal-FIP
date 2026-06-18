@@ -63,30 +63,252 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 
 <style>
-    .user-card{max-width:960px;margin:2rem auto;background:#ffffff;padding:1.5rem;border-radius:12px;box-shadow:0 8px 30px rgba(9,30,66,0.08);font-family:Segoe UI,Roboto,Arial,sans-serif}
-    .user-row{display:flex;gap:1rem}
-    .user-col{flex:1}
-    label{display:block;font-size:0.9rem;color:#333;margin-bottom:0.25rem}
-    input[type=text], input[type=password], input[type=tel], select{width:100%;height:2.4rem;padding:0.6rem;border:1px solid #dfe3e8;border-radius:8px;font-size:1rem;box-sizing:border-box}
-    .actions{display:flex;justify-content:center;margin-top:1rem}
-    .btn{background:#0f62fe;color:#fff;padding:0.6rem 1.2rem;border-radius:8px;border:none;cursor:pointer;font-weight:600}
-    .btn.secondary{background:#6b7280}
-    .note{font-size:0.9rem;color:#555;text-align:center;margin-bottom:1rem}
-    .errors{background:#fff5f5;border:1px solid #ffd3d3;padding:0.8rem;border-radius:6px;color:#9b1c1c;margin-bottom:1rem}
-    .success{background:#f3fff4;border:1px solid #c9f7d6;padding:0.8rem;border-radius:6px;color:#14532d;margin-bottom:1rem}
-    .password-wrapper{position:relative}
-    .password-wrapper input{padding-right:2.8rem}
-    .toggle-password{position:absolute;top:65%;right:0.6rem;bottom:0;transform:translateY(-50%);border:none;background:none;color:#475569;cursor:pointer;font-size:1.1rem;line-height:1;padding:0;margin:0;display:flex;align-items:center;justify-content:center;width:1.5rem;height:1.5rem}
-    .toggle-password:focus{outline:none}
+    .user-card {
+        max-width: 900px;
+        margin: 2.5rem auto;
+        background: var(--bg-card);
+        padding: 2rem;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-lg);
+        border: 1px solid var(--border-color);
+        font-family: var(--font-body);
+        transition: transform var(--transition-normal), box-shadow var(--transition-normal), background var(--transition-normal);
+    }
+    .user-card:hover {
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12);
+    }
+    .user-card-title {
+        text-align: center;
+        margin-bottom: 0.5rem;
+        color: var(--text-primary);
+        font-family: var(--font-heading);
+        font-weight: 800;
+        font-size: 1.75rem;
+        letter-spacing: -0.025em;
+        background: linear-gradient(135deg, var(--primary-light), var(--primary-color));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .user-card-subtitle {
+        font-size: 0.95rem;
+        color: var(--text-muted);
+        text-align: center;
+        margin-bottom: 2rem;
+        font-family: var(--font-body);
+    }
+    .user-row {
+        display: flex;
+        gap: 1.5rem;
+        margin-top: 1.25rem;
+    }
+    .user-col {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    label {
+        font-family: var(--font-heading);
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: color var(--transition-fast);
+    }
+    .user-col:focus-within label {
+        color: var(--primary-light);
+    }
+    label i {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+        transition: color var(--transition-fast);
+    }
+    .user-col:focus-within label i {
+        color: var(--primary-light);
+    }
+    input[type=text], input[type=password], input[type=tel], select {
+        width: 100%;
+        height: 2.75rem;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        font-size: 0.95rem;
+        background: var(--bg-input);
+        color: var(--text-primary);
+        box-sizing: border-box;
+        font-family: var(--font-body);
+        transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+    }
+    input[type=text]:focus, input[type=password]:focus, input[type=tel]:focus, select:focus {
+        border-color: var(--primary-light);
+        background: var(--bg-card);
+        box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.15);
+        outline: none;
+    }
+    select {
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+        background-size: 1.1rem;
+        padding-right: 2.5rem;
+    }
+    body.dark-theme select {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23cbd5e1'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+    }
+    .actions {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+    .btn {
+        background: linear-gradient(135deg, var(--primary-light), var(--primary-color));
+        color: #fff;
+        padding: 0.75rem 2rem;
+        border-radius: var(--radius-md);
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        font-family: var(--font-heading);
+        font-size: 1rem;
+        box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.25);
+        transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+    }
+    .btn:hover {
+        filter: brightness(1.1);
+        box-shadow: 0 6px 16px rgba(var(--primary-rgb), 0.35);
+        transform: translateY(-1px);
+    }
+    .btn:active {
+        transform: translateY(1px);
+    }
+    .btn.secondary {
+        background: var(--bg-hover);
+        color: var(--text-primary);
+        box-shadow: none;
+        border: 1px solid var(--border-color);
+    }
+    .btn.secondary:hover {
+        background: var(--border-color);
+        box-shadow: none;
+        transform: translateY(-1px);
+    }
+    .errors {
+        background: rgba(220, 38, 38, 0.08);
+        border: 1px solid var(--danger-color);
+        padding: 1rem 1.25rem;
+        border-radius: var(--radius-md);
+        color: var(--danger-color);
+        margin-bottom: 1.5rem;
+        font-family: var(--font-body);
+        font-size: 0.95rem;
+    }
+    .errors strong {
+        font-family: var(--font-heading);
+        font-weight: 700;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+    .errors ul {
+        margin: 0;
+        padding-left: 1.25rem;
+    }
+    .errors li {
+        margin-top: 0.25rem;
+    }
+    .success {
+        background: rgba(5, 150, 105, 0.08);
+        border: 1px solid var(--success-color);
+        padding: 1rem 1.25rem;
+        border-radius: var(--radius-md);
+        color: var(--success-color);
+        margin-bottom: 1.5rem;
+        font-family: var(--font-body);
+        font-size: 0.95rem;
+    }
+    .success strong {
+        font-family: var(--font-heading);
+        font-weight: 700;
+    }
+    .password-wrapper {
+        position: relative;
+    }
+    .password-wrapper input {
+        padding-right: 3rem;
+    }
+    .toggle-password {
+        position: absolute;
+        right: 0.75rem;
+        bottom: 0.45rem;
+        border: none;
+        background: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 1.2rem;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.8rem;
+        height: 1.8rem;
+        transition: color var(--transition-fast);
+    }
+    .toggle-password:hover {
+        color: var(--primary-light);
+    }
+    .toggle-password:focus {
+        outline: none;
+    }
+    .submitted-summary {
+        margin-top: 1.5rem;
+        padding: 1.25rem;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        background: var(--bg-hover);
+        font-family: var(--font-body);
+    }
+    .submitted-summary-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px dashed var(--border-color);
+    }
+    .submitted-summary-item:last-child {
+        border-bottom: none;
+    }
+    .submitted-summary-item strong {
+        color: var(--text-secondary);
+        font-family: var(--font-heading);
+    }
+    .submitted-summary-item span {
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+    @media (max-width: 768px) {
+        .user-row {
+            flex-direction: column;
+            gap: 1.25rem;
+            margin-top: 1rem;
+        }
+        .user-card {
+            margin: 1rem;
+            padding: 1.25rem;
+        }
+    }
 </style>
 
 <div class="user-card">
-    <div style="text-align:center;margin-bottom:0.75rem;color:#0f172a;font-weight:700;font-size:1.25rem">Create User / Officer</div>
-    <div class="note">Fill the details below and press Save. Data will be stored in the userdata.users table.</div>
+    <div class="user-card-title">Create User / Officer</div>
+    <div class="user-card-subtitle">Fill the details below and press Save. Data will be stored in the users database.</div>
 
     <?php if (!empty($errors)): ?>
         <div class="errors">
-            <strong>Please fix the following:</strong>
+            <strong><i class="fa-solid fa-triangle-exclamation"></i> Please fix the following:</strong>
             <ul>
                 <?php foreach ($errors as $e): ?>
                     <li><?php echo htmlspecialchars($e); ?></li>
@@ -96,27 +318,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
 
     <?php if ($submitted): ?>
-        <div class="success"><strong>Saved successfully.</strong> Below are the values submitted to the database.</div>
-        <div style="padding:0.5rem 1rem;border:1px solid #eef2ff;border-radius:8px;background:#fbfbff">
+        <div class="success"><strong><i class="fa-solid fa-circle-check"></i> Saved successfully.</strong> Below are the values submitted to the database.</div>
+        <div class="submitted-summary">
             <?php foreach ($data as $k => $v): ?>
-                <div style="margin:0.25rem 0"><strong><?php echo htmlspecialchars(ucfirst(str_replace('_',' ',$k))); ?>:</strong>
-                    <?php echo htmlspecialchars($v); ?></div>
+                <div class="submitted-summary-item">
+                    <strong><?php echo htmlspecialchars(ucfirst(str_replace('_',' ',$k))); ?></strong>
+                    <span><?php echo htmlspecialchars($v); ?></span>
+                </div>
             <?php endforeach; ?>
         </div>
-        <div style="text-align:center;margin-top:1rem"><a href="login.php" class="btn secondary">Add another</a></div>
+        <div style="text-align:center;margin-top:1.5rem"><a href="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" class="btn secondary">Add another</a></div>
     <?php else: ?>
 
-    <form method="post" action="login.php">
+    <form method="post" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>">
         <div class="user-row">
             <div class="user-col">
-                <label for="name">Name</label>
+                <label for="name"><i class="fa-solid fa-user-tie"></i> Name</label>
                 <input id="name" name="name" type="text" value="<?php echo htmlspecialchars($data['name']); ?>" />
             </div>
         </div>
 
-        <div class="user-row" style="margin-top:0.75rem">
+        <div class="user-row">
             <div class="user-col">
-                <label for="designation">Designation</label>
+                <label for="designation"><i class="fa-solid fa-briefcase"></i> Designation</label>
                 <select id="designation" name="designation">
                     <option value="">-- निवडा पदवी --</option>
                     <option value="गट विकास अधिकारी" <?php echo $data['designation'] === 'गट विकास अधिकारी' ? 'selected' : ''; ?>>गट विकास अधिकारी</option>
@@ -139,7 +363,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </select>
             </div>
             <div class="user-col">
-                <label for="department">Department</label>
+                <label for="department"><i class="fa-solid fa-building-user"></i> Department</label>
                 <select id="department" name="department">
                     <option value="">-- निवडा विभाग --</option>
                     <option value="पंचायत समिती" <?php echo $data['department'] === 'पंचायत समिती' ? 'selected' : ''; ?>>पंचायत समिती</option>
@@ -158,9 +382,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
 
-        <div class="user-row" style="margin-top:0.75rem">
+        <div class="user-row">
             <div class="user-col">
-                <label for="village">Village</label>
+                <label for="village"><i class="fa-solid fa-tree-city"></i> Village</label>
                 <select id="village" name="village">
                     <option value="">-- निवडा गांव --</option>
                     <option value="आमदरी" <?php echo $data['village'] === 'आमदरी' ? 'selected' : ''; ?>>आमदरी</option>
@@ -365,7 +589,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </select>
             </div>
             <div class="user-col">
-                <label for="grampanchayat">Grampanchayat</label>
+                <label for="grampanchayat"><i class="fa-solid fa-hotel"></i> Grampanchayat</label>
                 <select id="grampanchayat" name="grampanchayat">
                     <option value="">-- निवडा ग्रामपंचायत --</option>
                     <option value="आमदरी" <?php echo $data['grampanchayat'] === 'आमदरी' ? 'selected' : ''; ?>>आमदरी</option>
@@ -571,9 +795,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
 
-        <div class="user-row" style="margin-top:0.75rem">
+        <div class="user-row">
             <div class="user-col">
-                <label for="taluka">Taluka</label>
+                <label for="taluka"><i class="fa-solid fa-map-location-dot"></i> Taluka</label>
                 <select id="taluka" name="taluka">
                     <option value="">-- निवडा तालुका --</option>
                     <option value="औंढा नागनाथ" <?php echo $data['taluka'] === 'औंढा नागनाथ' ? 'selected' : ''; ?>>औंढा नागनाथ</option>
@@ -584,26 +808,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </select>
             </div>
             <div class="user-col">
-                <label for="mobile">Mobile no</label>
+                <label for="mobile"><i class="fa-solid fa-phone"></i> Mobile no</label>
                 <input id="mobile" name="mobile" type="tel" inputmode="numeric" pattern="[0-9]{10}" maxlength="10" placeholder="10 digits" value="<?php echo htmlspecialchars($data['mobile']); ?>" />
             </div>
         </div>
 
-        <div class="user-row" style="margin-top:0.75rem">
+        <div class="user-row">
             <div class="user-col">
-                <label for="username">Username</label>
+                <label for="username"><i class="fa-solid fa-user-gear"></i> Username</label>
                 <input id="username" name="username" type="text" value="<?php echo htmlspecialchars($data['username']); ?>" />
             </div>
             <div class="user-col password-wrapper">
-                <label for="password">Password</label>
+                <label for="password"><i class="fa-solid fa-key"></i> Password</label>
                 <input id="password" name="password" type="password" value="" />
                 <button type="button" class="toggle-password" aria-label="Press and hold to show password">👁️</button>
             </div>
         </div>
 
-        <div class="user-row" style="margin-top:0.75rem">
+        <div class="user-row">
             <div class="user-col">
-                <label for="system_role">System_role</label>
+                <label for="system_role"><i class="fa-solid fa-shield-halved"></i> System Role</label>
                 <select id="system_role" name="system_role">
                     <option value="">-- Select --</option>
                     <option value="admin" <?php echo $data['system_role']==='admin'?'selected':''; ?>>Admin</option>
@@ -611,7 +835,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </select>
             </div>
             <div class="user-col">
-                <label for="role">Role</label>
+                <label for="role"><i class="fa-solid fa-id-badge"></i> Role</label>
                 <input id="role" name="role" type="text" value="<?php echo htmlspecialchars($data['role']); ?>" />
             </div>
         </div>

@@ -69,13 +69,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     .user-row{display:flex;gap:1rem}
     .user-col{flex:1}
     label{display:block;font-size:0.9rem;color:#333;margin-bottom:0.25rem}
-    input[type=text], input[type=password], select{width:100%;padding:0.6rem;border:1px solid #dfe3e8;border-radius:8px;font-size:1rem}
+    input[type=text], input[type=password], input[type=tel], select{width:100%;height:2.4rem;padding:0.6rem;border:1px solid #dfe3e8;border-radius:8px;font-size:1rem;box-sizing:border-box}
     .actions{display:flex;justify-content:center;margin-top:1rem}
     .btn{background:#0f62fe;color:#fff;padding:0.6rem 1.2rem;border-radius:8px;border:none;cursor:pointer;font-weight:600}
     .btn.secondary{background:#6b7280}
     .note{font-size:0.9rem;color:#555;text-align:center;margin-bottom:1rem}
     .errors{background:#fff5f5;border:1px solid #ffd3d3;padding:0.8rem;border-radius:6px;color:#9b1c1c;margin-bottom:1rem}
     .success{background:#f3fff4;border:1px solid #c9f7d6;padding:0.8rem;border-radius:6px;color:#14532d;margin-bottom:1rem}
+    .password-wrapper{position:relative}
+    .password-wrapper input{padding-right:2.8rem}
+    .toggle-password{position:absolute;top:65%;right:0.6rem;bottom:0;transform:translateY(-50%);border:none;background:none;color:#475569;cursor:pointer;font-size:1.1rem;line-height:1;padding:0;margin:0;display:flex;align-items:center;justify-content:center;width:1.5rem;height:1.5rem}
+    .toggle-password:focus{outline:none}
 </style>
 
 <div class="user-card">
@@ -596,9 +600,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label for="username">Username</label>
                 <input id="username" name="username" type="text" value="<?php echo htmlspecialchars($data['username']); ?>" />
             </div>
-            <div class="user-col">
+            <div class="user-col password-wrapper">
                 <label for="password">Password</label>
                 <input id="password" name="password" type="password" value="" />
+                <button type="button" class="toggle-password" aria-label="Press and hold to show password">👁️</button>
             </div>
         </div>
 
@@ -625,6 +630,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script>
         document.getElementById('mobile').addEventListener('input', function(e) {
             e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
+        });
+
+        const passwordInput = document.getElementById('password');
+        const passwordButton = document.querySelector('.toggle-password');
+
+        function showPassword() {
+            passwordInput.type = 'text';
+            passwordButton.textContent = '🙈';
+            passwordButton.setAttribute('aria-label', 'Release to hide password');
+        }
+
+        function hidePassword() {
+            passwordInput.type = 'password';
+            passwordButton.textContent = '👁️';
+            passwordButton.setAttribute('aria-label', 'Press and hold to show password');
+        }
+
+        passwordButton.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            showPassword();
+        });
+
+        passwordButton.addEventListener('mouseup', function() {
+            hidePassword();
+        });
+
+        passwordButton.addEventListener('mouseleave', function() {
+            hidePassword();
+        });
+
+        passwordButton.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            showPassword();
+        }, { passive: false });
+
+        passwordButton.addEventListener('touchend', function() {
+            hidePassword();
+        });
+
+        passwordButton.addEventListener('touchcancel', function() {
+            hidePassword();
         });
     </script>
 

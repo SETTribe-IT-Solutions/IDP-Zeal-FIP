@@ -224,8 +224,8 @@ body {
                 <a href="issueform.php">Add Issue</a>
             </li>
 
-            <li class="sidebar-item <?php echo in_array(basename($_SERVER['PHP_SELF']), ['complaint.php', 'complaint_report.php']) ? 'active' : ''; ?>">
-                <a href="complaint.php">Issue Report</a>
+            <li class="sidebar-item <?php echo in_array(basename($_SERVER['PHP_SELF']), [ 'complaint_report.php']) ? 'active' : ''; ?>">
+                <a href="complaint_report.php">Issue Report</a>
             </li>
 
             <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'create_user.php') ? 'active' : ''; ?>">

@@ -6,7 +6,7 @@ include __DIR__ . '/include/config.php';
 $errors = [];
 $submitted = false;
 $data = [
-    'id' => '', 'name' => '', 'designation' => '', 'department' => '',
+    'name' => '', 'designation' => '', 'department' => '',
     'village' => '', 'grampanchayat' => '', 'taluka' => '', 'mobile' => '',
     'username' => '', 'password' => '', 'system_role' => '', 'role' => ''
 ];
@@ -17,7 +17,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Basic validation
-    if ($data['id'] === '') { $errors[] = 'Id is required.'; }
     if ($data['name'] === '') { $errors[] = 'Name is required.'; }
     if ($data['username'] === '') { $errors[] = 'Username is required.'; }
     if ($data['password'] === '') { $errors[] = 'Password is required.'; }
@@ -28,15 +27,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $mysqli = db_connect();
 
         $stmt = $mysqli->prepare(
-            'INSERT INTO users (Id, Name, Designation, Department, Village, Grampanchayat, Talika, `Mobile No`, Username, `Password`, `System Role`, Role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO users (Name, Designation, Department, Village, Grampanchayat, Talika, `Mobile No`, Username, `Password`, `System Role`, Role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
 
         if (!$stmt) {
             $errors[] = 'DB prepare failed: ' . $mysqli->error;
         } else {
             $stmt->bind_param(
-                'issssssissss',
-                $data['id'],
+                'ssssssissss',
                 $data['name'],
                 $data['designation'],
                 $data['department'],
@@ -110,10 +108,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <form method="post" action="login.php">
         <div class="user-row">
-            <div class="user-col">
-                <label for="id">Id</label>
-                <input id="id" name="id" type="text" value="<?php echo htmlspecialchars($data['id']); ?>" />
-            </div>
             <div class="user-col">
                 <label for="name">Name</label>
                 <input id="name" name="name" type="text" value="<?php echo htmlspecialchars($data['name']); ?>" />

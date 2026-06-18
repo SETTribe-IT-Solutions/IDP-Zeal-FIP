@@ -1,66 +1,29 @@
-<?php
-// User form with DB save to userdata.users.
-include __DIR__ . '/include/header.php';
-include __DIR__ . '/include/config.php';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login | Coordination Portal</title>
 
-$errors = [];
-$submitted = false;
-$data = [
-    'name' => '', 'designation' => '', 'department' => '',
-    'village' => '', 'grampanchayat' => '', 'taluka' => '', 'mobile' => '',
-    'username' => '', 'password' => '', 'system_role' => '', 'role' => ''
-];
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    foreach ($data as $k => $v) {
-        $data[$k] = isset($_POST[$k]) ? trim($_POST[$k]) : '';
-    }
+    <!-- Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 
-    // Basic validation
-    if ($data['name'] === '') { $errors[] = 'Name is required.'; }
-    if ($data['username'] === '') { $errors[] = 'Username is required.'; }
-    if ($data['password'] === '') { $errors[] = 'Password is required.'; }
-    if ($data['mobile'] !== '' && !preg_match('/^[0-9]{10}$/', $data['mobile'])) { $errors[] = 'Mobile number must be exactly 10 digits.'; }
-    if ($data['mobile'] === '') { $errors[] = 'Mobile number is required.'; }
-
-    if (empty($errors)) {
-        $mysqli = db_connect();
-
-        $stmt = $mysqli->prepare(
-            'INSERT INTO users (Name, Designation, Department, Village, Grampanchayat, Talika, `Mobile No`, Username, `Password`, `System Role`, Role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-        );
-
-        if (!$stmt) {
-            $errors[] = 'DB prepare failed: ' . $mysqli->error;
-        } else {
-            $stmt->bind_param(
-                'ssssssissss',
-                $data['name'],
-                $data['designation'],
-                $data['department'],
-                $data['village'],
-                $data['grampanchayat'],
-                $data['taluka'],
-                $data['mobile'],
-                $data['username'],
-                $data['password'],
-                $data['system_role'],
-                $data['role']
-            );
-
-            if ($stmt->execute()) {
-                $submitted = true;
-            } else {
-                $errors[] = 'DB insert failed: ' . $stmt->error;
-            }
-
-            $stmt->close();
+    <style>
+        body {
+            background: linear-gradient(135deg, #2c3e50, #4ca1af);
+            height: 100vh;
         }
 
-        $mysqli->close();
-    }
-}
-?>
+        .login-card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .form-control {
+            border-radius: 10px;
+        }
 
 <style>
     .user-card {
@@ -811,92 +774,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label for="mobile"><i class="fa-solid fa-phone"></i> Mobile no</label>
                 <input id="mobile" name="mobile" type="tel" inputmode="numeric" pattern="[0-9]{10}" maxlength="10" placeholder="10 digits" value="<?php echo htmlspecialchars($data['mobile']); ?>" />
             </div>
-        </div>
 
-        <div class="user-row">
-            <div class="user-col">
-                <label for="username"><i class="fa-solid fa-user-gear"></i> Username</label>
-                <input id="username" name="username" type="text" value="<?php echo htmlspecialchars($data['username']); ?>" />
+            <!-- Login Button -->
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary btn-login">Login</button>
             </div>
-            <div class="user-col password-wrapper">
-                <label for="password"><i class="fa-solid fa-key"></i> Password</label>
-                <input id="password" name="password" type="password" value="" />
-                <button type="button" class="toggle-password" aria-label="Press and hold to show password">👁️</button>
+
+            <!-- Forgot Password -->
+            <div class="text-center mt-3">
+                <a href="#" class="text-decoration-none">Forgot Password?</a>
             </div>
-        </div>
 
-        <div class="user-row">
-            <div class="user-col">
-                <label for="system_role"><i class="fa-solid fa-shield-halved"></i> System Role</label>
-                <select id="system_role" name="system_role">
-                    <option value="">-- Select --</option>
-                    <option value="admin" <?php echo $data['system_role']==='admin'?'selected':''; ?>>Admin</option>
-                    <option value="user" <?php echo $data['system_role']==='user'?'selected':''; ?>>User</option>
-                </select>
-            </div>
-            <div class="user-col">
-                <label for="role"><i class="fa-solid fa-id-badge"></i> Role</label>
-                <input id="role" name="role" type="text" value="<?php echo htmlspecialchars($data['role']); ?>" />
-            </div>
-        </div>
-
-        <div class="actions">
-            <button type="submit" class="btn">Save</button>
-        </div>
-    </form>
-
-    <script>
-        document.getElementById('mobile').addEventListener('input', function(e) {
-            e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
-        });
-
-        const passwordInput = document.getElementById('password');
-        const passwordButton = document.querySelector('.toggle-password');
-
-        function showPassword() {
-            passwordInput.type = 'text';
-            passwordButton.textContent = '🙈';
-            passwordButton.setAttribute('aria-label', 'Release to hide password');
-        }
-
-        function hidePassword() {
-            passwordInput.type = 'password';
-            passwordButton.textContent = '👁️';
-            passwordButton.setAttribute('aria-label', 'Press and hold to show password');
-        }
-
-        passwordButton.addEventListener('mousedown', function(e) {
-            e.preventDefault();
-            showPassword();
-        });
-
-        passwordButton.addEventListener('mouseup', function() {
-            hidePassword();
-        });
-
-        passwordButton.addEventListener('mouseleave', function() {
-            hidePassword();
-        });
-
-        passwordButton.addEventListener('touchstart', function(e) {
-            e.preventDefault();
-            showPassword();
-        }, { passive: false });
-
-        passwordButton.addEventListener('touchend', function() {
-            hidePassword();
-        });
-
-        passwordButton.addEventListener('touchcancel', function() {
-            hidePassword();
-        });
-    </script>
-
-    <?php endif; ?>
-
+        </form>
+    </div>
 </div>
 
-<?php
-// include footer if exists
-if (file_exists(__DIR__ . '/include/footer.php')) include __DIR__ . '/include/footer.php';
-?>
+<script>
+function togglePassword() {
+    var pass = document.getElementById("password");
+    var icon = document.getElementById("eyeIcon");
+
+    if (pass.type === "password") {
+        pass.type = "text";
+        icon.classList.remove("bi-eye");
+        icon.classList.add("bi-eye-slash");
+    } else {
+        pass.type = "password";
+        icon.classList.remove("bi-eye-slash");
+        icon.classList.add("bi-eye");
+    }
+}
+</script>
+
+</body>
+</html>

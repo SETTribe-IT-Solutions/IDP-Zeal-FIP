@@ -1,16 +1,14 @@
 <?php
 session_start();
 
-// Database Connection
-$conn = mysqli_connect("localhost", "root", "", "portal_db");
+require_once __DIR__ . '/include/config.php';
 
-if (!$conn) {
-    die("Connection Failed: " . mysqli_connect_error());
-}
+// Database Connection
+$conn = db_connect();
 
 // Get Form Data
-$username = $_POST['username'] ?? '';
-$password = $_POST['password'] ?? '';
+$username = trim($_POST['username'] ?? '');
+$password = trim($_POST['password'] ?? '');
 
 // Check empty fields
 if (empty($username) || empty($password)) {
@@ -22,7 +20,7 @@ if (empty($username) || empty($password)) {
 }
 
 // Prepared Statement
-$sql = "SELECT * FROM users WHERE username = ?";
+$sql = "SELECT Username AS username, Password AS password FROM users WHERE Username = ?";
 $stmt = mysqli_prepare($conn, $sql);
 
 if ($stmt) {
@@ -36,18 +34,18 @@ if ($stmt) {
         $user = mysqli_fetch_assoc($result);
 
         // Verify Password
-        if (password_verify($password, $user['password'])) {
+        if (password_verify($password, $user['password']) || $password === $user['password']) {
 
             // Store session
             $_SESSION['username'] = $user['username'];
 
             // Redirect
-            header("Location: index.php");
+            header("Location: issueform.php");
             exit;
 
         } else {
             echo "<script>
-                    alert('Wrong Password');
+                    alert('Wrong Username or Password');
                     window.location.href='login.php';
                   </script>";
         }

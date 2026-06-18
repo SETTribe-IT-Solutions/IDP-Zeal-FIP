@@ -2,50 +2,35 @@
 // Include database configuration
 require_once 'include/config.php';
 
-$conn = getDBConnection();
+$conn = db_connect();
 $nextIssueNumber = generateIssueNumber($conn);
 $conn->close();
+
+// Include header
+include 'include/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="mr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>समस्या नोंदणी प्रणाली</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root{
-            --bg-1: #f8fafc;
-            --bg-2: #ffffff;
-            --card-bg: #ffffff;
-            --accent: #0284c7;
-            --accent-2: #06b6d4;
-            --muted: #64748b;
-            --input-border: #e2e8f0;
-            --shadow: 0 4px 15px rgba(15, 23, 42, 0.08);
-            --success: #10b981;
-            --bg-img: url('');
+<style>
+    body {
+        padding-top: 0 !important;
+        background: #f3f7fb;
+        display: block;
+    }
+    
+    .issue-form-wrapper {
+        min-height: calc(100vh - 76px);
+        padding: 32px 18px;
+        padding-left: calc(32px + 260px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 0;
+    }
+    
+    @media (max-width: 1024px) {
+        .issue-form-wrapper {
+            padding-left: 32px;
         }
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-            background: radial-gradient(circle at top left, rgba(14,165,233,0.12), transparent 20%),
-                        radial-gradient(circle at bottom right, rgba(16,185,129,0.08), transparent 18%),
-                        #f3f7fb;
-            min-height: 100vh;
-            padding: 32px 18px;
-            -webkit-font-smoothing:antialiased;
-            color: #0f172a;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-        }
+    }
 
         .container {
             max-width: 850px;
@@ -418,23 +403,30 @@ $conn->close();
                 justify-content: center;
             }
         }
+        .container1{
+            width:100%;
+            margin:0 auto;
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <h1><i class="fas fa-ticket-alt"></i>समस्या नोंदणी प्रणाली</h1>
-        <p>कृपया आपली समस्या खालील फॉर्म मध्ये नोंदवा</p>
-    </div>
+<?php include 'include/sidebar.php'; ?>
 
-    <div id="messageBox" class="message-box">
-        <i id="msgIcon" class="fas fa-check-circle"></i>
-        <div class="msg-content">
-            <strong id="msgTitle">यशस्वी!</strong>
-            <span id="msgText">आपली समस्या नोंदवली गेली.</span>
+<div class="issue-form-wrapper">
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-ticket-alt"></i>समस्या नोंदणी प्रणाली</h1>
+            <p>कृपया आपली समस्या खालील फॉर्म मध्ये नोंदवा</p>
         </div>
-    </div>
+
+        <div id="messageBox" class="message-box">
+            <i id="msgIcon" class="fas fa-check-circle"></i>
+            <div class="msg-content">
+                <strong id="msgTitle">यशस्वी!</strong>
+                <span id="msgText">आपली समस्या नोंदवली गेली.</span>
+            </div>
+        </div>
 
     <form id="issueForm" enctype="multipart/form-data">
         <div class="form-row">
@@ -514,6 +506,7 @@ $conn->close();
             </button>
         </div>
     </form>
+</div>
 </div>
 
 <!-- Modals -->
@@ -717,5 +710,8 @@ document.querySelector('.btn-reset').addEventListener('click', function(e) {
 
 
 </script>
+
+<?php include 'include/footer.php'; ?>
+
 </body>
 </html>

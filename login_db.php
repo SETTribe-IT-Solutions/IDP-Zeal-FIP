@@ -12,7 +12,6 @@ if (!$conn) {
 $username = $_POST['username'] ?? '';
 $password = $_POST['password'] ?? '';
 
-
 // Check empty fields
 if (empty($username) || empty($password)) {
     echo "<script>

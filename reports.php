@@ -113,4 +113,6 @@
     }
 </script>
 
+</main>
+
 <?php include('include/footer.php'); ?>

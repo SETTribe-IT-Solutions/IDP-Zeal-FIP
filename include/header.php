@@ -270,6 +270,78 @@
         .action-link:hover {
             text-decoration: underline;
         }
+
+        /* --- SIDEBAR TOGGLE BUTTON --- */
+        .toggle-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1001;
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            color: #fff;
+            border: 2px solid rgba(56, 189, 248, 0.3);
+            padding: 12px 16px;
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 20px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+        }
+
+        .toggle-btn:hover {
+            background: linear-gradient(135deg, #334155, #1e293b);
+            border-color: rgba(56, 189, 248, 0.6);
+            box-shadow: 0 6px 16px rgba(56, 189, 248, 0.2);
+            transform: scale(1.05);
+        }
+
+        .toggle-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Sidebar closed state */
+        .sidebar.closed {
+            transform: translateX(-100%);
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 250px;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .toggle-btn {
+                top: 15px;
+                left: 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .sidebar {
+                width: 220px;
+            }
+
+            .toggle-btn {
+                width: 44px;
+                height: 44px;
+                font-size: 18px;
+                padding: 10px 14px;
+            }
+        }
     </style>
 </head>
 <body>

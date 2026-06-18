@@ -217,30 +217,33 @@ body {
 
         <ul class="sidebar-menu">
             <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'index.php') ? 'active' : ''; ?>">
-                <a href="index.php">🏠 Dashboard</a>
+                <a href="index.php">Dashboard</a>
             </li>
 
-            <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'reports.php') ? 'active' : ''; ?>">
-                <a href="reports.php">📋 Report</a>
+            <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'issueform.php') ? 'active' : ''; ?>">
+                <a href="issueform.php">Add Issue</a>
             </li>
 
             <li class="sidebar-item <?php echo in_array(basename($_SERVER['PHP_SELF']), ['complaint.php', 'complaint_report.php']) ? 'active' : ''; ?>">
-                <a href="complaint.php">📝 माझी तक्रारी</a>
+                <a href="complaint.php">Issue Report</a>
             </li>
 
-            <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'create-user.php') ? 'active' : ''; ?>">
-                <a href="create-user.php">👤 Create User</a>
+            <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'create_user.php') ? 'active' : ''; ?>">
+                <a href="create_user.php">Create User</a>
             </li>
 
             <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'change-password.php') ? 'active' : ''; ?>">
-                <a href="change-password.php">🔑 Change Password</a>
+                <a href="change-password.php">Change Password</a>
+            </li>
+        <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'logout.php') ? 'active' : ''; ?>">
+                <a>Logout</a> 
             </li>
         </ul>
     </div>
 
-    <div class="sidebar-bottom">
-        <a href="logout.php" title="Logout">🚪 Logout</a>
-        <button id="sidebarToggle" class="toggle-btn" title="Toggle Sidebar">☰ Close</button>
+    <!-- <div class="sidebar-bottom">
+        <a href="logout.php" title="Logout">Logout</a> -->
+        <button id="sidebarToggle" class="toggle-btn" title="Toggle Sidebar">☰</button>
     </div>
 
 </aside>
@@ -257,7 +260,7 @@ body {
         if (mainContent) {
             mainContent.classList.toggle("collapsed", isClosed);
         }
-        sidebarToggle.textContent = isClosed ? "☰ Open" : "☰ Close";
+        sidebarToggle.textContent = isClosed ? "☰ " : "☰ ";
         localStorage.setItem("sidebarClosed", isClosed);
     });
 
@@ -266,10 +269,10 @@ body {
         if (isClosed) {
             sidebar.classList.add("closed");
             if (mainContent) mainContent.classList.add("collapsed");
-            if (sidebarToggle) sidebarToggle.textContent = "☰ Open";
+            if (sidebarToggle) sidebarToggle.textContent = "☰ ";
         } else {
             if (mainContent) mainContent.classList.remove("collapsed");
-            if (sidebarToggle) sidebarToggle.textContent = "☰ Close";
+            if (sidebarToggle) sidebarToggle.textContent = "☰ ";
         }
     });
 </script>

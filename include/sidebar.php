@@ -210,6 +210,10 @@ body {
         </div>
 
         <ul class="sidebar-menu">
+            <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'landingpage.php') ? 'active' : ''; ?>">
+                <a href="landingpage.php">Home</a>
+            </li>
+
             <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'user_dashboard.php') ? 'active' : ''; ?>">
                 <a href="user_dashboard.php">Dashboard</a>
             </li>
@@ -227,7 +231,7 @@ body {
             </li>
 
             <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'change-password.php') ? 'active' : ''; ?>">
-                <a href="change-password.php">Change Password</a>
+                <a href="forgetpassward.php">Change Password</a>
             </li>
         <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'logout.php') ? 'active' : ''; ?>">
                 <a>Logout</a> 

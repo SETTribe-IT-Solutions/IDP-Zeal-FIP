@@ -76,20 +76,12 @@ include __DIR__ . '/include/header.php';
 
 <style>
     /* Layout integration */
-    .portal-layout {
-        display: flex;
-        min-height: calc(100vh - var(--header-height));
-        width: 100%;
-        background-color: var(--bg-body);
-        transition: background-color var(--transition-normal);
-    }
-
-    .portal-main {
-        flex-grow: 1;
+    .password-reset-wrapper {
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 48px 24px;
+        min-height: calc(100vh - var(--header-height) - 120px);
+        padding: 40px 20px;
         box-sizing: border-box;
     }
 
@@ -277,13 +269,13 @@ include __DIR__ . '/include/header.php';
     }
 </style>
 
-<div class="portal-layout">
     <!-- Include Portal Sidebar -->
     <?php include __DIR__ . '/include/sidebar.php'; ?>
 
     <!-- Main Workspace Container -->
-    <main class="portal-main">
-        <div class="card">
+    <main class="main-content">
+        <div class="password-reset-wrapper">
+            <div class="card">
             <h1>Reset Password</h1>
             <p class="subtitle">Enter the username and new credentials to reset the password.</p>
 
@@ -327,10 +319,9 @@ include __DIR__ . '/include/header.php';
                 <button type="submit" class="button">Save New Password</button>
             </form>
 
-            <p class="small-note">Remembered your password? <a href="../login.php">Sign in</a>.</p>
+            <p class="small-note">Remembered your password? <a href="login.php">Sign in</a>.</p>
         </div>
-    </main>
-</div>
+    </div>
 
 <script>
     document.querySelectorAll('.toggle-password').forEach(function(button) {
@@ -354,3 +345,4 @@ if (file_exists(__DIR__ . '/include/footer.php')) {
     include __DIR__ . '/include/footer.php';
 }
 ?>
+</main>

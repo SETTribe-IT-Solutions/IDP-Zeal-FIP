@@ -17,7 +17,9 @@ if ($result) {
 $conn->close();
 
 function badgeClass($status) {
-    switch (strtolower($status)) {
+    switch (strtolower(trim($status))) {
+        case 'pending':
+            return 'pending';
         case 'in progress':
             return 'in-progress';
         case 'resolved':
@@ -146,7 +148,6 @@ function formatDate($dateString) {
         <span class="page-info">पृष्ठ <span id="currentPage">1</span> / <span id="totalPages">1</span></span>
         <button class="page-btn" onclick="nextPage()">पुढे →</button>
     </div>
-</main>
 
 <!-- Styles -->
 <style>
@@ -397,6 +398,11 @@ function formatDate($dateString) {
     .badge-status {
         background: #f3f4f6;
         color: #374151;
+    }
+
+    .badge-status.pending {
+        background: #ffedd5;
+        color: #ea580c;
     }
 
     .badge-status.open {
@@ -712,3 +718,4 @@ function formatDate($dateString) {
 </script>
 
 <?php include('include/footer.php'); ?>
+</main>

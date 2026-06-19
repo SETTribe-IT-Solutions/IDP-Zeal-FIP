@@ -1,8 +1,8 @@
 <?php
 // User form with DB save to userdata.users.
 include __DIR__ . '/include/header.php';
+include __DIR__ . '/include/sidebar.php';
 include __DIR__ . '/include/config.php';
-
 $errors = [];
 $submitted = false;
 $data = [
@@ -289,7 +289,8 @@ $system_roles = ['अंगणवाडी सेविका','ग्राम�
     }
 </style>
 
-<div class="cu-card">
+<div class="main-content">
+    <div class="cu-card">
     <div class="cu-header">
         <h1><i class="fa-solid fa-user-plus"></i> Create User / Officer</h1>
         <p>Fill in the details below to register a new user in the system</p>
@@ -768,6 +769,7 @@ $system_roles = ['अंगणवाडी सेविका','ग्राम�
     </script>
 
     <?php endif; ?>
+</div>
 </div>
 
 <?php

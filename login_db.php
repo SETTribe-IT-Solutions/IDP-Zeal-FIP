@@ -40,7 +40,7 @@ if ($stmt) {
             $_SESSION['username'] = $user['username'];
 
             // Redirect
-            header("Location: issueform.php");
+            header("Location: user_dashboard.php");
             exit;
 
         } else {

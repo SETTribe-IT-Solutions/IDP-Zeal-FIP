@@ -15,6 +15,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     foreach ($data as $k => $v) {
         $data[$k] = isset($_POST[$k]) ? trim($_POST[$k]) : '';
     }
+    if ($data['role'] === '' && $data['system_role'] !== '') {
+        $data['role'] = $data['system_role'];
+    }
 
     // Basic validation
     if ($data['name'] === '') { $errors[] = 'Name is required.'; }
@@ -29,41 +32,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!preg_match('/[0-9]/', $pw)) { $errors[] = 'Password must contain at least one number.'; }
         if (!preg_match('/[^a-zA-Z0-9]/', $pw)) { $errors[] = 'Password must contain at least one special character.'; }
     }
-    if ($data['mobile'] !== '' && !preg_match('/^[0-9]{10}$/', $data['mobile'])) { $errors[] = 'Mobile number must be exactly 10 digits.'; }
+    if ($data['mobile'] !== '') {
+        if (!preg_match('/^[0-9]{10}$/', $data['mobile'])) {
+            $errors[] = 'Mobile number must be exactly 10 digits.';
+        } elseif (!preg_match('/^[6789]/', $data['mobile'])) {
+            $errors[] = 'Mobile number must start with 6, 7, 8, or 9.';
+        }
+    }
     if ($data['mobile'] === '') { $errors[] = 'Mobile number is required.'; }
 
     if (empty($errors)) {
         $mysqli = db_connect();
 
-        $stmt = $mysqli->prepare(
-            'INSERT INTO users (Name, Designation, Department, Village, Grampanchayat, Talika, `Mobile No`, Username, `Password`, `System Role`, Role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-        );
-
-        if (!$stmt) {
-            $errors[] = 'DB prepare failed: ' . $mysqli->error;
+        // Check if mobile number is already registered
+        $check_stmt = $mysqli->prepare('SELECT COUNT(*) FROM users WHERE `Mobile No` = ?');
+        if ($check_stmt) {
+            $check_stmt->bind_param('s', $data['mobile']);
+            $check_stmt->execute();
+            $check_stmt->bind_result($count);
+            $check_stmt->fetch();
+            $check_stmt->close();
+            if ($count > 0) {
+                $errors[] = 'Mobile number is already registered.';
+                $mobile_duplicate_error = true;
+            }
         } else {
-            $stmt->bind_param(
-                'ssssssissss',
-                $data['name'],
-                $data['designation'],
-                $data['department'],
-                $data['village'],
-                $data['grampanchayat'],
-                $data['taluka'],
-                $data['mobile'],
-                $data['username'],
-                $data['password'],
-                $data['system_role'],
-                $data['role']
+            $errors[] = 'DB unique check prepare failed: ' . $mysqli->error;
+        }
+
+        if (empty($errors)) {
+            $stmt = $mysqli->prepare(
+                'INSERT INTO users (Name, Designation, Department, Village, Grampanchayat, Talika, `Mobile No`, Username, `Password`, `System Role`, Role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
             );
 
-            if ($stmt->execute()) {
-                $submitted = true;
+            if (!$stmt) {
+                $errors[] = 'DB prepare failed: ' . $mysqli->error;
             } else {
-                $errors[] = 'DB insert failed: ' . $stmt->error;
-            }
+                $stmt->bind_param(
+                    'ssssssissss',
+                    $data['name'],
+                    $data['designation'],
+                    $data['department'],
+                    $data['village'],
+                    $data['grampanchayat'],
+                    $data['taluka'],
+                    $data['mobile'],
+                    $data['username'],
+                    $data['password'],
+                    $data['system_role'],
+                    $data['role']
+                );
 
-            $stmt->close();
+                if ($stmt->execute()) {
+                    $submitted = true;
+                } else {
+                    $errors[] = 'DB insert failed: ' . $stmt->error;
+                }
+
+                $stmt->close();
+            }
         }
 
         $mysqli->close();
@@ -100,6 +127,7 @@ $grampanchayats = [
 ];
 
 $talukas = ['औंढा नागनाथ','बसमत','हिंगोली','कळमनुरी','सेनगांव'];
+$system_roles = ['अंगणवाडी सेविका','ग्रामपंचायत अधिकारी','शिक्षक','THO','BDO','HoD','CEO'];
 ?>
 
 <style>
@@ -276,35 +304,56 @@ $talukas = ['औंढा नागनाथ','बसमत','हिंगोल
     </div>
 
     <?php if (!empty($errors)): ?>
-        <div class="cu-body" style="padding-bottom:0">
-            <div class="cu-alert cu-alert-danger">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-                <div>
-                    <strong>Please fix the following errors:</strong>
-                    <ul><?php foreach ($errors as $e): ?><li><?php echo htmlspecialchars($e); ?></li><?php endforeach; ?></ul>
+        <?php 
+        $display_errors = array_filter($errors, function($e) {
+            return $e !== 'Mobile number is already registered.';
+        });
+        ?>
+        <?php if (!empty($display_errors)): ?>
+            <div class="cu-body" style="padding-bottom:0">
+                <div class="cu-alert cu-alert-danger">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <div>
+                        <strong>Please fix the following errors:</strong>
+                        <ul><?php foreach ($display_errors as $e): ?><li><?php echo htmlspecialchars($e); ?></li><?php endforeach; ?></ul>
+                    </div>
                 </div>
             </div>
-        </div>
+        <?php endif; ?>
+    <?php endif; ?>
+
+    <?php if (isset($mobile_duplicate_error) && $mobile_duplicate_error): ?>
+        <!-- SweetAlert2 for duplicate mobile -->
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <script>
+            document.addEventListener("DOMContentLoaded", function() {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'The mobile number is already registered.',
+                    icon: 'error',
+                    confirmButtonColor: '#dc2626',
+                    confirmButtonText: 'OK'
+                });
+            });
+        </script>
     <?php endif; ?>
 
     <?php if ($submitted): ?>
-        <div class="cu-body">
-            <div class="cu-alert cu-alert-success">
-                <i class="fa-solid fa-circle-check"></i>
-                <div><strong>User created successfully!</strong> The details have been saved to the database.</div>
-            </div>
-            <div class="cu-summary">
-                <?php foreach ($data as $k => $v): ?>
-                    <div class="cu-summary-row">
-                        <strong><?php echo htmlspecialchars(ucfirst(str_replace('_',' ',$k))); ?></strong>
-                        <span><?php echo $k === 'password' ? str_repeat('•', 8) : htmlspecialchars($v); ?></span>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-            <div class="cu-actions">
-                <a href="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" class="cu-btn cu-btn-secondary"><i class="fa-solid fa-plus"></i> Add Another User</a>
-            </div>
-        </div>
+        <!-- SweetAlert2 -->
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <script>
+            document.addEventListener("DOMContentLoaded", function() {
+                Swal.fire({
+                    title: 'Success!',
+                    text: <?php echo json_encode($data['name'] . " is successfully Registered", JSON_UNESCAPED_UNICODE); ?>,
+                    icon: 'success',
+                    confirmButtonColor: '#2563eb',
+                    confirmButtonText: 'OK'
+                }).then(function() {
+                    window.location.href = "create_user.php";
+                });
+            });
+        </script>
     <?php else: ?>
 
     <form method="post" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" id="createUserForm" novalidate>
@@ -322,20 +371,20 @@ $talukas = ['औंढा नागनाथ','बसमत','हिंगोल
                 </div>
                 <div class="cu-row">
                     <div class="cu-field">
-                        <label for="designation"><i class="fa-solid fa-briefcase"></i> Designation</label>
-                        <select class="cu-select" id="designation" name="designation">
-                            <option value="">-- निवडा पदवी --</option>
-                            <?php foreach ($designations as $d): ?>
-                            <option value="<?php echo htmlspecialchars($d); ?>" <?php echo $data['designation'] === $d ? 'selected' : ''; ?>><?php echo htmlspecialchars($d); ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div class="cu-field">
                         <label for="department"><i class="fa-solid fa-building-user"></i> Department</label>
                         <select class="cu-select" id="department" name="department">
                             <option value="">-- निवडा विभाग --</option>
                             <?php foreach ($departments as $d): ?>
                             <option value="<?php echo htmlspecialchars($d); ?>" <?php echo $data['department'] === $d ? 'selected' : ''; ?>><?php echo htmlspecialchars($d); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="cu-field">
+                        <label for="designation"><i class="fa-solid fa-briefcase"></i> Designation</label>
+                        <select class="cu-select" id="designation" name="designation">
+                            <option value="">-- निवडा पदवी --</option>
+                            <?php foreach ($designations as $d): ?>
+                            <option value="<?php echo htmlspecialchars($d); ?>" <?php echo $data['designation'] === $d ? 'selected' : ''; ?>><?php echo htmlspecialchars($d); ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -415,8 +464,9 @@ $talukas = ['औंढा नागनाथ','बसमत','हिंगोल
                         <label for="system_role"><i class="fa-solid fa-user-shield"></i> System Role</label>
                         <select class="cu-select" id="system_role" name="system_role">
                             <option value="">-- Select Role --</option>
-                            <option value="admin" <?php echo $data['system_role']==='admin'?'selected':''; ?>>Admin</option>
-                            <option value="user" <?php echo $data['system_role']==='user'?'selected':''; ?>>User</option>
+                            <?php foreach ($system_roles as $r): ?>
+                            <option value="<?php echo htmlspecialchars($r); ?>" <?php echo $data['system_role'] === $r ? 'selected' : ''; ?>><?php echo htmlspecialchars($r); ?></option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="cu-field">
@@ -451,6 +501,8 @@ $talukas = ['औंढा नागनाथ','बसमत','हिंगोल
                 validate(v) {
                     if (!v) return 'Mobile number is required';
                     if (!/^\d+$/.test(v)) return 'Only digits are allowed';
+                    var first = v.charAt(0);
+                    if (first !== '6' && first !== '7' && first !== '8' && first !== '9') return 'Mobile number must start with 6, 7, 8, or 9';
                     if (v.length < 10) return 'Must be exactly 10 digits (' + v.length + '/10)';
                     if (v.length > 10) return 'Cannot exceed 10 digits';
                     return '';
@@ -524,6 +576,16 @@ $talukas = ['औंढा नागनाथ','बसमत','हिंगोल
                 this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);
                 var counter = document.getElementById('counter-mobile');
                 if (counter) counter.textContent = this.value.length + ' / 10';
+            });
+        }
+
+        // Replicate System Role to Role
+        var systemRoleSelect = document.getElementById('system_role');
+        var roleInput = document.getElementById('role');
+        if (systemRoleSelect && roleInput) {
+            systemRoleSelect.addEventListener('change', function() {
+                roleInput.value = this.value;
+                updateProgress();
             });
         }
 
@@ -644,7 +706,64 @@ $talukas = ['औंढा नागनाथ','बसमत','हिंगोल
             if (counter) counter.textContent = '0 / 10';
             document.querySelectorAll('.cu-step').forEach(function(s) { s.classList.remove('active','completed'); });
             document.querySelectorAll('.cu-pw-req').forEach(function(r) { r.classList.remove('pass','fail'); r.querySelector('i').className = 'fa-solid fa-circle'; });
+            setTimeout(filterDesignations, 0);
         };
+
+        // Dynamic department/designation filtering
+        var departmentSelect = document.getElementById('department');
+        var designationSelect = document.getElementById('designation');
+        var originalDesignations = <?php echo json_encode($designations, JSON_UNESCAPED_UNICODE); ?>;
+        var deptDesignationMap = {
+            'पंचायत समिती': ['गट विकास अधिकारी'],
+            'आरोग्य विभाग': ['गट विकास अधिकारी', 'तालुका आरोग्य अधिकारी', 'जिल्ха आरोग्य अधिकारी'],
+            'शिक्षण विभाग': ['गट विकास अधिकारी', 'गटशिक्षणाधिकारी'],
+            'महिला व बालकल्याण विभाग': ['गट विकास अधिकारी', 'बालविकास प्रकल्प अधिकारी', 'उप. मुख्य कार्यकारी अधिकारी (महिला आणि बाल विकास)'],
+            'कृषी विभाग': ['गट विकास अधिकारी', 'विस्तार अधिकारी (कृषी)', 'कृषी विकास अधिकारी'],
+            'पशुसंवर्धन विभाग': ['गट विकास अधिकारी', 'पशुवैद्यकीय अधिकारी', 'जिल्हा पशुसंवर्धन अधिकारी'],
+            'सामान्य प्रशासन विभाग': ['गट विकास अधिकारी', 'उप. मुख्य कार्यकारी अधिकारी (सा)'],
+            'ग्रामपंचायत विभाग': ['गट विकास अधिकारी', 'उप. मुख्य कार्यकारी अधिकारी (पं)'],
+            'जिल्हा ग्रामीण विकास यंत्रणा': ['गट विकास अधिकारी', 'प्रकल्प संचालक (जि.ग्रा.वि.य.)', 'तालुका अभियान व्यवस्थापक'],
+            'शिक्षण विभाग (प्राथमिक)': ['गट विकास अधिकारी', 'शिक्षणाधिकारी (प्राथमिक)'],
+            'शिक्षण विभाग (माध्यमिक)': ['गट विकास अधिकारी', 'शिक्षणाधिकारी (माध्यमिक)'],
+            'समाज कल्याण विभाग': ['गट विकास अधिकारी', 'जिल्हा समाजकल्याण अधिकारी']
+        };
+
+        function filterDesignations() {
+            if (!departmentSelect || !designationSelect) return;
+            var selectedDept = departmentSelect.value;
+            var currentDesignation = designationSelect.value;
+
+            // Clear current options except the first one
+            designationSelect.innerHTML = '<option value="">-- निवडा पदवी --</option>';
+
+            var allowed = deptDesignationMap[selectedDept];
+            if (selectedDept && allowed) {
+                allowed.forEach(function(d) {
+                    var opt = document.createElement('option');
+                    opt.value = d;
+                    opt.textContent = d;
+                    if (d === currentDesignation) {
+                        opt.selected = true;
+                    }
+                    designationSelect.appendChild(opt);
+                });
+            } else {
+                originalDesignations.forEach(function(d) {
+                    var opt = document.createElement('option');
+                    opt.value = d;
+                    opt.textContent = d;
+                    if (d === currentDesignation) {
+                        opt.selected = true;
+                    }
+                    designationSelect.appendChild(opt);
+                });
+            }
+        }
+
+        if (departmentSelect) {
+            departmentSelect.addEventListener('change', filterDesignations);
+        }
+        filterDesignations();
 
         updateProgress();
         if (mobileInput) { var c = document.getElementById('counter-mobile'); if (c) c.textContent = mobileInput.value.length + ' / 10'; }

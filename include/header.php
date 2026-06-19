@@ -1284,19 +1284,25 @@ $user_initials = "RP";
 <body>
 
     <!-- Header Start -->
+    <?php
+    $header_dashboard_link = 'user_dashboard.php';
+    if (isset($_SESSION['system_role']) && function_exists('get_role_redirect_page')) {
+        $header_dashboard_link = get_role_redirect_page($_SESSION['system_role']);
+    }
+    ?>
     <header class="idp-header">
         <div class="header-container">
 
             <!-- Left: Maharashtra Emblem -->
             <div class="header-left">
-                <a href="user_dashboard.php">
+                <a href="<?php echo htmlspecialchars($header_dashboard_link); ?>">
                     <img src="assets/maharashtra-emblem.png" alt="Maharashtra State Emblem" class="brand-emblem-img">
                 </a>
             </div>
 
             <!-- Middle: Center Title & Branding -->
             <div class="header-middle">
-                <a href="user_dashboard.php" class="brand-text-wrapper">
+                <a href="<?php echo htmlspecialchars($header_dashboard_link); ?>" class="brand-text-wrapper">
                     <h1 class="brand-title">Zilla Parishad Hingoli</h1>
                     <p class="brand-subtitle">Inter-Department Portal</p>
                 </a>

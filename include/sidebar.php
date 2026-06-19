@@ -230,7 +230,7 @@ body {
                 <a href="change-password.php">Change Password</a>
             </li>
         <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'logout.php') ? 'active' : ''; ?>">
-                <a>Logout</a> 
+                <a href="logout.php">Logout</a>
             </li>
         </ul>
     </div>

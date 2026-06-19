@@ -233,7 +233,7 @@ body {
             </li>
 
             <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'change-password.php') ? 'active' : ''; ?>">
-                <a href="change-password.php">🔑 Change Password</a>
+                <a href="forgetpassward.php">🔑 Change Password</a>
             </li>
         </ul>
     </div>

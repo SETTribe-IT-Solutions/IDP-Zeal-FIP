@@ -1,5 +1,40 @@
 <?php
 // complaint.php - User Complaint Records Page
+require_once 'include/config.php';
+
+$conn = db_connect();
+$complaints = [];
+$dbError = '';
+
+$query = "SELECT * FROM tbl_raiseissue ORDER BY issue_date DESC";
+$result = $conn->query($query);
+if ($result) {
+    $complaints = $result->fetch_all(MYSQLI_ASSOC);
+    $result->free();
+} else {
+    $dbError = $conn->error;
+}
+$conn->close();
+
+function badgeClass($status) {
+    switch (strtolower(trim($status))) {
+        case 'pending':
+            return 'pending';
+        case 'in progress':
+            return 'in-progress';
+        case 'resolved':
+            return 'resolved';
+        case 'closed':
+            return 'closed';
+        default:
+            return 'open';
+    }
+}
+
+function formatDate($dateString) {
+    $timestamp = strtotime($dateString);
+    return $timestamp ? date('d F Y', $timestamp) : htmlspecialchars($dateString);
+}
 ?>
 
 <?php include('include/header.php'); ?>
@@ -66,111 +101,35 @@
                 </tr>
             </thead>
             <tbody id="complaintTableBody">
-                <!-- Sample Complaint Records -->
-                <tr class="complaint-row" data-status="Open" data-department="नगर विकास" data-village="खांडाळा">
-                    <td class="complaint-id">#CMP-2024-0001</td>
-                    <td class="photo-cell">
-                        <img src="https://via.placeholder.com/50?text=Photo" alt="तक्रार फोटो" class="complaint-photo">
-                    </td>
-                    <td class="complaint-subject">
-                        <strong>रस्त्यावरील खड्ड्यांची समस्या</strong>
-                        <p class="complaint-desc">मुख्य रस्त्यावर मोठे खड्डे आहेत ज्याने वाहनांना हानी होत आहे...</p>
-                    </td>
-                    <td>नगर विकास</td>
-                    <td>खांडाळा</td>
-                    <td><span class="badge-type urgent">🔴 जरूरी</span></td>
-                    <td>15 जानेवारी 2024</td>
-                    <td><span class="badge-status open">🟢 उघडलेली</span></td>
-                    <td class="action-cell">
-                        <button class="btn-icon btn-edit" title="संपादित करा" onclick="editComplaint(1)">✏️</button>
-                        <button class="btn-icon btn-view" title="तपशील पहा" onclick="viewComplaint(1)">👁️</button>
-                        <button class="btn-icon btn-delete" title="हटवा" onclick="deleteComplaint(1)">🗑️</button>
-                    </td>
-                </tr>
-
-                <tr class="complaint-row" data-status="In Progress" data-department="जलप्रणाली" data-village="गाडीवळान">
-                    <td class="complaint-id">#CMP-2024-0002</td>
-                    <td class="photo-cell">
-                        <img src="https://via.placeholder.com/50?text=Photo" alt="तक्रार फोटो" class="complaint-photo">
-                    </td>
-                    <td class="complaint-subject">
-                        <strong>पाण्याचा गळती समस्या</strong>
-                        <p class="complaint-desc">पाणीपुरवठा पाईपमधून पाणी गळत आहे...</p>
-                    </td>
-                    <td>जलप्रणाली</td>
-                    <td>गाडीवळान</td>
-                    <td><span class="badge-type medium">🟡 सामान्य</span></td>
-                    <td>16 जानेवारी 2024</td>
-                    <td><span class="badge-status in-progress">🟡 प्रक्रियेतील</span></td>
-                    <td class="action-cell">
-                        <button class="btn-icon btn-edit" title="संपादित करा" onclick="editComplaint(2)">✏️</button>
-                        <button class="btn-icon btn-view" title="तपशील पहा" onclick="viewComplaint(2)">👁️</button>
-                        <button class="btn-icon btn-delete" title="हटवा" onclick="deleteComplaint(2)">🗑️</button>
-                    </td>
-                </tr>
-
-                <tr class="complaint-row" data-status="Resolved" data-department="स्वच्छता" data-village="खंभारी">
-                    <td class="complaint-id">#CMP-2024-0003</td>
-                    <td class="photo-cell">
-                        <img src="https://via.placeholder.com/50?text=Photo" alt="तक्रार फोटो" class="complaint-photo">
-                    </td>
-                    <td class="complaint-subject">
-                        <strong>अवैध डम्पिंग साइट</strong>
-                        <p class="complaint-desc">गाव व्यतिरिक्त अवैध कचऱ्याचे ढेर आहे...</p>
-                    </td>
-                    <td>स्वच्छता</td>
-                    <td>खंभारी</td>
-                    <td><span class="badge-type low">🟢 कमी</span></td>
-                    <td>17 जानेवारी 2024</td>
-                    <td><span class="badge-status resolved">🟣 निराकृत</span></td>
-                    <td class="action-cell">
-                        <button class="btn-icon btn-edit" title="संपादित करा" onclick="editComplaint(3)">✏️</button>
-                        <button class="btn-icon btn-view" title="तपशील पहा" onclick="viewComplaint(3)">👁️</button>
-                        <button class="btn-icon btn-delete" title="हटवा" onclick="deleteComplaint(3)">🗑️</button>
-                    </td>
-                </tr>
-
-                <tr class="complaint-row" data-status="Open" data-department="विद्युत" data-village="अंजनवेल">
-                    <td class="complaint-id">#CMP-2024-0004</td>
-                    <td class="photo-cell">
-                        <img src="https://via.placeholder.com/50?text=Photo" alt="तक्रार फोटो" class="complaint-photo">
-                    </td>
-                    <td class="complaint-subject">
-                        <strong>विद्युत खंड स्थितीत सुधार</strong>
-                        <p class="complaint-desc">विद्युत खंड टुटलेली पोल आणि वायरिंग समस्या...</p>
-                    </td>
-                    <td>विद्युत</td>
-                    <td>अंजनवेल</td>
-                    <td><span class="badge-type urgent">🔴 जरूरी</span></td>
-                    <td>18 जानेवारी 2024</td>
-                    <td><span class="badge-status open">🟢 उघडलेली</span></td>
-                    <td class="action-cell">
-                        <button class="btn-icon btn-edit" title="संपादित करा" onclick="editComplaint(4)">✏️</button>
-                        <button class="btn-icon btn-view" title="तपशील पहा" onclick="viewComplaint(4)">👁️</button>
-                        <button class="btn-icon btn-delete" title="हटवा" onclick="deleteComplaint(4)">🗑️</button>
-                    </td>
-                </tr>
-
-                <tr class="complaint-row" data-status="Closed" data-department="रस्ते" data-village="तालेगांव">
-                    <td class="complaint-id">#CMP-2024-0005</td>
-                    <td class="photo-cell">
-                        <img src="https://via.placeholder.com/50?text=Photo" alt="तक्रार फोटो" class="complaint-photo">
-                    </td>
-                    <td class="complaint-subject">
-                        <strong>रस्ता डांबराकरण कार्य</strong>
-                        <p class="complaint-desc">रस्ता खराब अवस्थेत आहे, डांबराकरण आवश्यक आहे...</p>
-                    </td>
-                    <td>रस्ते</td>
-                    <td>तालेगांव</td>
-                    <td><span class="badge-type medium">🟡 सामान्य</span></td>
-                    <td>19 जानेवारी 2024</td>
-                    <td><span class="badge-status closed">🔴 बंद</span></td>
-                    <td class="action-cell">
-                        <button class="btn-icon btn-edit" title="संपादित करा" onclick="editComplaint(5)">✏️</button>
-                        <button class="btn-icon btn-view" title="तपशील पहा" onclick="viewComplaint(5)">👁️</button>
-                        <button class="btn-icon btn-delete" title="हटवा" onclick="deleteComplaint(5)">🗑️</button>
-                    </td>
-                </tr>
+                <?php if (!empty($complaints)): ?>
+                    <?php foreach ($complaints as $complaint): ?>
+                        <?php
+                            $status = $complaint['status'] ?? 'Open';
+                            $badgeClass = badgeClass($status);
+                            $photoSrc = !empty($complaint['photo']) ? htmlspecialchars($complaint['photo']) : 'https://via.placeholder.com/50?text=Photo';
+                        ?>
+                        <tr class="complaint-row" data-status="<?= htmlspecialchars($status); ?>" data-department="<?= htmlspecialchars($complaint['department']); ?>" data-village="<?= htmlspecialchars($complaint['village']); ?>">
+                            <td class="complaint-id"><?= htmlspecialchars($complaint['issue_number']); ?></td>
+                            <td class="photo-cell">
+                                <img src="<?= $photoSrc; ?>" alt="तक्रार फोटो" class="complaint-photo">
+                            </td>
+                            <td class="complaint-subject">
+                                <strong><?= htmlspecialchars($complaint['description']); ?></strong>
+                                <p class="complaint-desc"><?= htmlspecialchars($complaint['description']); ?></p>
+                            </td>
+                            <td><?= htmlspecialchars($complaint['department']); ?></td>
+                            <td><?= htmlspecialchars($complaint['village']); ?></td>
+                            <td><span class="badge-type"><?= htmlspecialchars($complaint['registration_type']); ?></span></td>
+                            <td><?= formatDate($complaint['issue_date']); ?></td>
+                            <td><span class="badge-status <?= $badgeClass; ?>"><?= htmlspecialchars($status); ?></span></td>
+                            <td class="action-cell">
+                                <button class="btn-icon btn-edit" title="संपादित करा" onclick="editComplaint('<?= htmlspecialchars($complaint['issue_number']); ?>')">✏️</button>
+                                <button class="btn-icon btn-view" title="तपशील पहा" onclick="viewComplaint('<?= htmlspecialchars($complaint['issue_number']); ?>')">👁️</button>
+                                <button class="btn-icon btn-delete" title="हटवा" onclick="deleteComplaint('<?= htmlspecialchars($complaint['issue_number']); ?>')">🗑️</button>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </tbody>
         </table>
     </div>
@@ -189,7 +148,6 @@
         <span class="page-info">पृष्ठ <span id="currentPage">1</span> / <span id="totalPages">1</span></span>
         <button class="page-btn" onclick="nextPage()">पुढे →</button>
     </div>
-</main>
 
 <!-- Styles -->
 <style>
@@ -440,6 +398,11 @@
     .badge-status {
         background: #f3f4f6;
         color: #374151;
+    }
+
+    .badge-status.pending {
+        background: #ffedd5;
+        color: #ea580c;
     }
 
     .badge-status.open {
@@ -755,3 +718,4 @@
 </script>
 
 <?php include('include/footer.php'); ?>
+</main>

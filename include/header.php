@@ -1244,15 +1244,14 @@ $user_initials = "RP";
 
             <!-- Left: Maharashtra Emblem -->
             <div class="header-left">
-                <a href="index.php">
-                    <img src="assets/maharashtra-emblem.png" alt="Maharashtra State Emblem"
-                        class="brand-emblem-img">
+                <a href="user_dashboard.php">
+                    <img src="assets/maharashtra-emblem.png" alt="Maharashtra State Emblem" class="brand-emblem-img">
                 </a>
             </div>
 
             <!-- Middle: Center Title & Branding -->
             <div class="header-middle">
-                <a href="index.php" class="brand-text-wrapper">
+                <a href="user_dashboard.php" class="brand-text-wrapper">
                     <h1 class="brand-title">Zilla Parishad Hingoli</h1>
                     <p class="brand-subtitle">Inter-Department Portal</p>
                 </a>

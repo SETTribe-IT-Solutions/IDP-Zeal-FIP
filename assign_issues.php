@@ -1,5 +1,5 @@
-<?php
-// complaint.php - User Complaint Records Page
+﻿<?php
+// complain_action.php - Complaint action and transfer page
 require_once 'include/config.php';
 
 $conn = db_connect();
@@ -44,8 +44,8 @@ function formatDate($dateString) {
     <!-- Page Header -->
     <div class="header-container">
         <div class="page-title">
-            <h1>📋 माझी तक्रारी</h1>
-            <p>आपल्या सर्व तक्रारीचे रेकॉर्ड पहा आणि व्यवस्थापित करा</p>
+            <h1>📋 तक्रार क्रिया आणि हस्तांतरण</h1>
+            <p>आपल्या तक्रारींसाठी क्रिया करा आणि आवश्यक असल्यास ट्रान्सफर करा</p>
         </div>
         <button class="btn-primary" onclick="openNewComplaintForm()">
             ➕ नवीन तक्रार दाखल करा
@@ -97,7 +97,7 @@ function formatDate($dateString) {
                     <th>प्रकार</th>
                     <th>दिनांक</th>
                     <th>स्थिती</th>
-                    <th>कृती</th>
+                    <th>क्रिया</th>
                 </tr>
             </thead>
             <tbody id="complaintTableBody">
@@ -123,25 +123,9 @@ function formatDate($dateString) {
                             <td><?= formatDate($complaint['issue_date']); ?></td>
                             <td><span class="badge-status <?= $badgeClass; ?>"><?= htmlspecialchars($status); ?></span></td>
                             <td class="action-cell">
-                                <button class="btn-icon btn-edit" title="संपादित करा" aria-label="Edit complaint" onclick="editComplaint('<?= htmlspecialchars($complaint['issue_number']); ?>')">
-                                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-                                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z" />
-                                    </svg>
-                                </button>
-                                <button class="btn-icon btn-view" title="तपशील पहा" aria-label="View complaint" onclick="viewComplaint('<?= htmlspecialchars($complaint['issue_number']); ?>')">
-                                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-                                        <path d="M12 6a9.77 9.77 0 0 0-9.46 7 9.77 9.77 0 0 0 18.92 0A9.77 9.77 0 0 0 12 6zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" />
-                                    </svg>
-                                </button>
-                                <button class="btn-icon btn-delete" title="हटवा" aria-label="Delete complaint" onclick="deleteComplaint('<?= htmlspecialchars($complaint['issue_number']); ?>')">
-                                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-                                        <path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
-                                    </svg>
-                                </button>
-                                <button class="btn-icon btn-transfer" title="Transfer" aria-label="Transfer complaint" onclick="openTransferModal('<?= htmlspecialchars($complaint['issue_number']); ?>')">
-                                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-                                        <path d="M16 8l-4-4-4 4h3v5h2v-5h3zm4 2v10H4V10h3V8H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-10h-3z" />
-                                    </svg>
+                                <button class="btn-icon btn-action" title="क्रिया" onclick="actionComplaint('<?= htmlspecialchars($complaint['issue_number']); ?>')">निराकरण</button>
+                                <button class="btn-icon btn-transfer" title="हस्तांतरण" onclick="transferComplaint('<?= htmlspecialchars($complaint['issue_number']); ?>')">हस्तांतरण
+
                                 </button>
                             </td>
                         </tr>
@@ -166,134 +150,8 @@ function formatDate($dateString) {
         <button class="page-btn" onclick="nextPage()">पुढे →</button>
     </div>
 
-    <!-- Transfer Modal -->
-    <div id="transferModal" class="modal" style="display: none;">
-        <div class="modal-overlay" onclick="closeTransferModal()"></div>
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>तक्रार हस्तांतरण</h2>
-                <button class="modal-close" onclick="closeTransferModal()">×</button>
-            </div>
-            <div class="modal-body">
-                <form id="transferForm">
-                    <input type="hidden" id="complaintIdTransfer" />
-                    
-                    <div class="form-group">
-                        <label for="transferDepartment">विभाग निवडा:</label>
-                        <select id="transferDepartment" class="form-control" required>
-                            <option value="">-- विभाग निवडा --</option>
-                            <option value="नगर विकास">नगर विकास</option>
-                            <option value="जलप्रणाली">जलप्रणाली</option>
-                            <option value="स्वच्छता">स्वच्छता</option>
-                            <option value="विद्युत">विद्युत</option>
-                            <option value="रस्ते">रस्ते</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="transferDate">आजचा दिनांक आणि वेळ:</label>
-                        <input type="text" id="transferDate" class="form-control" readonly />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="transferNotes">अतिरिक्त टिप्पणी:</label>
-                        <textarea id="transferNotes" class="form-control" rows="4" placeholder="हस्तांतरणाचे कारण लिहा..."></textarea>
-                    </div>
-                   <div>
-                   <button class="btn-icon btn-transfer"
-        title="Transfer"
-        aria-label="Transfer complaint"
-        onclick="openTransferModal('<?= htmlspecialchars($complaint['issue_number']); ?>')">
-    <svg viewBox="0 0 24 24">
-        <path d="M16 8l-4-4-4 4h3v5h2v-5h3zm4 2v10H4V10h3V8H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-10h-3z"/>
-    </svg>
-</button>
-<div id="transferModal" class="modal" style="display:none;">
-    <div class="modal-overlay" onclick="closeTransferModal()"></div>
-
-    <div class="modal-content">
-
-        <div class="modal-header">
-            <h2>तक्रार हस्तांतरण</h2>
-            <button class="modal-close" onclick="closeTransferModal()">×</button>
-        </div>
-
-        <div class="modal-body">
-            <form id="transferForm">
-
-                <input type="hidden" id="complaintIdTransfer">
-
-                <!-- Complaint Number -->
-                <div class="form-group">
-                    <label>समस्या क्रमांक</label>
-                    <input type="text"
-                           id="complaintNumber"
-                           class="form-control"
-                           readonly>
-                </div>
-
-                <!-- Department Dropdown -->
-                <div class="form-group">
-                    <label>विभाग निवडा</label>
-                    <select id="transferDepartment"
-                            class="form-control"
-                            required>
-                        <option value="">-- विभाग निवडा --</option>
-                        <option value="नगर विकास">नगर विकास</option>
-                        <option value="जलप्रणाली">जलप्रणाली</option>
-                        <option value="स्वच्छता">स्वच्छता</option>
-                        <option value="विद्युत">विद्युत</option>
-                        <option value="रस्ते">रस्ते</option>
-                    </select>
-                </div>
-
-                <!-- Transfer Date -->
-                <div class="form-group">
-                    <label>हस्तांतरण दिनांक</label>
-                    <input type="text"
-                           id="transferDate"
-                           class="form-control"
-                           readonly>
-                </div>
-
-                <!-- Remarks -->
-                <div class="form-group">
-                    <label>टिप्पणी</label>
-                    <textarea id="transferNotes"
-                              class="form-control"
-                              rows="4"
-                              placeholder="हस्तांतरणाचे कारण लिहा..."></textarea>
-                </div>
-
-                <div class="modal-footer">
-                    <button type="button"
-                            class="btn-secondary"
-                            onclick="closeTransferModal()">
-                        रद्द करा
-                    </button>
-
-                    <button type="submit"
-                            class="btn-primary">
-                        हस्तांतरण करा
-                    </button>
-                    
-                </div>
-
-            </form>
-        </div>
-
-    </div>
-</div>
-
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
 <!-- Styles -->
 <style>
-    /* Header Container */
     .header-container {
         display: flex;
         justify-content: space-between;
@@ -315,7 +173,6 @@ function formatDate($dateString) {
         font-size: 0.95rem;
     }
 
-    /* Buttons */
     .btn-primary {
         background: linear-gradient(135deg, #3b82f6, #2563eb);
         color: white;
@@ -351,7 +208,6 @@ function formatDate($dateString) {
         background: #cbd5e1;
     }
 
-    /* Filter Section */
     .filter-section {
         background: white;
         border-radius: 10px;
@@ -416,7 +272,6 @@ function formatDate($dateString) {
         box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
 
-    /* Table Wrapper */
     .table-wrapper {
         background: white;
         border-radius: 10px;
@@ -425,7 +280,6 @@ function formatDate($dateString) {
         margin-bottom: 24px;
     }
 
-    /* Table Styles */
     .complaints-table {
         width: 100%;
         border-collapse: collapse;
@@ -464,7 +318,6 @@ function formatDate($dateString) {
         font-family: 'Courier New', monospace;
     }
 
-    /* Photo Cell */
     .photo-cell {
         text-align: center;
     }
@@ -484,7 +337,6 @@ function formatDate($dateString) {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
 
-    /* Complaint Subject */
     .complaint-subject {
         max-width: 280px;
     }
@@ -507,7 +359,6 @@ function formatDate($dateString) {
         overflow: hidden;
     }
 
-    /* Badge Styles */
     .badge-type,
     .badge-status {
         display: inline-block;
@@ -567,7 +418,6 @@ function formatDate($dateString) {
         color: #991b1b;
     }
 
-    /* Action Cell */
     .action-cell {
         display: flex;
         gap: 6px;
@@ -576,176 +426,29 @@ function formatDate($dateString) {
     .btn-icon {
         background: none;
         border: none;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 40px;
-        height: 40px;
+        font-size: 1.1rem;
         cursor: pointer;
-        padding: 0;
-        border-radius: 8px;
-        transition: background 0.15s ease, transform 0.12s ease;
+        padding: 6px 8px;
+        border-radius: 6px;
+        transition: all 0.3s ease;
     }
 
-    .btn-icon svg {
-        width: 20px;
-        height: 20px;
-        display: block;
-        fill: currentColor;
-    }
-
-    .btn-edit {
+    .btn-action {
         color: #3b82f6;
     }
 
-    .btn-edit:hover {
+    .btn-action:hover {
         background: rgba(59, 130, 246, 0.1);
     }
 
-    .btn-view {
+    .btn-transfer {
         color: #8b5cf6;
     }
 
-    .btn-view:hover {
+    .btn-transfer:hover {
         background: rgba(139, 92, 246, 0.1);
     }
 
-    .btn-delete {
-        color: #ef4444;
-    }
-
-    .btn-delete:hover {
-        background: rgba(239, 68, 68, 0.1);
-    }
-    .btn-transfer {
-        color: #f59e0b;
-    }
-
-    .btn-transfer:hover {
-        background: rgba(245, 158, 11, 0.1);
-    }
-
-    /* Modal Styles */
-    .modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        z-index: 2000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .modal-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
-        cursor: pointer;
-    }
-
-    .modal-content {
-        position: relative;
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        max-width: 500px;
-        width: 90%;
-        max-height: 80vh;
-        overflow-y: auto;
-        z-index: 2001;
-    }
-
-    .modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 24px;
-        border-bottom: 1px solid #e2e8f0;
-    }
-
-    .modal-header h2 {
-        margin: 0;
-        color: #1e293b;
-        font-size: 1.5rem;
-    }
-
-    .modal-close {
-        background: none;
-        border: none;
-        font-size: 1.8rem;
-        cursor: pointer;
-        color: #64748b;
-        padding: 0;
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 6px;
-        transition: all 0.3s ease;
-    }
-
-    .modal-close:hover {
-        background: #f1f5f9;
-        color: #1e293b;
-    }
-
-    .modal-body {
-        padding: 24px;
-    }
-
-    .form-group {
-        margin-bottom: 20px;
-    }
-
-    .form-group label {
-        display: block;
-        margin-bottom: 8px;
-        color: #1e293b;
-        font-weight: 600;
-        font-size: 0.95rem;
-    }
-
-    .form-control {
-        width: 100%;
-        padding: 10px 14px;
-        border: 1px solid #cbd5e1;
-        border-radius: 6px;
-        font-size: 0.95rem;
-        font-family: inherit;
-        transition: all 0.3s ease;
-    }
-
-    .form-control:focus {
-        outline: none;
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
-
-    .form-control[readonly] {
-        background: #f8fafc;
-        color: #64748b;
-        cursor: not-allowed;
-    }
-
-    .modal-footer {
-        display: flex;
-        gap: 12px;
-        padding: 20px 24px;
-        border-top: 1px solid #e2e8f0;
-        justify-content: flex-end;
-    }
-
-    .modal-footer .btn-primary,
-    .modal-footer .btn-secondary {
-        margin: 0;
-    }
-    /* Empty State */
     .empty-state {
         text-align: center;
         padding: 60px 20px;
@@ -770,7 +473,6 @@ function formatDate($dateString) {
         margin-bottom: 24px;
     }
 
-    /* Pagination */
     .pagination {
         display: flex;
         justify-content: center;
@@ -800,7 +502,6 @@ function formatDate($dateString) {
         font-weight: 500;
     }
 
-    /* Responsive Design */
     @media (max-width: 1024px) {
         .complaint-subject {
             max-width: 200px;
@@ -880,14 +581,11 @@ function formatDate($dateString) {
     }
 </style>
 
-<!-- JavaScript Functions -->
 <script>
-    // Search Functionality
     document.getElementById('searchInput').addEventListener('keyup', function() {
         filterComplaints();
     });
 
-    // Filter Functionality
     document.getElementById('statusFilter').addEventListener('change', filterComplaints);
     document.getElementById('departmentFilter').addEventListener('change', filterComplaints);
 
@@ -916,7 +614,6 @@ function formatDate($dateString) {
             }
         });
 
-        // Show empty state if no results
         const emptyState = document.getElementById('emptyState');
         if (visibleCount === 0) {
             emptyState.style.display = 'block';
@@ -934,23 +631,14 @@ function formatDate($dateString) {
         filterComplaints();
     }
 
-    function editComplaint(id) {
-        alert('तक्रार #' + id + ' संपादित करण्याचे फॉर्म उघडणे...');
-        // Redirect to edit page
-        // window.location.href = 'edit-complaint.php?id=' + id;
+    function actionComplaint(id) {
+        alert('तक्रार #' + id + ' साठी क्रिया पृष्ठ उघडले जात आहे...');
+        // window.location.href = 'complaint-action-detail.php?id=' + id;
     }
 
-    function viewComplaint(id) {
-        alert('तक्रार #' + id + ' चे तपशील पहाणे...');
-        // Redirect to detail page
-        // window.location.href = 'complaint-detail.php?id=' + id;
-    }
-
-    function deleteComplaint(id) {
-        if (confirm('क्या आप खरोखर हे तक्रार हटवू शकता?')) {
-            alert('तक्रार #' + id + ' हटवल्या गेले आहे');
-            // Call delete API
-        }
+    function transferComplaint(id) {
+        alert('तक्रार #' + id + ' ट्रान्सफर करण्याचे पृष्ठ उघडले जात आहे...');
+        // window.location.href = 'transfer-complaint.php?id=' + id;
     }
 
     function openNewComplaintForm() {
@@ -973,13 +661,13 @@ function formatDate($dateString) {
                 const date = cells[6].textContent.trim();
                 const status = cells[7].textContent.trim();
 
-                csv += `"${id}","${subject}","${department}","${village}","${type}","${date}","${status}"\n`;
+                csv += '"' + id + '","' + subject + '","' + department + '","' + village + '","' + type + '","' + date + '","' + status + '"\n';
             }
         });
 
         const link = document.createElement('a');
         link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-        link.download = 'माझी_तक्रारी.csv';
+        link.download = 'तक्रारी.csv';
         link.click();
     }
 
@@ -991,70 +679,6 @@ function formatDate($dateString) {
         alert('पुढील पृष्ठकडे जाणे...');
     }
 
-    function openTransferModal(complaintId) {
-        document.getElementById('complaintIdTransfer').value = complaintId;
-        setCurrentDateTime();
-        document.getElementById('transferModal').style.display = 'flex';
-    }
-
-    function closeTransferModal() {
-        document.getElementById('transferModal').style.display = 'none';
-        document.getElementById('transferForm').reset();
-    }
-
-    function setCurrentDateTime() {
-        const now = new Date();
-        const options = {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false
-        };
-        const dateTimeString = now.toLocaleDateString('en-GB', options).replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$2-$1') + ' ' + 
-                              now.toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false});
-        document.getElementById('transferDate').value = dateTimeString;
-    }
-
-    // Handle transfer form submission
-    document.getElementById('transferForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const complaintId = document.getElementById('complaintIdTransfer').value;
-        const department = document.getElementById('transferDepartment').value;
-        const transferDate = document.getElementById('transferDate').value;
-        const notes = document.getElementById('transferNotes').value;
-
-        if (!department) {
-            alert('कृपया विभाग निवडा');
-            return;
-        }
-
-        // Here you would typically send this data to the server
-        alert('तक्रार #' + complaintId + ' हस्तांतरित केल्या जात आहे ' + department + ' ला\nवेळ: ' + transferDate + '\nटिप्पणी: ' + notes);
-        
-        closeTransferModal();
-        // Uncomment to send data to server
-        // fetch('transfer_complaint.php', {
-        //     method: 'POST',
-        //     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        //     body: 'id=' + complaintId + '&department=' + department + '&notes=' + notes
-        // }).then(r => r.json()).then(data => {
-        //     if (data.success) alert('हस्तांतरण यशस्वी!');
-        //     else alert('त्रुटी: ' + data.message);
-        // });
-    });
-
-    // Close modal when clicking overlay
-    document.addEventListener('click', function(e) {
-        const modal = document.getElementById('transferModal');
-        if (e.target === document.querySelector('.modal-overlay')) {
-            closeTransferModal();
-        }
-    });
-
-    // Initialize on page load
     window.addEventListener('load', function() {
         filterComplaints();
     });

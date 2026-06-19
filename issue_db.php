@@ -32,10 +32,10 @@ try {
     }
     
     // Validate mobile
-    if (!preg_match('/^[0-9]{10}$/', $mobile)) {
+    if (!preg_match('/^[6789][0-9]{9}$/', $mobile)) {
         echo json_encode([
             'success' => false,
-            'message' => 'कृपया 10 अंकी वैध मोबाईल क्रमांक टाका'
+            'message' => 'कृपया 6, 7, 8 किंवा 9 ने सुरू होणारा 10 अंकी वैध मोबाईल क्रमांक टाका'
         ]);
         exit;
     }

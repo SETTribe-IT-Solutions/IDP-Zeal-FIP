@@ -485,7 +485,7 @@ $conn->close();
 
             <div class="form-group full-width">
                 <label><i class="fas fa-phone"></i>तक्रारकर्त्याचे मोबाईल क्र <span class="required">*</span></label>
-                <input type="tel" id="mobile" name="mobile" placeholder="10 अंकी मोबाईल क्रमांक" pattern="[0-9]{10}" maxlength="10" required>
+                <input type="tel" id="mobile" name="mobile" placeholder="10 अंकी मोबाईल क्रमांक (6, 7, 8 किंवा 9 ने सुरू होणारा)" pattern="[6789][0-9]{9}" maxlength="10" required>
             </div>
 
             <div class="form-group full-width">
@@ -675,10 +675,24 @@ document.getElementById('issueForm').addEventListener('submit', async function(e
     submitBtn.disabled = false;
 });
 
-// Mobile number validation (only numbers)
-document.getElementById('mobile').addEventListener('input', function() {
-    this.value = this.value.replace(/[^0-9]/g, '');
-});
+// Mobile number validation (only numbers and custom messages)
+const mobileField = document.getElementById('mobile');
+if (mobileField) {
+    mobileField.addEventListener('input', function() {
+        this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);
+        this.setCustomValidity('');
+    });
+
+    mobileField.addEventListener('invalid', function() {
+        if (this.validity.valueMissing) {
+            this.setCustomValidity('मोबाईल क्रमांक आवश्यक आहे.');
+        } else if (this.validity.patternMismatch) {
+            this.setCustomValidity('मोबाईल क्रमांक 10 अंकी असावा आणि 6, 7, 8 किंवा 9 ने सुरू व्हावा.');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+}
 
 // Text-only validation for Marathi/letter fields
 ['taluka', 'village', 'department', 'deptHead', 'position'].forEach(function(fieldId) {

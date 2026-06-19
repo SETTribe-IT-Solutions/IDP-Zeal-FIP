@@ -772,7 +772,7 @@
             </div>
             <div class="user-col">
                 <label for="mobile"><i class="fa-solid fa-phone"></i> Mobile no</label>
-                <input id="mobile" name="mobile" type="tel" inputmode="numeric" pattern="[0-9]{10}" maxlength="10" placeholder="10 digits" value="<?php echo htmlspecialchars($data['mobile']); ?>" />
+                <input id="mobile" name="mobile" type="tel" inputmode="numeric" pattern="[6789][0-9]{9}" maxlength="10" placeholder="10 digits starting with 6, 7, 8, or 9" value="<?php echo htmlspecialchars($data['mobile']); ?>" />
             </div>
 
             <!-- Login Button -->

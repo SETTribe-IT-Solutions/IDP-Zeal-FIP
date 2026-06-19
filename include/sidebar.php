@@ -81,6 +81,24 @@ body {
     transform: translateX(5px);
 }
 
+.sidebar-submenu {
+    list-style: none;
+    margin: 6px 0 0 0;
+    padding: 0 0 0 8px;
+}
+
+.sidebar-submenu .sidebar-item a {
+    padding: 10px 20px;
+    font-size: 14px;
+    color: rgba(255,255,255,0.95);
+    background: transparent;
+}
+
+.sidebar-submenu .sidebar-item a:hover {
+    background: rgba(255,255,255,0.08);
+    transform: none;
+}
+
 .sidebar-item.active a {
     background: #fff;
     color: #1e3c72;
@@ -222,8 +240,12 @@ body {
                 <a href="issueform.php">Add Issue</a>
             </li>
 
-            <li class="sidebar-item <?php echo in_array(basename($_SERVER['PHP_SELF']), [ 'complaint_report.php']) ? 'active' : ''; ?>">
+            <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'complaint_report.php') ? 'active' : ''; ?>">
                 <a href="complaint_report.php">Issue Report</a>
+            </li>
+
+            <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'assign_issues.php') ? 'active' : ''; ?>">
+                <a href="assign_issues.php">Assigned Issues</a>
             </li>
 
             <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'create_user.php') ? 'active' : ''; ?>">
@@ -231,10 +253,7 @@ body {
             </li>
 
             <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'change-password.php') ? 'active' : ''; ?>">
-                <a href="forgetpassward.php">Change Password</a>
-            </li>
-        <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'logout.php') ? 'active' : ''; ?>">
-                <a>Logout</a> 
+                <a href="forgetpassward.php">🔑 Change Password</a>
             </li>
         </ul>
     </div>

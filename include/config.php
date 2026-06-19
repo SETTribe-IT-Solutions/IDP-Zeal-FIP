@@ -37,3 +37,37 @@ function generateIssueNumber($conn) {
 
     return $issueNumber;
 }
+
+/**
+ * Get the relative redirect path based on the user's system role.
+ *
+ * @param string|null $system_role
+ * @return string
+ */
+function get_role_redirect_page($system_role) {
+    $role = trim($system_role ?? '');
+    $lower_role = strtolower($role);
+    switch ($lower_role) {
+        case 'bdo':
+            return 'BDO.php';
+        case 'tho':
+            return 'THO.php';
+        case 'ceo':
+            return 'CEO.php';
+        case 'hod':
+            return 'Hod.php';
+        case 'admin':
+            return 'admin.php';
+        case 'user':
+            return 'user_dashboard.php';
+    }
+    // Marathi roles exactly matching database values
+    if ($role === 'ग्रामपंचायत अधिकारी') {
+        return 'ग्रामपंचायत अधिकारी.php';
+    }
+    if ($role === 'अंगणवाडी सेविका') {
+        return 'अंगणवाडी सेविका.php';
+    }
+    return 'user_dashboard.php';
+}
+

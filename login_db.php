@@ -20,7 +20,7 @@ if (empty($username) || empty($password)) {
 }
 
 // Prepared Statement
-$sql = "SELECT Username AS username, Password AS password FROM users WHERE Username = ?";
+$sql = "SELECT Username AS username, Password AS password, Name AS name, Designation AS designation, Department AS department, Village AS village, Grampanchayat AS grampanchayat, Talika AS talika, `Mobile No` AS mobile, `System Role` AS system_role, Role AS role FROM users WHERE Username = ?";
 $stmt = mysqli_prepare($conn, $sql);
 
 if ($stmt) {
@@ -38,9 +38,21 @@ if ($stmt) {
 
             // Store session
             $_SESSION['username'] = $user['username'];
+            $_SESSION['user_name'] = $user['name'] ?? '';
+            $_SESSION['user_designation'] = $user['designation'] ?? '';
+            $_SESSION['user_dept'] = $user['department'] ?? '';
+            $_SESSION['user_village'] = $user['village'] ?? '';
+            $_SESSION['user_grampanchayat'] = $user['grampanchayat'] ?? '';
+            $_SESSION['user_taluka'] = $user['talika'] ?? '';
+            $_SESSION['user_mobile'] = $user['mobile'] ?? '';
+            $_SESSION['system_role'] = !empty($user['system_role']) ? $user['system_role'] : 'user';
+            
+            // Set user_role (display role) to custom Role if specified, otherwise Designation/System Role
+            $_SESSION['user_role'] = !empty($user['role']) ? $user['role'] : (!empty($user['designation']) ? $user['designation'] : $_SESSION['system_role']);
 
-            // Redirect
-            header("Location: user_dashboard.php");
+            // Redirect based on role
+            $redirectPage = get_role_redirect_page($_SESSION['system_role']);
+            header("Location: " . $redirectPage);
             exit;
 
         } else {

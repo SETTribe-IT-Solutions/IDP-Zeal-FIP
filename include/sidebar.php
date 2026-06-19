@@ -210,8 +210,14 @@ body {
         </div>
 
         <ul class="sidebar-menu">
-            <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'user_dashboard.php') ? 'active' : ''; ?>">
-                <a href="user_dashboard.php">Dashboard</a>
+            <?php
+            $dashboard_link = 'user_dashboard.php';
+            if (isset($_SESSION['system_role']) && function_exists('get_role_redirect_page')) {
+                $dashboard_link = get_role_redirect_page($_SESSION['system_role']);
+            }
+            ?>
+            <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == $dashboard_link) ? 'active' : ''; ?>">
+                <a href="<?php echo htmlspecialchars($dashboard_link); ?>">Dashboard</a>
             </li>
 
             <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'issueform.php') ? 'active' : ''; ?>">
@@ -232,8 +238,8 @@ body {
         </ul>
     </div>
 
-    <!-- <div class="sidebar-bottom">
-        <a href="logout.php" title="Logout">Logout</a> -->
+    <div class="sidebar-bottom">
+        <a href="logout.php" title="Logout">Logout</a>
         <button id="sidebarToggle" class="toggle-btn" title="Toggle Sidebar">☰</button>
     </div>
 

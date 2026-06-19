@@ -5,6 +5,20 @@ session_start();
 // Include database configuration
 require_once 'include/config.php';
 
+// Check login
+if (!isset($_SESSION['username'])) {
+    header("Location: login.php");
+    exit;
+}
+
+// Redirect other roles to their specific dashboard
+$user_system_role = $_SESSION['system_role'] ?? 'user';
+if (strtolower(trim($user_system_role)) !== 'user') {
+    $redirectPage = get_role_redirect_page($user_system_role);
+    header("Location: " . $redirectPage);
+    exit;
+}
+
 // Fetch stats and recent items from DB with error fallbacks
 $total_issues = 0;
 $in_progress_issues = 0;

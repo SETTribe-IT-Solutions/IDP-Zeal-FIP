@@ -9,6 +9,26 @@ if (!isset($active_page)) {
     $active_page = basename($_SERVER['PHP_SELF'], '.php');
 }
 
+// Define page titles for menu context
+$page_titles = [
+    'landingpage' => 'Home',
+    'user_dashboard' => 'Dashboard',
+    'issueform' => 'Add Issue',
+    'complaint_report' => 'Issue Report',
+    'create_user' => 'Create User',
+    'forgetpassward' => 'Change Password',
+    'login' => 'Login',
+    'logout' => 'Logout'
+];
+
+// Get page title from map or use default
+if (!isset($page_title)) {
+    $page_title = isset($page_titles[$active_page]) ? $page_titles[$active_page] : 'Portal';
+}
+if (!isset($page_description)) {
+    $page_description = '';
+}
+
 // User details mockup
 $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : "Shri. Rajesh Patil";
 $user_role = isset($_SESSION['user_role']) ? $_SESSION['user_role'] : "Admin Officer";
@@ -21,7 +41,7 @@ $user_initials = "RP";
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZP Hingoli - Inter Department Portal</title>
+    <title><?php echo htmlspecialchars($page_title); ?> - ZP Hingoli Inter Department Portal</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -234,6 +254,31 @@ $user_initials = "RP";
 
         .brand-logo-img:hover {
             transform: scale(1.05);
+        }
+
+        .header-image-card {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 130px;
+            height: 52px;
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.20), rgba(30, 58, 138, 0.15));
+            border: 1px solid rgba(14, 165, 233, 0.18);
+            border-radius: 14px;
+            box-shadow: 0 10px 20px rgba(15, 23, 42, 0.09);
+            margin-right: 12px;
+            overflow: hidden;
+            transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+        }
+
+        .header-image-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 14px 28px rgba(15, 23, 42, 0.16);
+        }
+
+        .header-image-card svg {
+            width: 100%;
+            height: auto;
         }
 
         .header-divider {
@@ -1259,6 +1304,23 @@ $user_initials = "RP";
 
             <!-- Right: ZP Logo & Actions -->
             <div class="header-right">
+                <div class="header-image-card" title="Inter Department Portal">
+                    <svg viewBox="0 0 160 70" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <defs>
+                            <linearGradient id="headerGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#0ea5e9" stop-opacity="0.8"/>
+                                <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.7"/>
+                            </linearGradient>
+                        </defs>
+                        <rect x="4" y="12" width="72" height="46" rx="12" fill="#ffffff" opacity="0.18"/>
+                        <circle cx="42" cy="34" r="16" fill="#ffffff" opacity="0.25"/>
+                        <path d="M 28 54 Q 42 44 56 54" stroke="#ffffff" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.85"/>
+                        <rect x="90" y="16" width="48" height="36" rx="10" fill="url(#headerGlow)" opacity="0.88"/>
+                        <path d="M 98 30 L 118 30 L 118 38 L 98 38 Z" fill="#ffffff" opacity="0.95"/>
+                        <path d="M 98 42 L 118 42" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.95"/>
+                        <path d="M 104 22 Q 112 14 120 22" stroke="#ffffff" stroke-width="2.5" fill="none" opacity="0.9"/>
+                    </svg>
+                </div>
                 <img src="assets/zp-logo.png" alt="ZP Hingoli Logo" class="brand-logo-img">
 
                 <div class="header-divider"></div>
@@ -1312,6 +1374,20 @@ $user_initials = "RP";
         </div>
     </header>
     <!-- Header End -->
+
+    <!-- Page Title/Breadcrumb for Unauthenticated Pages -->
+    <?php if (!isset($_SESSION['username']) && $active_page === 'landingpage'): ?>
+    <div style="background: linear-gradient(135deg, rgba(30, 58, 138, 0.05), rgba(14, 165, 233, 0.05)); border-bottom: 1px solid var(--border-color); padding: 16px 24px; max-width: 1440px; margin: 0 auto;">
+        <div style="font-size: 14px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-house" style="color: #0ea5e9;"></i>
+            <span style="font-weight: 600;"><?php echo htmlspecialchars($page_title); ?></span>
+            <?php if (!empty($page_description)): ?>
+            <span style="color: var(--text-secondary); margin-left: 8px;">—</span>
+            <span style="color: var(--text-secondary); margin-left: 8px;"><?php echo htmlspecialchars($page_description); ?></span>
+            <?php endif; ?>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <!-- Core Portal Interactions Script -->
     <script>

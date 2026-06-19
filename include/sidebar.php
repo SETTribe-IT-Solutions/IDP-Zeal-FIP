@@ -14,10 +14,10 @@ body {
 /* Sidebar */
 .sidebar {
     width: 260px;
-    height: 100vh;
+    height: calc(100vh - var(--header-height));
     background: linear-gradient(180deg, #1e3c72, #2a5298);
     position: fixed;
-    top: 0;
+    top: var(--header-height);
     left: 0;
     box-shadow: 4px 0 15px rgba(0,0,0,0.15);
     display: flex;
@@ -33,7 +33,7 @@ body {
 }
 
 .sidebar.closed .sidebar-brand {
-    padding: 18px 10px;
+    padding: 0;
 }
 
 .sidebar.closed .sidebar-brand span,
@@ -51,13 +51,7 @@ body {
 }
 
 .sidebar-brand {
-    text-align: center;
-    padding: 25px 15px;
-    color: #fff;
-    font-size: 24px;
-    font-weight: bold;
-    border-bottom: 1px solid rgba(255,255,255,0.2);
-    letter-spacing: 1px;
+    display: none;
 }
 
 .sidebar-menu {
@@ -216,8 +210,8 @@ body {
         </div>
 
         <ul class="sidebar-menu">
-            <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'index.php') ? 'active' : ''; ?>">
-                <a href="index.php">Dashboard</a>
+            <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'user_dashboard.php') ? 'active' : ''; ?>">
+                <a href="user_dashboard.php">Dashboard</a>
             </li>
 
             <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'issueform.php') ? 'active' : ''; ?>">

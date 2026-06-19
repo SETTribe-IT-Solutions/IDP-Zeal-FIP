@@ -261,6 +261,9 @@ $talukas = ['औंढा नागनाथ','बसमत','हिंगोल
     }
 </style>
 
+<?php include __DIR__ . '/include/sidebar.php'; ?>
+
+<main class="main-content">
 <div class="cu-card">
     <div class="cu-header">
         <h1><i class="fa-solid fa-user-plus"></i> Create User / Officer</h1>
@@ -654,3 +657,4 @@ $talukas = ['औंढा नागनाथ','बसमत','हिंगोल
 <?php
 if (file_exists(__DIR__ . '/include/footer.php')) include __DIR__ . '/include/footer.php';
 ?>
+</main>

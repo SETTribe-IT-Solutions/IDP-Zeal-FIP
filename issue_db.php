@@ -81,18 +81,19 @@ try {
     
     // Prepare SQL statement
     $sql = "INSERT INTO tbl_raiseissue (
-        issue_number, issue_date, taluka, village, department, department_head, registration_type, position, mobile, description, photo
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        issue_number, issue_date, taluka, village, department, department_head, registration_type, position, mobile, description, photo, status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     
     $stmt = $conn->prepare($sql);
     if (!$stmt) {
         throw new Exception('Prepare failed: ' . $conn->error);
     }
 
+    $status = 'Pending';
     $stmt->bind_param(
-        "sssssssssss",
+        "ssssssssssss",
         $issue_number, $issue_date, $taluka, $village, $department, $department_head,
-        $registration_type, $position, $mobile, $description, $photo
+        $registration_type, $position, $mobile, $description, $photo, $status
     );
     
     // Execute and check

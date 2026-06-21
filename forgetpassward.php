@@ -103,6 +103,7 @@ include __DIR__ . '/include/header.php';
             opacity: 0;
             transform: translateY(16px);
         }
+
         to {
             opacity: 1;
             transform: translateY(0);
@@ -269,13 +270,13 @@ include __DIR__ . '/include/header.php';
     }
 </style>
 
-    <!-- Include Portal Sidebar -->
-    <?php include __DIR__ . '/include/sidebar.php'; ?>
+<!-- Include Portal Sidebar -->
 
-    <!-- Main Workspace Container -->
-    <main class="main-content">
-        <div class="password-reset-wrapper">
-            <div class="card">
+
+<!-- Main Workspace Container -->
+<main class="main-content">
+    <div class="password-reset-wrapper">
+        <div class="card">
             <h1>Reset Password</h1>
             <p class="subtitle">Enter the username and new credentials to reset the password.</p>
 
@@ -299,21 +300,27 @@ include __DIR__ . '/include/header.php';
                 <div class="field">
                     <label for="username">Username</label>
                     <div class="input-wrapper">
-                        <input type="text" id="username" name="username" placeholder="Enter username" value="<?php echo htmlspecialchars($username, ENT_QUOTES); ?>" required autocomplete="username">
+                        <input type="text" id="username" name="username" placeholder="Enter username"
+                            value="<?php echo htmlspecialchars($username, ENT_QUOTES); ?>" required
+                            autocomplete="username">
                     </div>
                 </div>
                 <div class="field">
                     <label for="new_password">Create New Password</label>
                     <div class="input-wrapper password-wrapper">
-                        <input type="password" id="new_password" name="new_password" autocomplete="new-password" placeholder="New password" required>
-                        <button type="button" class="toggle-password" data-target="new_password" aria-label="Toggle password visibility">👁️</button>
+                        <input type="password" id="new_password" name="new_password" autocomplete="new-password"
+                            placeholder="New password" required>
+                        <button type="button" class="toggle-password" data-target="new_password"
+                            aria-label="Toggle password visibility">👁️</button>
                     </div>
                 </div>
                 <div class="field">
                     <label for="confirm_password">Confirm New Password</label>
                     <div class="input-wrapper password-wrapper">
-                        <input type="password" id="confirm_password" name="confirm_password" autocomplete="new-password" placeholder="Confirm password" required>
-                        <button type="button" class="toggle-password" data-target="confirm_password" aria-label="Toggle password visibility">👁️</button>
+                        <input type="password" id="confirm_password" name="confirm_password" autocomplete="new-password"
+                            placeholder="Confirm password" required>
+                        <button type="button" class="toggle-password" data-target="confirm_password"
+                            aria-label="Toggle password visibility">👁️</button>
                     </div>
                 </div>
                 <button type="submit" class="button">Save New Password</button>
@@ -323,26 +330,26 @@ include __DIR__ . '/include/header.php';
         </div>
     </div>
 
-<script>
-    document.querySelectorAll('.toggle-password').forEach(function(button) {
-        button.addEventListener('click', function() {
-            var targetId = button.getAttribute('data-target');
-            var input = document.getElementById(targetId);
-            if (!input) return;
-            if (input.type === 'password') {
-                input.type = 'text';
-                button.textContent = '🙈';
-            } else {
-                input.type = 'password';
-                button.textContent = '👁️';
-            }
+    <script>
+        document.querySelectorAll('.toggle-password').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var targetId = button.getAttribute('data-target');
+                var input = document.getElementById(targetId);
+                if (!input) return;
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    button.textContent = '🙈';
+                } else {
+                    input.type = 'password';
+                    button.textContent = '👁️';
+                }
+            });
         });
-    });
-</script>
+    </script>
 
-<?php
-if (file_exists(__DIR__ . '/include/footer.php')) {
-    include __DIR__ . '/include/footer.php';
-}
-?>
+    <?php
+    if (file_exists(__DIR__ . '/include/footer.php')) {
+        include __DIR__ . '/include/footer.php';
+    }
+    ?>
 </main>

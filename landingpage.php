@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 session_start();
 
 if (isset($_SESSION['username'])) {
@@ -109,13 +109,27 @@ include 'include/header.php';
     }
 
     @keyframes slideDown {
-        from { opacity: 0; transform: translateY(-20px); }
-        to { opacity: 1; transform: translateY(0); }
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     @keyframes slideUp {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     .landing-hero .hero-actions .btn {
@@ -381,7 +395,7 @@ include 'include/header.php';
         height: 150px;
         position: relative;
         overflow: hidden;
-        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
     }
 
     .gallery-thumb::after {
@@ -389,7 +403,7 @@ include 'include/header.php';
         position: absolute;
         right: 12px;
         bottom: 12px;
-        color: rgba(255,255,255,0.8);
+        color: rgba(255, 255, 255, 0.8);
         font-size: 0.75rem;
         letter-spacing: 0.08em;
     }
@@ -492,8 +506,15 @@ include 'include/header.php';
     }
 
     @keyframes fadeInUp {
-        from { opacity: 0; transform: translateY(30px); }
-        to { opacity: 1; transform: translateY(0); }
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     @media (max-width: 1024px) {
@@ -625,13 +646,18 @@ include 'include/header.php';
 <main class="main-content">
     <section class="landing-hero">
         <div class="hero-panel">
-            <span class="hero-badge"><i class="fa-solid fa-shield-halved"></i> जिल्हा परिषद हिंगोली पोर्टल | Zilha Parishad Hingoli Portal</span>
+            <span class="hero-badge"><i class="fa-solid fa-shield-halved"></i> जिल्हा परिषद हिंगोली पोर्टल | Zilha
+                Parishad Hingoli Portal</span>
             <h1 class="hero-title">हिंगोली जिल्हा परिषद आंतर-विभागीय समस्या व्यवस्थापन पोर्टल</h1>
             <p class="hero-title-sub">Hingoli District Inter-Departmental Issue Management Portal</p>
-            <p class="hero-text">हिंगोली जिल्हा परिषद आणि सविस्तर सेवांसाठी अधिकृत समस्यांचे निवारण पोर्टल. एकाच ठिकाणी तक्रारी नोंदवा, प्रगती बघा आणि स्थानिक प्रशासनाशी जोडलेले अपडेट मिळवा.</p>
+            <p class="hero-text">हिंगोली जिल्हा परिषद आणि सविस्तर सेवांसाठी अधिकृत समस्यांचे निवारण पोर्टल. एकाच ठिकाणी
+                तक्रारी नोंदवा, प्रगती बघा आणि स्थानिक प्रशासनाशी जोडलेले अपडेट मिळवा.</p>
             <div class="hero-actions">
-                <a href="login.php" class="btn btn-primary">लॉगिन करा / Login <i class="fa-solid fa-right-to-bracket ms-2"></i></a>
-                <a href="create_user.php" class="btn btn-outline-light text-white" style="border-color: rgba(255,255,255,0.4);">नवीन खाते / Register <i class="fa-solid fa-user-plus ms-2"></i></a>
+                <a href="login.php" class="btn btn-primary">लॉगिन करा / Login <i
+                        class="fa-solid fa-right-to-bracket ms-2"></i></a>
+                <a href="create_user.php" class="btn btn-outline-light text-white"
+                    style="border-color: rgba(255,255,255,0.4);">नवीन खाते / Register <i
+                        class="fa-solid fa-user-plus ms-2"></i></a>
             </div>
         </div>
         <div class="hero-visual">
@@ -652,16 +678,19 @@ include 'include/header.php';
         <div class="landing-note">
             <strong>विश्वसनी सेवा</strong>
             <span class="note-lang">Secure Access</span>
-            <span>प्रमाणित लॉगिन आणि विभागीय वापरकर्त्यांसाठी सुरक्षित प्रवेश. Verified login for authorized users only.</span>
+            <span>प्रमाणित लॉगिन आणि विभागीय वापरकर्त्यांसाठी सुरक्षित प्रवेश. Verified login for authorized users
+                only.</span>
         </div>
     </div>
 
     <div class="section-container">
-        <h2 class="section-title"><i class="fa-solid fa-map-location-dot"></i> हिंगोली जिल्हा माहिती / Hingoli District Overview</h2>
+        <h2 class="section-title"><i class="fa-solid fa-map-location-dot"></i> हिंगोली जिल्हा माहिती / Hingoli District
+            Overview</h2>
         <div class="info-banner">
             <div class="info-card">
                 <h4>जिल्ह्याचा परिचय</h4>
-                <p>हिंगोली महाराष्ट्रातील मराठवाड्याच्या उत्तरेस स्थित असून त्याची सीमा अकोला, यवतमाळ, परभणी आणि नांदेड जिल्ह्याशी जोडलेली आहे.</p>
+                <p>हिंगोली महाराष्ट्रातील मराठवाड्याच्या उत्तरेस स्थित असून त्याची सीमा अकोला, यवतमाळ, परभणी आणि नांदेड
+                    जिल्ह्याशी जोडलेली आहे.</p>
             </div>
             <div class="info-card">
                 <h4>स्थापना</h4>
@@ -678,31 +707,7 @@ include 'include/header.php';
         </div>
     </div>
 
-    <div class="section-container">
-        <h2 class="section-title"><i class="fa-solid fa-users-line"></i> नेतृत्व व महत्त्वाच्या अधिकारी / Leadership</h2>
-        <div class="leadership-grid">
-            <div class="leadership-card">
-                <div class="leadership-icon"><i class="fa-solid fa-user-tie"></i></div>
-                <h4>मुख्य कार्यकारी अधिकारी</h4>
-                <p>विवेक गायकवाड (भा.प्र.से.)</p>
-            </div>
-            <div class="leadership-card">
-                <div class="leadership-icon"><i class="fa-solid fa-user-shield"></i></div>
-                <h4>पालकमंत्री</h4>
-                <p>नरहरी सावित्रीबाई सीताराम झिरवाल</p>
-            </div>
-            <div class="leadership-card">
-                <div class="leadership-icon"><i class="fa-solid fa-person-booth"></i></div>
-                <h4>मुख्य मंत्री</h4>
-                <p>श्री. देवेंद्र फडणवीस</p>
-            </div>
-            <div class="leadership-card">
-                <div class="leadership-icon"><i class="fa-solid fa-user-gear"></i></div>
-                <h4>उपमुख्यमंत्री</h4>
-                <p>श्री. एकनाथ शिंदे</p>
-            </div>
-        </div>
-    </div>
+
 
     <div class="section-container">
         <h2 class="section-title"><i class="fa-solid fa-sparkles"></i> मुख्य सुविधा / Key Features</h2>

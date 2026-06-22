@@ -952,7 +952,6 @@ $user_initials = isset($_SESSION['user_initials']) ? $_SESSION['user_initials'] 
         }
 
         @media (max-width: 1024px) {
-
             .header-nav,
             .header-search {
                 display: none;
@@ -967,13 +966,134 @@ $user_initials = isset($_SESSION['user_initials']) ? $_SESSION['user_initials'] 
             }
         }
 
+        @media (max-width: 768px) {
+            /* Hide logos, divider, and subtitle — show only the name */
+            .brand-logo-img,
+            .header-divider,
+            .brand-subtitle {
+                display: none !important;
+            }
+
+            .brand-emblem-img {
+                height: 38px;
+            }
+
+            .brand-title {
+                font-size: 16px;
+            }
+
+            .brand-emblem-img {
+                height: 36px;
+            }
+
+            .brand-title {
+                font-size: 16px;
+            }
+
+            .brand-subtitle {
+                font-size: 9px;
+                letter-spacing: 0.04em;
+            }
+
+            .header-actions {
+                gap: 8px;
+            }
+
+            .action-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 14px;
+            }
+
+            .header-btn {
+                padding: 6px 12px;
+                font-size: 11px;
+            }
+
+            .profile-trigger {
+                padding: 4px;
+                gap: 4px;
+            }
+
+            .profile-avatar {
+                width: 28px;
+                height: 28px;
+                font-size: 11px;
+            }
+        }
+
         @media (max-width: 480px) {
-            .brand-text {
-                display: none;
+            .header-container {
+                gap: 10px;
+                padding: 0 16px;
+            }
+
+            .header-btn {
+                padding: 6px 14px;
+                font-size: 12px;
+            }
+
+            .header-actions {
+                gap: 8px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            /* On very small screens also hide emblem image — show ONLY the name */
+            .brand-emblem-img {
+                display: none !important;
+            }
+
+            .brand-title {
+                font-size: 14px;
+            }
+
+            .action-btn {
+                width: 34px;
+                height: 34px;
+                font-size: 14px;
+            }
+
+            .header-btn {
+                padding: 5px 10px;
+                font-size: 11px;
+            }
+
+            .header-actions {
+                gap: 6px;
+            }
+
+            .profile-trigger {
+                padding: 2px 4px;
+            }
+
+            .profile-avatar {
+                width: 28px;
+                height: 28px;
+                font-size: 11px;
             }
 
             .header-container {
-                padding: 0 16px;
+                padding: 0 10px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .brand-subtitle {
+                display: none;
+            }
+
+            .brand-title {
+                font-size: 13px;
+            }
+
+            .header-btn {
+                padding: 4px 8px;
+                font-size: 10px;
+            }
+
+            .header-actions {
+                gap: 4px;
             }
         }
 
@@ -1316,6 +1436,64 @@ $user_initials = isset($_SESSION['user_initials']) ? $_SESSION['user_initials'] 
             color: #ffffff;
             box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
         }
+
+        /* ===== SIDEBAR TOGGLE BUTTONS IN HEADER ===== */
+        #desktopSidebarToggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: 1.5px solid rgba(255,255,255,0.3);
+            color: #fff;
+            font-size: 1.3rem;
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            margin-right: 8px;
+        }
+
+        #desktopSidebarToggle:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .mobile-sidebar-toggle {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            color: inherit;
+            font-size: 1.4rem;
+            cursor: pointer;
+            padding: 6px 10px;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-sidebar-toggle { display: inline-flex; }
+            #desktopSidebarToggle { display: none; }
+
+            /* Hide logos, divider, subtitle, avatar icon and down arrow on mobile */
+            .brand-emblem-img,
+            .brand-logo-img,
+            .header-divider,
+            .brand-subtitle,
+            .profile-dept,
+            .nav-dropdown-indicator,
+            .profile-avatar { display: none !important; }
+
+            /* Show name text instead of avatar icon */
+            .profile-info { display: flex !important; flex-direction: column; }
+            .profile-name { display: block !important; font-size: 13px; }
+
+            /* Show only the brand name */
+            .brand-title { font-size: 1rem; }
+
+            /* Keep header compact */
+            .header-right { gap: 6px; }
+            .header-actions { gap: 4px; }
+        }
     </style>
 </head>
 
@@ -1324,6 +1502,12 @@ $user_initials = isset($_SESSION['user_initials']) ? $_SESSION['user_initials'] 
     <!-- Header Start -->
     <header class="idp-header">
         <div class="header-container">
+
+            <!-- Desktop Sidebar Toggle -->
+            <button id="desktopSidebarToggle" title="Toggle Sidebar" aria-label="Toggle Sidebar">&#9776;</button>
+
+            <!-- Mobile Sidebar Toggle -->
+            <button id="mobileSidebarToggle" class="mobile-sidebar-toggle" title="Open Menu" aria-label="Open Menu">&#9776;</button>
 
             <!-- Left: Maharashtra Emblem -->
             <div class="header-left">
@@ -1365,8 +1549,7 @@ $user_initials = isset($_SESSION['user_initials']) ? $_SESSION['user_initials'] 
                                 <span class="profile-name"><?php echo $user_name; ?></span>
                                 <span class="profile-dept"><?php echo $user_dept; ?></span>
                             </div>
-                            <i class="fa-solid fa-chevron-down nav-dropdown-indicator"
-                                style="margin-right: 6px; font-size: 10px;"></i>
+
 
                             <div class="dropdown-menu profile-dropdown">
                                 <div class="profile-dd-header">
@@ -1390,10 +1573,11 @@ $user_initials = isset($_SESSION['user_initials']) ? $_SESSION['user_initials'] 
                             </div>
                         </div>
                     <?php else: ?>
-                        <!-- Login / Register Buttons for Unauthenticated Users -->
-                        <a href="login.php" class="header-btn header-btn-outline">लॉगिन / Login</a>
-                        <a href="create_user.php" class="header-btn header-btn-primary">नोंदणी / Register</a>
-                    <?php endif; ?>
+    <?php if (basename($_SERVER['PHP_SELF']) == 'landingpage.php'): ?>
+        <a href="login.php" class="header-btn header-btn-outline">लॉगिन / Login</a>
+        <a href="create_user.php" class="header-btn header-btn-primary">नोंदणी / Register</a>
+    <?php endif; ?>
+<?php endif; ?>
 
                 </div>
             </div>
@@ -1450,3 +1634,4 @@ $user_initials = isset($_SESSION['user_initials']) ? $_SESSION['user_initials'] 
             }
         })();
     </script>
+       

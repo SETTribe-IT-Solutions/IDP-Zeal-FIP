@@ -1316,6 +1316,20 @@ if (empty($system_roles)) {
         .cu-body {
             padding: 1rem;
         }
+
+        .cu-progress {
+            padding: 1rem 0.5rem 0;
+            gap: 0.25rem;
+        }
+
+        .cu-step {
+            font-size: 0.68rem;
+            padding: 0.35rem 0.5rem;
+            gap: 0.3rem;
+            flex: 1;
+            justify-content: center;
+            text-align: center;
+        }
     }
 </style>
 

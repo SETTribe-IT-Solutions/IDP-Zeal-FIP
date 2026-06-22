@@ -1,3 +1,20 @@
+<?php
+session_start();
+
+$error = '';
+if (isset($_GET['error'])) {
+    $errorCode = $_GET['error'];
+    if ($errorCode === 'required') {
+        $error = 'Please enter both username and password.';
+    } elseif ($errorCode === 'invalid') {
+        $error = 'Invalid username or password.';
+    } elseif ($errorCode === 'notfound') {
+        $error = 'User not found.';
+    } else {
+        $error = htmlspecialchars($errorCode, ENT_QUOTES, 'UTF-8');
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -49,6 +66,20 @@
 
         .forgot-link{display:block;text-align:center;margin-top:.75rem;font-size:0.9rem;color:#2563eb}
 
+        .error-box{
+            background:#fde8e8;
+            border:1px solid #f5c2c7;
+            color:#842029;
+            border-radius:8px;
+            padding:0.9rem 1rem;
+            margin-bottom:1rem;
+            font-size:0.95rem;
+            text-align:center;
+        }
+        .btn-login:hover{background:#0b5ed7;border-color:#0b5ed7}
+
+        .forgot-link{display:block;text-align:center;margin-top:.75rem;font-size:0.9rem;color:#2563eb}
+
         @media (max-width:420px){
             :root{--card-width:calc(100vw - 1.5rem)}
             .form-control{height:56px;font-size:1.05rem}
@@ -65,6 +96,9 @@
         <p class="portal-sub">Login to continue</p>
 
         <form action="login_db.php" method="POST" novalidate>
+            <?php if (!empty($error)): ?>
+                <div class="error-box"><?php echo $error; ?></div>
+            <?php endif; ?>
 
             <div class="mb-3">
                 <label class="form-label" for="username">Username</label>

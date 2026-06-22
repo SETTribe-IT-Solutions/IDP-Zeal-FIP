@@ -13,6 +13,12 @@ if (!isset($active_page)) {
 $page_titles = [
     'landingpage' => 'Home',
     'user_dashboard' => 'Dashboard',
+    'BDO' => 'BDO Dashboard',
+    'THO' => 'THO Dashboard',
+    'CEO' => 'CEO Dashboard',
+    'Hod' => 'HoD Dashboard',
+    'gram_panchayat' => 'Gram Panchayat Dashboard',
+    'anganwadi' => 'Anganwadi Dashboard',
     'issueform' => 'Add Issue',
     'complaint_report' => 'Issue Report',
     'create_user' => 'Create User',

@@ -234,7 +234,7 @@
             </li>
 
             <li
-                class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'user_dashboard.php') ? 'active' : ''; ?>">
+                class="sidebar-item <?php echo in_array(basename($_SERVER['PHP_SELF']), ['user_dashboard.php', 'BDO.php', 'THO.php', 'CEO.php', 'Hod.php', 'gram_panchayat.php', 'anganwadi.php']) ? 'active' : ''; ?>">
                 <a href="user_dashboard.php">Dashboard</a>
             </li>
 

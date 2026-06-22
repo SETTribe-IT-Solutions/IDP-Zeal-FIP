@@ -2,11 +2,6 @@
 // Start session
 session_start();
 
-if (!isset($_SESSION['username'])) {
-    header("Location: login.php");
-    exit;
-}
-
 // Include database configuration
 require_once 'include/config.php';
 
@@ -21,81 +16,36 @@ $recent_issues = [];
 try {
     $conn = db_connect();
 
-    // Determine query filter based on user role
-    $role = $_SESSION['user_system_role'] ?? '';
-    $where = "1=1";
-    $params = [];
-    $types = "";
-
-    if ($role === 'CEO') {
-        $where = "1=1";
-    } elseif ($role === 'ग्रामपंचायत अधिकारी' || $role === 'अंगणवाडी सेविका' || $role === 'शिक्षक') {
-        $where = "mobile = ?";
-        $params[] = $_SESSION['user_mobile'] ?? '';
-        $types .= "s";
-    } else {
-        // BDO, THO, HoD
-        $where = "department = ? AND department_head = ?";
-        $params[] = $_SESSION['user_dept'] ?? '';
-        $params[] = $_SESSION['user_designation'] ?? '';
-        $types .= "ss";
-    }
-
     // Query stats
     $count_sql = "SELECT 
         COUNT(*) as total,
         SUM(CASE WHEN LOWER(status) = 'in progress' THEN 1 ELSE 0 END) as in_progress,
         SUM(CASE WHEN LOWER(status) = 'resolved' OR LOWER(status) = 'closed' THEN 1 ELSE 0 END) as resolved
-    FROM tbl_raiseissue WHERE $where";
-
-    $stmt1 = $conn->prepare($count_sql);
-    if ($stmt1) {
-        if (!empty($params)) {
-            $stmt1->bind_param($types, ...$params);
-        }
-        $stmt1->execute();
-        $count_res = $stmt1->get_result();
-        if ($count_res && $row = $count_res->fetch_assoc()) {
-            $total_issues = (int) $row['total'];
-            $in_progress_issues = (int) $row['in_progress'];
-            $resolved_issues = (int) $row['resolved'];
-            $open_issues = $total_issues - ($in_progress_issues + $resolved_issues);
-            if ($open_issues < 0)
-                $open_issues = 0;
-        }
-        $stmt1->close();
+    FROM tbl_raiseissue";
+    
+    $count_res = $conn->query($count_sql);
+    if ($count_res && $row = $count_res->fetch_assoc()) {
+        $total_issues = (int)$row['total'];
+        $in_progress_issues = (int)$row['in_progress'];
+        $resolved_issues = (int)$row['resolved'];
+        $open_issues = $total_issues - ($in_progress_issues + $resolved_issues);
+        if ($open_issues < 0) $open_issues = 0;
     }
 
     // Active departments
-    $dept_sql = "SELECT COUNT(DISTINCT department) as dept_count FROM tbl_raiseissue WHERE department IS NOT NULL AND department != '' AND $where";
-    $stmt2 = $conn->prepare($dept_sql);
-    if ($stmt2) {
-        if (!empty($params)) {
-            $stmt2->bind_param($types, ...$params);
-        }
-        $stmt2->execute();
-        $dept_res = $stmt2->get_result();
-        if ($dept_res && $row = $dept_res->fetch_assoc()) {
-            $active_depts = (int) $row['dept_count'];
-        }
-        $stmt2->close();
+    $dept_sql = "SELECT COUNT(DISTINCT department) as dept_count FROM tbl_raiseissue WHERE department IS NOT NULL AND department != ''";
+    $dept_res = $conn->query($dept_sql);
+    if ($dept_res && $row = $dept_res->fetch_assoc()) {
+        $active_depts = (int)$row['dept_count'];
     }
 
     // Recent 5 issues
-    $recent_sql = "SELECT * FROM tbl_raiseissue WHERE $where ORDER BY issue_date DESC, id DESC LIMIT 5";
-    $stmt3 = $conn->prepare($recent_sql);
-    if ($stmt3) {
-        if (!empty($params)) {
-            $stmt3->bind_param($types, ...$params);
-        }
-        $stmt3->execute();
-        $recent_res = $stmt3->get_result();
-        if ($recent_res) {
-            $recent_issues = $recent_res->fetch_all(MYSQLI_ASSOC);
-        }
-        $stmt3->close();
+    $recent_sql = "SELECT * FROM tbl_raiseissue ORDER BY issue_date DESC, id DESC LIMIT 5";
+    $recent_res = $conn->query($recent_sql);
+    if ($recent_res) {
+        $recent_issues = $recent_res->fetch_all(MYSQLI_ASSOC);
     }
-
+    
     $conn->close();
 } catch (Exception $e) {
     // Graceful fallbacks in case DB isn't initialized/empty
@@ -104,7 +54,7 @@ try {
     $resolved_issues = 84;
     $open_issues = 12;
     $active_depts = 6;
-
+    
     $recent_issues = [
         [
             'issue_number' => '0024',
@@ -137,8 +87,7 @@ try {
 }
 
 // Function to determine badge class
-function getStatusBadgeClass($status)
-{
+function getStatusBadgeClass($status) {
     switch (strtolower(trim($status))) {
         case 'pending':
             return 'badge-pending';
@@ -154,8 +103,7 @@ function getStatusBadgeClass($status)
 }
 
 // Marathi translation mapping helper
-function translateStatus($status)
-{
+function translateStatus($status) {
     switch (strtolower(trim($status))) {
         case 'pending':
             return 'प्रलंबित (Pending)';
@@ -172,7 +120,7 @@ function translateStatus($status)
 }
 
 // Dynamic Greeting based on time
-$hour = (int) date('H');
+$hour = (int)date('H');
 if ($hour >= 5 && $hour < 12) {
     $greeting = "शुभ सकाळ / Good Morning";
     $greeting_icon = "☀️";
@@ -200,12 +148,10 @@ include 'include/sidebar.php';
                 <i class="fa-solid fa-circle-check"></i> जिल्हा परिषद हिंगोली - आय.डी.पी.
             </span>
             <h1 class="welcome-title">
-                <span
-                    class="highlight"><?php echo htmlspecialchars(preg_replace('/^Shri\.\s+/i', '', $user_display_name)); ?></span>
+                <span class="highlight"><?php echo htmlspecialchars(preg_replace('/^Shri\.\s+/i', '', $user_display_name)); ?></span>
             </h1>
             <p class="welcome-desc">
-                हिंगोली जिल्हा परिषदेच्या आंतर-विभागीय समन्वय आणि समस्या निवारण प्रणालीमध्ये आपले स्वागत आहे. खालील
-                डॅशबोर्डवर थेट अद्यतने पहा.
+                हिंगोली जिल्हा परिषदेच्या आंतर-विभागीय समन्वय आणि समस्या निवारण प्रणालीमध्ये आपले स्वागत आहे. खालील डॅशबोर्डवर थेट अद्यतने पहा.
             </p>
         </div>
         <div class="welcome-actions">
@@ -223,7 +169,7 @@ include 'include/sidebar.php';
         <h2><i class="fa-solid fa-chart-pie"></i> पोर्टल आकडेवारी (Live Portal Stats)</h2>
         <span class="refresh-indicator"><i class="fa-solid fa-arrows-rotate"></i> रीअल-टाइम अपडेट</span>
     </div>
-
+    
     <div class="stats-grid">
         <div class="stat-card stat-total">
             <div class="stat-card-glow"></div>
@@ -314,8 +260,7 @@ include 'include/sidebar.php';
 
     <!-- Interactive Taluka Guide -->
     <div class="section-container">
-        <h2 class="section-title"><i class="fa-solid fa-map-location-dot"></i> हिंगोली जिल्ह्यातील तालुके (Hingoli
-            Talukas)</h2>
+        <h2 class="section-title"><i class="fa-solid fa-map-location-dot"></i> हिंगोली जिल्ह्यातील तालुके (Hingoli Talukas)</h2>
         <div class="taluka-showcase">
             <div class="taluka-tabs">
                 <button class="taluka-tab active" onclick="showTaluka('aundha')">
@@ -334,7 +279,7 @@ include 'include/sidebar.php';
                     <i class="fa-solid fa-tree"></i> सेनगांव
                 </button>
             </div>
-
+            
             <div class="taluka-details-container">
                 <!-- Aundha Details -->
                 <div id="taluka-aundha" class="taluka-detail-pane active">
@@ -342,8 +287,7 @@ include 'include/sidebar.php';
                         <h3>औंढा नागनाथ (Aundha Nagnath)</h3>
                         <span class="pane-badge">पर्यटन व धार्मिक केंद्र</span>
                     </div>
-                    <p>औंढा नागनाथ हा ऐतिहासिक आणि धार्मिक दृष्ट्या अत्यंत महत्त्वाचा तालुका आहे. येथे भारतातील प्रसिद्ध
-                        १२ ज्योतिर्लिंगांपैकी ८ वे ज्योतिर्लिंग मंदिर आहे.</p>
+                    <p>औंढा नागनाथ हा ऐतिहासिक आणि धार्मिक दृष्ट्या अत्यंत महत्त्वाचा तालुका आहे. येथे भारतातील प्रसिद्ध १२ ज्योतिर्लिंगांपैकी ८ वे ज्योतिर्लिंग मंदिर आहे.</p>
                     <div class="pane-stats">
                         <div class="pane-stat-item">
                             <strong>९०+</strong>
@@ -362,8 +306,7 @@ include 'include/sidebar.php';
                         <h3>हिंगोली (Hingoli)</h3>
                         <span class="pane-badge">जिल्हा मुख्यालय</span>
                     </div>
-                    <p>हिंगोली हा जिल्हा मुख्यालयाचा मुख्य तालुका आहे. सर्व प्रमुख प्रशासकीय कार्यालये, जिल्हा रुग्णालय,
-                        आणि शैक्षणिक संस्था या तालुक्यात केंद्रित आहेत.</p>
+                    <p>हिंगोली हा जिल्हा मुख्यालयाचा मुख्य तालुका आहे. सर्व प्रमुख प्रशासकीय कार्यालये, जिल्हा रुग्णालय, आणि शैक्षणिक संस्था या तालुक्यात केंद्रित आहेत.</p>
                     <div class="pane-stats">
                         <div class="pane-stat-item">
                             <strong>१२०+</strong>
@@ -382,8 +325,7 @@ include 'include/sidebar.php';
                         <h3>बसमत (Basmat)</h3>
                         <span class="pane-badge">कृषी व व्यापार संपन्न</span>
                     </div>
-                    <p>बसमत हा तालुका केळी उत्पादनासाठी आणि कृषी मालाच्या व्यापारासाठी प्रसिद्ध आहे. येथे मोठ्या
-                        प्रमाणात बागायती शेती केली जाते.</p>
+                    <p>बसमत हा तालुका केळी उत्पादनासाठी आणि कृषी मालाच्या व्यापारासाठी प्रसिद्ध आहे. येथे मोठ्या प्रमाणात बागायती शेती केली जाते.</p>
                     <div class="pane-stats">
                         <div class="pane-stat-item">
                             <strong>११०+</strong>
@@ -402,8 +344,7 @@ include 'include/sidebar.php';
                         <h3>कळमनुरी (Kalmanuri)</h3>
                         <span class="pane-badge">कृषी व ग्रामीण विकास</span>
                     </div>
-                    <p>कळमनुरी हा डोंगराळ आणि मैदानी भागांचे मिश्रण असलेला तालुका आहे. ग्रामीण रस्ते जोडणी आणि शैक्षणिक
-                        विकासावर येथे प्रामुख्याने काम सुरू आहे.</p>
+                    <p>कळमनुरी हा डोंगराळ आणि मैदानी भागांचे मिश्रण असलेला तालुका आहे. ग्रामीण रस्ते जोडणी आणि शैक्षणिक विकासावर येथे प्रामुख्याने काम सुरू आहे.</p>
                     <div class="pane-stats">
                         <div class="pane-stat-item">
                             <strong>१००+</strong>
@@ -422,8 +363,7 @@ include 'include/sidebar.php';
                         <h3>सेनगांव (Sengaon)</h3>
                         <span class="pane-badge">वनसंपत्ती व लोककल्याण</span>
                     </div>
-                    <p>सेनगांव तालुका हा नैसर्गिक वनसंपत्तीने संपन्न आहे. येथे ग्रामीण आरोग्य केंद्रांचे सक्षमीकरण आणि
-                        पाणलोट विकासाचे काम उत्तम प्रकारे राबविले जाते.</p>
+                    <p>सेनगांव तालुका हा नैसर्गिक वनसंपत्तीने संपन्न आहे. येथे ग्रामीण आरोग्य केंद्रांचे सक्षमीकरण आणि पाणलोट विकासाचे काम उत्तम प्रकारे राबविले जाते.</p>
                     <div class="pane-stats">
                         <div class="pane-stat-item">
                             <strong>९५+</strong>
@@ -442,12 +382,10 @@ include 'include/sidebar.php';
     <!-- Recent Issues Feed -->
     <div class="section-container">
         <div class="recent-header">
-            <h2 class="section-title"><i class="fa-solid fa-list-check"></i> अलीकडील नोंदवलेल्या समस्या (Recent Issues)
-            </h2>
-            <a href="complaint_report.php" class="view-all-link">सर्व समस्या पहा <i
-                    class="fa-solid fa-angles-right"></i></a>
+            <h2 class="section-title"><i class="fa-solid fa-list-check"></i> अलीकडील नोंदवलेल्या समस्या (Recent Issues)</h2>
+            <a href="complaint_report.php" class="view-all-link">सर्व समस्या पहा <i class="fa-solid fa-angles-right"></i></a>
         </div>
-
+        
         <div class="issues-table-card">
             <?php if (!empty($recent_issues)): ?>
                 <table class="recent-table">
@@ -469,8 +407,7 @@ include 'include/sidebar.php';
                                     <strong><?php echo htmlspecialchars(mb_strimwidth($issue['description'], 0, 80, "...")); ?></strong>
                                 </td>
                                 <td><span class="dept-badge"><?php echo htmlspecialchars($issue['department']); ?></span></td>
-                                <td><?php echo htmlspecialchars($issue['village'] . ', ' . ($issue['taluka'] ?? 'Hingoli')); ?>
-                                </td>
+                                <td><?php echo htmlspecialchars($issue['village'] . ', ' . ($issue['taluka'] ?? 'Hingoli')); ?></td>
                                 <td><?php echo date('d M Y', strtotime($issue['issue_date'])); ?></td>
                                 <td>
                                     <span class="status-badge <?php echo getStatusBadgeClass($issue['status'] ?? 'Open'); ?>">
@@ -491,755 +428,713 @@ include 'include/sidebar.php';
         </div>
     </div>
 
-    <style>
-        /* Global Content Spacing Wrapper */
+<style>
+    /* Global Content Spacing Wrapper */
+    .main-content {
+        margin-left: 260px;
+        padding: 30px 24px;
+        min-height: calc(100vh - var(--header-height));
+        background-color: var(--bg-body);
+        transition: margin-left var(--transition-normal), background-color var(--transition-normal);
+    }
+    
+    .main-content.collapsed {
+        margin-left: 72px;
+    }
+    
+    @media screen and (max-width: 1024px) {
         .main-content {
-            margin-left: 260px;
-            padding: 30px 24px;
-            min-height: calc(100vh - var(--header-height));
-            background-color: var(--bg-body);
-            transition: margin-left var(--transition-normal), background-color var(--transition-normal);
+            margin-left: 240px;
         }
-
         .main-content.collapsed {
             margin-left: 72px;
         }
+    }
 
-        @media screen and (max-width: 1024px) {
-            .main-content {
-                margin-left: 240px;
-            }
-
-            .main-content.collapsed {
-                margin-left: 72px;
-            }
+    @media screen and (max-width: 768px) {
+        .main-content {
+            margin-left: 220px;
         }
-
-        @media screen and (max-width: 768px) {
-            .main-content {
-                margin-left: 220px;
-            }
-
-            .main-content.collapsed {
-                margin-left: 72px;
-            }
+        .main-content.collapsed {
+            margin-left: 72px;
         }
+    }
 
-        /* Welcome Container Styles */
+    /* Welcome Container Styles */
+    .welcome-container {
+        position: relative;
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 40px;
+        color: var(--text-primary);
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 30px;
+        margin-bottom: 35px;
+    }
+
+    .welcome-bg-overlay {
+        display: none;
+    }
+
+    .welcome-info {
+        max-width: 600px;
+        z-index: 1;
+    }
+
+    .welcome-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background-color: var(--bg-hover);
+        color: var(--text-secondary);
+        border: 1px solid var(--border-color);
+        padding: 6px 14px;
+        border-radius: var(--radius-full);
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        margin-bottom: 16px;
+    }
+
+    .welcome-title {
+        font-family: var(--font-heading);
+        font-size: 32px;
+        font-weight: 800;
+        line-height: 1.25;
+        margin-bottom: 12px;
+        color: var(--text-primary);
+    }
+
+    .welcome-title .highlight {
+        color: var(--primary-light);
+    }
+
+    .welcome-desc {
+        font-size: 15px;
+        color: var(--text-secondary);
+        line-height: 1.6;
+    }
+
+    .welcome-actions {
+        display: flex;
+        gap: 14px;
+        z-index: 1;
+        flex-shrink: 0;
+    }
+
+    .welcome-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 24px;
+        border-radius: var(--radius-md);
+        font-weight: 700;
+        font-size: 14px;
+        font-family: var(--font-heading);
+        transition: all var(--transition-fast);
+        cursor: pointer;
+        border: none;
+    }
+
+    .welcome-btn-primary {
+        background: linear-gradient(135deg, var(--primary-light), var(--primary-color));
+        color: #ffffff;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .welcome-btn-primary:hover {
+        background: var(--primary-color);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .welcome-btn-secondary {
+        background-color: var(--bg-hover);
+        color: var(--text-secondary);
+        border: 1px solid var(--border-color);
+    }
+
+    .welcome-btn-secondary:hover {
+        background-color: var(--border-color);
+        color: var(--text-primary);
+        transform: translateY(-2px);
+    }
+
+    /* Section Stats Header */
+    .stats-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .stats-header h2 {
+        font-family: var(--font-heading);
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .stats-header h2 i {
+        color: var(--primary-light);
+        margin-right: 8px;
+    }
+
+    .refresh-indicator {
+        font-size: 12px;
+        color: var(--text-muted);
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* Statistics Grid Layout */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+        margin-bottom: 40px;
+    }
+
+    .stat-card {
+        position: relative;
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        box-shadow: var(--shadow-sm);
+        transition: transform var(--transition-normal), box-shadow var(--transition-normal), border-color var(--transition-fast);
+        overflow: hidden;
+    }
+
+    .stat-card-glow {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(80px circle at 0px 0px, rgba(var(--primary-rgb), 0.08), transparent 80%);
+        opacity: 0;
+        transition: opacity var(--transition-normal);
+        pointer-events: none;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--primary-light);
+    }
+
+    .stat-card:hover .stat-card-glow {
+        opacity: 1;
+    }
+
+    .stat-icon-wrapper {
+        width: 50px;
+        height: 50px;
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+
+    .stat-total .stat-icon-wrapper { background-color: rgba(30, 58, 138, 0.1); color: #1e3a8a; }
+    .stat-open .stat-icon-wrapper { background-color: rgba(2, 132, 199, 0.1); color: #0284c7; }
+    .stat-progress .stat-icon-wrapper { background-color: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+    .stat-resolved .stat-icon-wrapper { background-color: rgba(16, 185, 129, 0.1); color: #10b981; }
+
+    .stat-info h3 {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-bottom: 4px;
+    }
+
+    .stat-number {
+        font-family: var(--font-heading);
+        font-size: 28px;
+        font-weight: 800;
+        color: var(--text-primary);
+        line-height: 1.1;
+    }
+
+    /* Section Containers */
+    .section-container {
+        margin-bottom: 40px;
+    }
+
+    .section-title {
+        font-family: var(--font-heading);
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .section-title i {
+        color: var(--primary-light);
+    }
+
+    /* Quick Action Hub CSS */
+    .action-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+    }
+
+    .action-card {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+        text-decoration: none;
+        color: inherit;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        box-shadow: var(--shadow-sm);
+        transition: transform var(--transition-normal), box-shadow var(--transition-normal), border-color var(--transition-fast);
+    }
+
+    .action-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--primary-light);
+    }
+
+    .action-card-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        margin-bottom: 16px;
+    }
+
+    .bg-blue { background-color: rgba(37, 99, 235, 0.1); color: #2563eb; }
+    .bg-purple { background-color: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
+    .bg-emerald { background-color: rgba(16, 185, 129, 0.1); color: #10b981; }
+    .bg-amber { background-color: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+
+    .action-card h4 {
+        font-family: var(--font-heading);
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+
+    .action-card p {
+        font-size: 13px;
+        color: var(--text-muted);
+        line-height: 1.5;
+        flex-grow: 1;
+        margin-bottom: 16px;
+    }
+
+    .action-card-link {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--primary-light);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: gap var(--transition-fast);
+    }
+
+    .action-card:hover .action-card-link {
+        gap: 10px;
+    }
+
+    /* Taluka Showcase CSS */
+    .taluka-showcase {
+        display: grid;
+        grid-template-columns: 260px 1fr;
+        gap: 24px;
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .taluka-tabs {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .taluka-tab {
+        width: 100%;
+        background-color: transparent;
+        border: 1px solid transparent;
+        padding: 12px 16px;
+        border-radius: var(--radius-md);
+        color: var(--text-secondary);
+        font-family: var(--font-heading);
+        font-weight: 600;
+        font-size: 14px;
+        text-align: left;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: all var(--transition-fast);
+    }
+
+    .taluka-tab:hover {
+        background-color: var(--bg-hover);
+        color: var(--text-primary);
+    }
+
+    .taluka-tab.active {
+        background-color: rgba(30, 58, 138, 0.08);
+        border-color: rgba(30, 58, 138, 0.15);
+        color: var(--primary-light);
+    }
+
+    body.dark-theme .taluka-tab.active {
+        background-color: rgba(37, 99, 235, 0.15);
+        color: #60a5fa;
+    }
+
+    .taluka-tab i {
+        font-size: 14px;
+        width: 18px;
+        text-align: center;
+    }
+
+    .taluka-details-container {
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        border-left: 1px solid var(--border-color);
+    }
+
+    .taluka-detail-pane {
+        display: none;
+        animation: fadeIn 0.35s ease;
+        width: 100%;
+    }
+
+    .taluka-detail-pane.active {
+        display: block;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .pane-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+    .pane-header h3 {
+        font-family: var(--font-heading);
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--text-primary);
+    }
+
+    .pane-badge {
+        font-size: 11px;
+        font-weight: 700;
+        background-color: rgba(245, 158, 11, 0.15);
+        color: #d97706;
+        padding: 4px 10px;
+        border-radius: var(--radius-full);
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+    }
+
+    .taluka-detail-pane p {
+        font-size: 14px;
+        color: var(--text-secondary);
+        line-height: 1.6;
+        margin-bottom: 20px;
+    }
+
+    .pane-stats {
+        display: flex;
+        gap: 32px;
+    }
+
+    .pane-stat-item {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .pane-stat-item strong {
+        font-family: var(--font-heading);
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--primary-light);
+    }
+
+    .pane-stat-item span {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 2px;
+    }
+
+    /* Recent Issues CSS */
+    .recent-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+
+    .view-all-link {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--primary-light);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        transition: gap var(--transition-fast);
+    }
+
+    .view-all-link:hover {
+        gap: 8px;
+    }
+
+    .issues-table-card {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        overflow-x: auto;
+    }
+
+    .recent-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        font-size: 14px;
+    }
+
+    .recent-table th {
+        background-color: var(--bg-hover);
+        padding: 14px 20px;
+        font-weight: 700;
+        color: var(--text-secondary);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .recent-table td {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-primary);
+    }
+
+    .recent-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .recent-table tbody tr:hover {
+        background-color: var(--bg-hover);
+    }
+
+    .issue-no {
+        font-weight: 700;
+        color: var(--primary-light);
+        font-family: monospace;
+    }
+
+    .issue-desc strong {
+        color: var(--text-primary);
+        font-weight: 600;
+    }
+
+    .dept-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        background-color: var(--bg-hover);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-secondary);
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: var(--radius-full);
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    .badge-open {
+        background-color: rgba(2, 132, 199, 0.12);
+        color: #0284c7;
+    }
+
+    .badge-pending {
+        background-color: rgba(234, 88, 12, 0.12);
+        color: #ea580c;
+    }
+
+    .badge-in-progress {
+        background-color: rgba(245, 158, 11, 0.12);
+        color: #d97706;
+    }
+
+    .badge-resolved {
+        background-color: rgba(16, 185, 129, 0.12);
+        color: #10b981;
+    }
+
+    .empty-feed {
+        padding: 40px;
+        text-align: center;
+        color: var(--text-muted);
+    }
+
+    .empty-feed i {
+        font-size: 32px;
+        margin-bottom: 12px;
+    }
+
+    .empty-feed p {
+        font-size: 14px;
+    }
+
+    /* Interactive Stats Card Shimmer Hover mouse tracker script */
+    @media (min-width: 1025px) {
+        .stats-grid {
+            /* Enable mouse hover effect */
+        }
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 1200px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .action-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 768px) {
         .welcome-container {
-            position: relative;
-            background-color: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-lg);
-            padding: 40px;
-            color: var(--text-primary);
-            box-shadow: var(--shadow-sm);
-            overflow: hidden;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 30px;
-            margin-bottom: 35px;
-        }
-
-        .welcome-bg-overlay {
-            display: none;
-        }
-
-        .welcome-info {
-            max-width: 600px;
-            z-index: 1;
-        }
-
-        .welcome-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background-color: var(--bg-hover);
-            color: var(--text-secondary);
-            border: 1px solid var(--border-color);
-            padding: 6px 14px;
-            border-radius: var(--radius-full);
-            font-size: 12px;
-            font-weight: 600;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            margin-bottom: 16px;
+            padding: 24px;
+            flex-direction: column;
+            align-items: flex-start;
         }
 
         .welcome-title {
-            font-family: var(--font-heading);
-            font-size: 32px;
-            font-weight: 800;
-            line-height: 1.25;
-            margin-bottom: 12px;
-            color: var(--text-primary);
-        }
-
-        .welcome-title .highlight {
-            color: var(--primary-light);
-        }
-
-        .welcome-desc {
-            font-size: 15px;
-            color: var(--text-secondary);
-            line-height: 1.6;
+            font-size: 26px;
         }
 
         .welcome-actions {
-            display: flex;
-            gap: 14px;
-            z-index: 1;
-            flex-shrink: 0;
+            width: 100%;
+            flex-direction: column;
         }
 
         .welcome-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 24px;
-            border-radius: var(--radius-md);
-            font-weight: 700;
-            font-size: 14px;
-            font-family: var(--font-heading);
-            transition: all var(--transition-fast);
-            cursor: pointer;
-            border: none;
-        }
-
-        .welcome-btn-primary {
-            background: linear-gradient(135deg, var(--primary-light), var(--primary-color));
-            color: #ffffff;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .welcome-btn-primary:hover {
-            background: var(--primary-color);
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
-        }
-
-        .welcome-btn-secondary {
-            background-color: var(--bg-hover);
-            color: var(--text-secondary);
-            border: 1px solid var(--border-color);
-        }
-
-        .welcome-btn-secondary:hover {
-            background-color: var(--border-color);
-            color: var(--text-primary);
-            transform: translateY(-2px);
-        }
-
-        /* Section Stats Header */
-        .stats-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .stats-header h2 {
-            font-family: var(--font-heading);
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--text-primary);
-        }
-
-        .stats-header h2 i {
-            color: var(--primary-light);
-            margin-right: 8px;
-        }
-
-        .refresh-indicator {
-            font-size: 12px;
-            color: var(--text-muted);
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        /* Statistics Grid Layout */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-
-        .stat-card {
-            position: relative;
-            background-color: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-lg);
-            padding: 24px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            box-shadow: var(--shadow-sm);
-            transition: transform var(--transition-normal), box-shadow var(--transition-normal), border-color var(--transition-fast);
-            overflow: hidden;
-        }
-
-        .stat-card-glow {
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(80px circle at 0px 0px, rgba(var(--primary-rgb), 0.08), transparent 80%);
-            opacity: 0;
-            transition: opacity var(--transition-normal);
-            pointer-events: none;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-md);
-            border-color: var(--primary-light);
-        }
-
-        .stat-card:hover .stat-card-glow {
-            opacity: 1;
-        }
-
-        .stat-icon-wrapper {
-            width: 50px;
-            height: 50px;
-            border-radius: var(--radius-md);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            flex-shrink: 0;
-        }
-
-        .stat-total .stat-icon-wrapper {
-            background-color: rgba(30, 58, 138, 0.1);
-            color: #1e3a8a;
-        }
-
-        .stat-open .stat-icon-wrapper {
-            background-color: rgba(2, 132, 199, 0.1);
-            color: #0284c7;
-        }
-
-        .stat-progress .stat-icon-wrapper {
-            background-color: rgba(245, 158, 11, 0.1);
-            color: #f59e0b;
-        }
-
-        .stat-resolved .stat-icon-wrapper {
-            background-color: rgba(16, 185, 129, 0.1);
-            color: #10b981;
-        }
-
-        .stat-info h3 {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            margin-bottom: 4px;
-        }
-
-        .stat-number {
-            font-family: var(--font-heading);
-            font-size: 28px;
-            font-weight: 800;
-            color: var(--text-primary);
-            line-height: 1.1;
-        }
-
-        /* Section Containers */
-        .section-container {
-            margin-bottom: 40px;
-        }
-
-        .section-title {
-            font-family: var(--font-heading);
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .section-title i {
-            color: var(--primary-light);
-        }
-
-        /* Quick Action Hub CSS */
-        .action-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-        }
-
-        .action-card {
-            background-color: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-lg);
-            padding: 24px;
-            text-decoration: none;
-            color: inherit;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            box-shadow: var(--shadow-sm);
-            transition: transform var(--transition-normal), box-shadow var(--transition-normal), border-color var(--transition-fast);
-        }
-
-        .action-card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-md);
-            border-color: var(--primary-light);
-        }
-
-        .action-card-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: var(--radius-md);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            margin-bottom: 16px;
-        }
-
-        .bg-blue {
-            background-color: rgba(37, 99, 235, 0.1);
-            color: #2563eb;
-        }
-
-        .bg-purple {
-            background-color: rgba(139, 92, 246, 0.1);
-            color: #8b5cf6;
-        }
-
-        .bg-emerald {
-            background-color: rgba(16, 185, 129, 0.1);
-            color: #10b981;
-        }
-
-        .bg-amber {
-            background-color: rgba(245, 158, 11, 0.1);
-            color: #f59e0b;
-        }
-
-        .action-card h4 {
-            font-family: var(--font-heading);
-            font-size: 15px;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 8px;
-        }
-
-        .action-card p {
-            font-size: 13px;
-            color: var(--text-muted);
-            line-height: 1.5;
-            flex-grow: 1;
-            margin-bottom: 16px;
-        }
-
-        .action-card-link {
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--primary-light);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: gap var(--transition-fast);
-        }
-
-        .action-card:hover .action-card-link {
-            gap: 10px;
-        }
-
-        /* Taluka Showcase CSS */
-        .taluka-showcase {
-            display: grid;
-            grid-template-columns: 260px 1fr;
-            gap: 24px;
-            background-color: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-lg);
-            padding: 24px;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .taluka-tabs {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .taluka-tab {
             width: 100%;
-            background-color: transparent;
-            border: 1px solid transparent;
-            padding: 12px 16px;
-            border-radius: var(--radius-md);
-            color: var(--text-secondary);
-            font-family: var(--font-heading);
-            font-weight: 600;
-            font-size: 14px;
-            text-align: left;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transition: all var(--transition-fast);
+            justify-content: center;
         }
 
-        .taluka-tab:hover {
-            background-color: var(--bg-hover);
-            color: var(--text-primary);
-        }
-
-        .taluka-tab.active {
-            background-color: rgba(30, 58, 138, 0.08);
-            border-color: rgba(30, 58, 138, 0.15);
-            color: var(--primary-light);
-        }
-
-        body.dark-theme .taluka-tab.active {
-            background-color: rgba(37, 99, 235, 0.15);
-            color: #60a5fa;
-        }
-
-        .taluka-tab i {
-            font-size: 14px;
-            width: 18px;
-            text-align: center;
+        .taluka-showcase {
+            grid-template-columns: 1fr;
         }
 
         .taluka-details-container {
-            padding: 10px 16px;
-            display: flex;
-            align-items: center;
-            border-left: 1px solid var(--border-color);
+            border-left: none;
+            border-top: 1px solid var(--border-color);
+            padding: 20px 0 0 0;
         }
 
-        .taluka-detail-pane {
-            display: none;
-            animation: fadeIn 0.35s ease;
-            width: 100%;
-        }
-
-        .taluka-detail-pane.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(5px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .pane-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .taluka-tabs {
+            flex-direction: row;
             flex-wrap: wrap;
-            gap: 12px;
-            margin-bottom: 14px;
         }
 
-        .pane-header h3 {
-            font-family: var(--font-heading);
-            font-size: 20px;
-            font-weight: 800;
-            color: var(--text-primary);
+        .taluka-tab {
+            width: calc(50% - 4px);
         }
+    }
 
-        .pane-badge {
-            font-size: 11px;
-            font-weight: 700;
-            background-color: rgba(245, 158, 11, 0.15);
-            color: #d97706;
-            padding: 4px 10px;
-            border-radius: var(--radius-full);
-            text-transform: uppercase;
-            letter-spacing: 0.02em;
+    @media (max-width: 480px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
         }
-
-        .taluka-detail-pane p {
-            font-size: 14px;
-            color: var(--text-secondary);
-            line-height: 1.6;
-            margin-bottom: 20px;
+        .action-grid {
+            grid-template-columns: 1fr;
         }
-
-        .pane-stats {
-            display: flex;
-            gap: 32px;
-        }
-
-        .pane-stat-item {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .pane-stat-item strong {
-            font-family: var(--font-heading);
-            font-size: 20px;
-            font-weight: 800;
-            color: var(--primary-light);
-        }
-
-        .pane-stat-item span {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: 2px;
-        }
-
-        /* Recent Issues CSS */
-        .recent-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-
-        .view-all-link {
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--primary-light);
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            transition: gap var(--transition-fast);
-        }
-
-        .view-all-link:hover {
-            gap: 8px;
-        }
-
-        .issues-table-card {
-            background-color: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-sm);
-            overflow-x: auto;
-        }
-
-        .recent-table {
+        .taluka-tab {
             width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-            font-size: 14px;
         }
+    }
+</style>
 
-        .recent-table th {
-            background-color: var(--bg-hover);
-            padding: 14px 20px;
-            font-weight: 700;
-            color: var(--text-secondary);
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            border-bottom: 1px solid var(--border-color);
+<script>
+    // Show details of selected Taluka
+    function showTaluka(id) {
+        // Deactivate all tabs
+        const tabs = document.querySelectorAll('.taluka-tab');
+        tabs.forEach(tab => tab.classList.remove('active'));
+
+        // Deactivate all panes
+        const panes = document.querySelectorAll('.taluka-detail-pane');
+        panes.forEach(pane => pane.classList.remove('active'));
+
+        // Find and activate requested tab
+        event.currentTarget.classList.add('active');
+
+        // Find and activate requested pane
+        const activePane = document.getElementById('taluka-' + id);
+        if (activePane) {
+            activePane.classList.add('active');
         }
+    }
 
-        .recent-table td {
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border-color);
-            color: var(--text-primary);
-        }
-
-        .recent-table tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        .recent-table tbody tr:hover {
-            background-color: var(--bg-hover);
-        }
-
-        .issue-no {
-            font-weight: 700;
-            color: var(--primary-light);
-            font-family: monospace;
-        }
-
-        .issue-desc strong {
-            color: var(--text-primary);
-            font-weight: 600;
-        }
-
-        .dept-badge {
-            display: inline-block;
-            padding: 4px 10px;
-            background-color: var(--bg-hover);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            font-size: 12px;
-            font-weight: 500;
-            color: var(--text-secondary);
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: var(--radius-full);
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-        }
-
-        .badge-open {
-            background-color: rgba(2, 132, 199, 0.12);
-            color: #0284c7;
-        }
-
-        .badge-pending {
-            background-color: rgba(234, 88, 12, 0.12);
-            color: #ea580c;
-        }
-
-        .badge-in-progress {
-            background-color: rgba(245, 158, 11, 0.12);
-            color: #d97706;
-        }
-
-        .badge-resolved {
-            background-color: rgba(16, 185, 129, 0.12);
-            color: #10b981;
-        }
-
-        .empty-feed {
-            padding: 40px;
-            text-align: center;
-            color: var(--text-muted);
-        }
-
-        .empty-feed i {
-            font-size: 32px;
-            margin-bottom: 12px;
-        }
-
-        .empty-feed p {
-            font-size: 14px;
-        }
-
-        /* Interactive Stats Card Shimmer Hover mouse tracker script */
-        @media (min-width: 1025px) {
-            .stats-grid {
-                /* Enable mouse hover effect */
+    // Dynamic stats card glow coordinate tracker on mouse move
+    document.querySelectorAll('.stat-card').forEach(card => {
+        card.addEventListener('mousemove', e => {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const glow = card.querySelector('.stat-card-glow');
+            if (glow) {
+                glow.style.background = `radial-gradient(120px circle at ${x}px ${y}px, rgba(37, 99, 235, 0.12), transparent 80%)`;
             }
-        }
-
-        /* Responsive Adjustments */
-        @media (max-width: 1200px) {
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .action-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media (max-width: 768px) {
-            .welcome-container {
-                padding: 24px;
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .welcome-title {
-                font-size: 26px;
-            }
-
-            .welcome-actions {
-                width: 100%;
-                flex-direction: column;
-            }
-
-            .welcome-btn {
-                width: 100%;
-                justify-content: center;
-            }
-
-            .taluka-showcase {
-                grid-template-columns: 1fr;
-            }
-
-            .taluka-details-container {
-                border-left: none;
-                border-top: 1px solid var(--border-color);
-                padding: 20px 0 0 0;
-            }
-
-            .taluka-tabs {
-                flex-direction: row;
-                flex-wrap: wrap;
-            }
-
-            .taluka-tab {
-                width: calc(50% - 4px);
-            }
-        }
-
-        @media (max-width: 480px) {
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .action-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .taluka-tab {
-                width: 100%;
-            }
-        }
-    </style>
-
-    <script>
-        // Show details of selected Taluka
-        function showTaluka(id) {
-            // Deactivate all tabs
-            const tabs = document.querySelectorAll('.taluka-tab');
-            tabs.forEach(tab => tab.classList.remove('active'));
-
-            // Deactivate all panes
-            const panes = document.querySelectorAll('.taluka-detail-pane');
-            panes.forEach(pane => pane.classList.remove('active'));
-
-            // Find and activate requested tab
-            event.currentTarget.classList.add('active');
-
-            // Find and activate requested pane
-            const activePane = document.getElementById('taluka-' + id);
-            if (activePane) {
-                activePane.classList.add('active');
-            }
-        }
-
-        // Dynamic stats card glow coordinate tracker on mouse move
-        document.querySelectorAll('.stat-card').forEach(card => {
-            card.addEventListener('mousemove', e => {
-                const rect = card.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                const glow = card.querySelector('.stat-card-glow');
-                if (glow) {
-                    glow.style.background = `radial-gradient(120px circle at ${x}px ${y}px, rgba(37, 99, 235, 0.12), transparent 80%)`;
-                }
-            });
         });
-    </script>
+    });
+</script>
 
-    <?php
-    // Include footer template inside main content to align perfectly with the header and sidebar
-    include 'include/footer.php';
-    ?>
+<?php
+// Include footer template inside main content to align perfectly with the header and sidebar
+include 'include/footer.php';
+?>
 </main>

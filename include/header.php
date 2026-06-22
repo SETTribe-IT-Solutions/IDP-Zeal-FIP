@@ -952,7 +952,6 @@ $user_initials = isset($_SESSION['user_initials']) ? $_SESSION['user_initials'] 
         }
 
         @media (max-width: 1024px) {
-
             .header-nav,
             .header-search {
                 display: none;
@@ -967,13 +966,115 @@ $user_initials = isset($_SESSION['user_initials']) ? $_SESSION['user_initials'] 
             }
         }
 
-        @media (max-width: 480px) {
-            .brand-text {
+        @media (max-width: 768px) {
+            .header-container {
+                padding: 0 16px;
+                gap: 10px;
+            }
+
+            .brand-logo-img {
                 display: none;
             }
 
+            .header-divider {
+                display: none;
+            }
+
+            .brand-emblem-img {
+                height: 36px;
+            }
+
+            .brand-title {
+                font-size: 16px;
+            }
+
+            .brand-subtitle {
+                font-size: 9px;
+                letter-spacing: 0.04em;
+            }
+
+            .header-actions {
+                gap: 8px;
+            }
+
+            .action-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 14px;
+            }
+
+            .header-btn {
+                padding: 6px 12px;
+                font-size: 11px;
+            }
+
+            .profile-trigger {
+                padding: 4px;
+                gap: 4px;
+            }
+
+            .profile-avatar {
+                width: 28px;
+                height: 28px;
+                font-size: 11px;
+            }
+        }
+
+        @media (max-width: 480px) {
             .header-container {
-                padding: 0 16px;
+                gap: 8px;
+            }
+
+            .brand-emblem-img {
+                height: 30px;
+            }
+
+            .brand-title {
+                font-size: 14px;
+            }
+
+            .brand-subtitle {
+                display: none;
+            }
+
+            .header-actions {
+                gap: 6px;
+            }
+
+            .header-btn {
+                padding: 5px 10px;
+                font-size: 10px;
+            }
+
+            .action-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 12px;
+            }
+
+            .profile-trigger {
+                padding: 3px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .brand-emblem-img {
+                display: none;
+            }
+
+            .brand-title {
+                font-size: 13px;
+            }
+
+            .header-btn {
+                padding: 4px 8px;
+                font-size: 9.5px;
+            }
+
+            .action-btn {
+                width: 30px;
+                height: 30px;
+                font-size: 11px;
             }
         }
 

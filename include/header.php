@@ -33,7 +33,7 @@ if (!isset($page_description)) {
 $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : "Shri. Rajesh Patil";
 $user_role = isset($_SESSION['user_role']) ? $_SESSION['user_role'] : "Admin Officer";
 $user_dept = isset($_SESSION['user_dept']) ? $_SESSION['user_dept'] : "Finance Dept";
-$user_initials = "RP";
+$user_initials = isset($_SESSION['user_initials']) ? $_SESSION['user_initials'] : "RP";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -1278,6 +1278,44 @@ $user_initials = "RP";
                 padding: 20px;
             }
         }
+
+        /* Login/Register buttons in header */
+        .header-btn {
+            padding: 8px 18px;
+            font-size: 13px;
+            font-weight: 700;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-btn-primary {
+            background: linear-gradient(135deg, #0ea5e9, #2563eb);
+            color: #ffffff;
+            border: none;
+        }
+
+        .header-btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+            background: linear-gradient(135deg, #38bdf8, #3b82f6);
+        }
+
+        .header-btn-outline {
+            border: 1.5px solid #2563eb;
+            color: #2563eb;
+            background: transparent;
+        }
+
+        .header-btn-outline:hover {
+            transform: translateY(-1px);
+            background: #2563eb;
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
     </style>
 </head>
 
@@ -1304,23 +1342,6 @@ $user_initials = "RP";
 
             <!-- Right: ZP Logo & Actions -->
             <div class="header-right">
-                <div class="header-image-card" title="Inter Department Portal">
-                    <svg viewBox="0 0 160 70" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                        <defs>
-                            <linearGradient id="headerGlow" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stop-color="#0ea5e9" stop-opacity="0.8"/>
-                                <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.7"/>
-                            </linearGradient>
-                        </defs>
-                        <rect x="4" y="12" width="72" height="46" rx="12" fill="#ffffff" opacity="0.18"/>
-                        <circle cx="42" cy="34" r="16" fill="#ffffff" opacity="0.25"/>
-                        <path d="M 28 54 Q 42 44 56 54" stroke="#ffffff" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.85"/>
-                        <rect x="90" y="16" width="48" height="36" rx="10" fill="url(#headerGlow)" opacity="0.88"/>
-                        <path d="M 98 30 L 118 30 L 118 38 L 98 38 Z" fill="#ffffff" opacity="0.95"/>
-                        <path d="M 98 42 L 118 42" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.95"/>
-                        <path d="M 104 22 Q 112 14 120 22" stroke="#ffffff" stroke-width="2.5" fill="none" opacity="0.9"/>
-                    </svg>
-                </div>
                 <img src="assets/zp-logo.png" alt="ZP Hingoli Logo" class="brand-logo-img">
 
                 <div class="header-divider"></div>
@@ -1334,39 +1355,45 @@ $user_initials = "RP";
                         <i class="fa-solid fa-moon"></i>
                     </button>
 
-                    <!-- User Profile Menu -->
-                    <div class="profile-trigger">
-                        <div class="profile-avatar">
-                            <?php echo $user_initials; ?>
-                        </div>
-                        <div class="profile-info">
-                            <span class="profile-name"><?php echo $user_name; ?></span>
-                            <span class="profile-dept"><?php echo $user_dept; ?></span>
-                        </div>
-                        <i class="fa-solid fa-chevron-down nav-dropdown-indicator"
-                            style="margin-right: 6px; font-size: 10px;"></i>
-
-                        <div class="dropdown-menu profile-dropdown">
-                            <div class="profile-dd-header">
-                                <span class="profile-dd-role"><?php echo $user_role; ?></span>
-                                <div class="profile-dd-name"><?php echo $user_name; ?></div>
-                                <div class="profile-dd-email">rajesh.patil@maharashtra.gov.in</div>
+                    <?php if (isset($_SESSION['username'])): ?>
+                        <!-- User Profile Menu -->
+                        <div class="profile-trigger">
+                            <div class="profile-avatar">
+                                <?php echo $user_initials; ?>
                             </div>
-                            <a href="profile.php" class="profile-dropdown-link">
-                                <i class="fa-regular fa-user"></i> My Profile
-                            </a>
-                            <a href="settings.php" class="profile-dropdown-link">
-                                <i class="fa-solid fa-gear"></i> Settings
-                            </a>
-                            <a href="tasks.php" class="profile-dropdown-link">
-                                <i class="fa-solid fa-list-check"></i> Tasks Assigned
-                            </a>
-                            <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 6px 0;">
-                            <a href="logout.php" class="profile-dropdown-link logout-link">
-                                <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
-                            </a>
+                            <div class="profile-info">
+                                <span class="profile-name"><?php echo $user_name; ?></span>
+                                <span class="profile-dept"><?php echo $user_dept; ?></span>
+                            </div>
+                            <i class="fa-solid fa-chevron-down nav-dropdown-indicator"
+                                style="margin-right: 6px; font-size: 10px;"></i>
+
+                            <div class="dropdown-menu profile-dropdown">
+                                <div class="profile-dd-header">
+                                    <span class="profile-dd-role"><?php echo $user_role; ?></span>
+                                    <div class="profile-dd-name"><?php echo $user_name; ?></div>
+                                    <div class="profile-dd-email">rajesh.patil@maharashtra.gov.in</div>
+                                </div>
+                                <a href="profile.php" class="profile-dropdown-link">
+                                    <i class="fa-regular fa-user"></i> My Profile
+                                </a>
+                                <a href="settings.php" class="profile-dropdown-link">
+                                    <i class="fa-solid fa-gear"></i> Settings
+                                </a>
+                                <a href="tasks.php" class="profile-dropdown-link">
+                                    <i class="fa-solid fa-list-check"></i> Tasks Assigned
+                                </a>
+                                <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 6px 0;">
+                                <a href="logout.php" class="profile-dropdown-link logout-link">
+                                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+                                </a>
+                            </div>
                         </div>
-                    </div>
+                    <?php else: ?>
+                        <!-- Login / Register Buttons for Unauthenticated Users -->
+                        <a href="login.php" class="header-btn header-btn-outline">लॉगिन / Login</a>
+                        <a href="create_user.php" class="header-btn header-btn-primary">नोंदणी / Register</a>
+                    <?php endif; ?>
 
                 </div>
             </div>
@@ -1375,19 +1402,7 @@ $user_initials = "RP";
     </header>
     <!-- Header End -->
 
-    <!-- Page Title/Breadcrumb for Unauthenticated Pages -->
-    <?php if (!isset($_SESSION['username']) && $active_page === 'landingpage'): ?>
-    <div style="background: linear-gradient(135deg, rgba(30, 58, 138, 0.05), rgba(14, 165, 233, 0.05)); border-bottom: 1px solid var(--border-color); padding: 16px 24px; max-width: 1440px; margin: 0 auto;">
-        <div style="font-size: 14px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
-            <i class="fa-solid fa-house" style="color: #0ea5e9;"></i>
-            <span style="font-weight: 600;"><?php echo htmlspecialchars($page_title); ?></span>
-            <?php if (!empty($page_description)): ?>
-            <span style="color: var(--text-secondary); margin-left: 8px;">—</span>
-            <span style="color: var(--text-secondary); margin-left: 8px;"><?php echo htmlspecialchars($page_description); ?></span>
-            <?php endif; ?>
-        </div>
-    </div>
-    <?php endif; ?>
+
 
     <!-- Core Portal Interactions Script -->
     <script>

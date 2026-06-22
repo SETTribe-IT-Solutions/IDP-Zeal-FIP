@@ -14,25 +14,29 @@ $user_village = '';
 $user_designation = '';
 $user_department = '';
 $user_mobile = '';
+$user_role_display = '';
 
 if (isset($_SESSION['username'])) {
-    $stmt = $conn->prepare("SELECT Id, Name, Talika, Village, Designation, Department, `Mobile No`, Role FROM users WHERE Username = ?");
+    $stmt = $conn->prepare("SELECT id, name, taluka, village, designation, department, mobile_no, system_role, role FROM users WHERE username = ?");
     if ($stmt) {
         $stmt->bind_param("s", $_SESSION['username']);
         $stmt->execute();
         $res = $stmt->get_result();
         if ($res && $user = $res->fetch_assoc()) {
-            $user_id = $user['Id'];
-            $user_taluka = $user['Talika'];
-            $user_village = $user['Village'];
-            $user_designation = $user['Designation'];
-            $user_department = $user['Department'];
-            $user_mobile = $user['Mobile No'];
+            $user_id = $user['id'];
+            $user_taluka = $user['taluka'];
+            $user_village = $user['village'];
+            $user_designation = $user['designation'];
+            $user_department = $user['department'];
+            $user_mobile = $user['mobile_no'];
+
+            // Determine readable role to display at पद
+            $user_role_display = !empty($user['role']) ? $user['role'] : (!empty($user['system_role']) ? $user['system_role'] : $user['designation']);
 
             // Set header session variables dynamically for real-time update
-            $_SESSION['user_name'] = $user['Name'];
-            $_SESSION['user_role'] = !empty($user['Role']) ? $user['Role'] : $user['Designation'];
-            $_SESSION['user_dept'] = $user['Department'];
+            $_SESSION['user_name'] = $user['name'];
+            $_SESSION['user_role'] = !empty($user['system_role']) ? $user['system_role'] : $user['designation'];
+            $_SESSION['user_dept'] = $user['department'];
         }
         $stmt->close();
     }
@@ -40,7 +44,7 @@ if (isset($_SESSION['username'])) {
 
 // Fetch distinct departments from database
 $distinct_departments = [];
-$dept_res = $conn->query("SELECT DISTINCT Department AS dept FROM users WHERE Department IS NOT NULL AND Department != ''");
+$dept_res = $conn->query("SELECT DISTINCT department AS dept FROM users WHERE department IS NOT NULL AND department != ''");
 if ($dept_res) {
     while ($row = $dept_res->fetch_assoc()) {
         $dept = trim($row['dept']);
@@ -51,18 +55,83 @@ if ($dept_res) {
 }
 sort($distinct_departments);
 
-// Fetch department to designation mappings from users table
+// Fetch department to designation mappings from users table (taluka specific for tho/bdo, global for hod)
 $dept_designations = [];
-$map_res = $conn->query("SELECT DISTINCT Department, Designation FROM users WHERE Department IS NOT NULL AND Department != '' AND Designation IS NOT NULL AND Designation != '' ORDER BY Designation ASC");
-if ($map_res) {
-    while ($row = $map_res->fetch_assoc()) {
-        $dept = trim($row['Department']);
-        $desg = trim($row['Designation']);
-        if (!isset($dept_designations[$dept])) {
-            $dept_designations[$dept] = [];
-        }
-        $dept_designations[$dept][] = $desg;
+
+// 1. Get all HOD designations (district wide)
+$hod_designations = [];
+$hod_res = $conn->query("SELECT department, designation FROM users WHERE LOWER(system_role) = 'hod' AND designation IS NOT NULL AND designation != ''");
+if ($hod_res) {
+    while ($row = $hod_res->fetch_assoc()) {
+        $dept = trim($row['department']);
+        $desg = trim($row['designation']);
+        $hod_designations[$dept][] = $desg;
     }
+}
+
+// 2. Get all THO designations for this user's taluka only
+$tho_designations = [];
+if (!empty($user_taluka)) {
+    $stmt = $conn->prepare("SELECT department, designation FROM users WHERE LOWER(system_role) = 'tho' AND taluka = ? AND designation IS NOT NULL AND designation != ''");
+    if ($stmt) {
+        $stmt->bind_param("s", $user_taluka);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($row = $res->fetch_assoc()) {
+            $dept = trim($row['department']);
+            $desg = trim($row['designation']);
+            $tho_designations[$dept][] = $desg;
+        }
+        $stmt->close();
+    }
+}
+
+// 3. Get all BDO designations for this user's taluka only
+$bdo_designations = [];
+if (!empty($user_taluka)) {
+    $stmt = $conn->prepare("SELECT designation FROM users WHERE LOWER(system_role) = 'bdo' AND taluka = ? AND designation IS NOT NULL AND designation != ''");
+    if ($stmt) {
+        $stmt->bind_param("s", $user_taluka);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        while ($row = $res->fetch_assoc()) {
+            $bdo_designations[] = trim($row['designation']);
+        }
+        $stmt->close();
+    }
+}
+
+// Combine mappings per department
+foreach ($distinct_departments as $dept) {
+    $designations_for_dept = [];
+    
+    // Add THO of that department and taluka
+    if (isset($tho_designations[$dept])) {
+        foreach ($tho_designations[$dept] as $d) {
+            if (!in_array($d, $designations_for_dept)) {
+                $designations_for_dept[] = $d;
+            }
+        }
+    }
+    
+    // Add BDO of that taluka
+    foreach ($bdo_designations as $d) {
+        if (!in_array($d, $designations_for_dept)) {
+            $designations_for_dept[] = $d;
+        }
+    }
+    
+    // Add HOD of that department
+    if (isset($hod_designations[$dept])) {
+        foreach ($hod_designations[$dept] as $d) {
+            if (!in_array($d, $designations_for_dept)) {
+                $designations_for_dept[] = $d;
+            }
+        }
+    }
+    
+    sort($designations_for_dept);
+    $dept_designations[$dept] = $designations_for_dept;
 }
 
 $nextIssueNumber = generateIssueNumber($conn);
@@ -492,13 +561,7 @@ include 'include/header.php';
             <p>कृपया आपली समस्या खालील फॉर्म मध्ये नोंदवा</p>
         </div>
 
-        <div id="messageBox" class="message-box">
-            <i id="msgIcon" class="fas fa-check-circle"></i>
-            <div class="msg-content">
-                <strong id="msgTitle">यशस्वी!</strong>
-                <span id="msgText">आपली समस्या नोंदवली गेली.</span>
-            </div>
-        </div>
+        <!-- Alerts will be shown using SweetAlert2 -->
 
         <form id="issueForm" enctype="multipart/form-data">
             <div class="form-row">
@@ -559,7 +622,7 @@ include 'include/header.php';
                 <div class="form-group">
                     <label><i class="fas fa-briefcase"></i>पद <span class="required">*</span></label>
                     <input type="text" id="position" name="position" placeholder="पद"
-                        value="<?php echo htmlspecialchars($user_designation); ?>" readonly required>
+                        value="<?php echo htmlspecialchars($user_role_display); ?>" readonly required>
                 </div>
 
                 <div class="form-group full-width">
@@ -598,17 +661,8 @@ include 'include/header.php';
         </form>
     </div>
 
-    <!-- Modals -->
-    <div id="successModal" aria-hidden="true">
-        <div class="modal-card success-card">
-            <div class="big-check"><i class="fas fa-check-circle"></i></div>
-            <h2 id="successTitle">यश!</h2>
-            <p id="successMessage"></p>
-            <div style="margin-top:16px;display:flex;gap:10px;justify-content:center">
-                <button id="closeSuccess" class="btn btn-reset">बंद करा</button>
-            </div>
-        </div>
-    </div>
+    <!-- SweetAlert2 library -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
         // Logged in user info for form prefill and restoration on reset
@@ -617,7 +671,7 @@ include 'include/header.php';
             taluka: <?php echo json_encode($user_taluka); ?>,
             village: <?php echo json_encode($user_village); ?>,
             department: <?php echo json_encode($user_department); ?>,
-            position: <?php echo json_encode($user_designation); ?>,
+            position: <?php echo json_encode($user_role_display); ?>,
             mobile: <?php echo json_encode($user_mobile); ?>
         };
 
@@ -686,12 +740,24 @@ include 'include/header.php';
             if (!file) return true;
             const ext = file.name.split('.').pop().toLowerCase();
             if (!allowedExt.includes(ext)) {
-                alert('केवळ JPG, JPEG, PNG किंवा GIF फाइल्स अपलोड करा.');
+                Swal.fire({
+                    title: 'त्रुटी',
+                    text: 'केवळ JPG, JPEG, PNG किंवा GIF फाइल्स अपलोड करा.',
+                    icon: 'error',
+                    confirmButtonColor: '#dc2626',
+                    confirmButtonText: 'बंद करा'
+                });
                 photoInput.value = '';
                 return false;
             }
             if (file.size > maxFileSize) {
-                alert('फाइल 5MB पेक्षा जास्त नसावी.');
+                Swal.fire({
+                    title: 'त्रुटी',
+                    text: 'फाइल 5MB पेक्षा जास्त नसावी.',
+                    icon: 'error',
+                    confirmButtonColor: '#dc2626',
+                    confirmButtonText: 'बंद करा'
+                });
                 photoInput.value = '';
                 return false;
             }
@@ -750,33 +816,14 @@ include 'include/header.php';
             }
         });
 
-        function clearSuccessState() {
-            const successModal = document.getElementById('successModal');
-            if (successModal) {
-                successModal.classList.remove('show');
-            }
-            const messageBox = document.getElementById('messageBox');
-            if (messageBox) {
-                messageBox.classList.remove('show', 'success', 'error');
-            }
-        }
-
-        window.addEventListener('pageshow', clearSuccessState);
-        document.addEventListener('DOMContentLoaded', clearSuccessState);
-
         // Form submission
         document.getElementById('issueForm').addEventListener('submit', async function (e) {
             e.preventDefault();
 
             const submitBtn = document.getElementById('submitBtn');
-            const messageBox = document.getElementById('messageBox');
-            const msgTitle = document.getElementById('msgTitle');
-            const msgText = document.getElementById('msgText');
-            const msgIcon = document.getElementById('msgIcon');
 
             submitBtn.classList.add('loading');
             submitBtn.disabled = true;
-            messageBox.classList.remove('show', 'success', 'error');
 
             try {
                 const formData = new FormData(this);
@@ -789,11 +836,13 @@ include 'include/header.php';
                 const result = await response.json();
 
                 if (result.success) {
-                    // show success modal
-                    const successModal = document.getElementById('successModal');
-                    document.getElementById('successTitle').textContent = '✅ यशस्वी!';
-                    document.getElementById('successMessage').innerHTML = result.message + '<br><strong>समस्या क्रमांक:</strong> ' + result.issue_number;
-                    successModal.classList.add('show');
+                    Swal.fire({
+                        title: 'यशस्वी!',
+                        html: result.message + '<br><strong>समस्या क्रमांक:</strong> ' + result.issue_number,
+                        icon: 'success',
+                        confirmButtonColor: '#0284c7',
+                        confirmButtonText: 'बंद करा'
+                    });
 
                     document.getElementById('issueNumber').value = result.issue_number;
                     const currentIssueNumber = result.issue_number;
@@ -802,17 +851,23 @@ include 'include/header.php';
                     document.getElementById('issueNumber').value = currentIssueNumber;
                     document.getElementById('issueDate').value = new Date().toISOString().split('T')[0];
                 } else {
-                    messageBox.className = 'message-box show error';
-                    msgIcon.className = 'fas fa-exclamation-circle';
-                    msgTitle.textContent = '❌ त्रुटी';
-                    msgText.textContent = result.message;
+                    Swal.fire({
+                        title: 'त्रुटी',
+                        text: result.message,
+                        icon: 'error',
+                        confirmButtonColor: '#dc2626',
+                        confirmButtonText: 'बंद करा'
+                    });
                 }
 
             } catch (error) {
-                messageBox.className = 'message-box show error';
-                msgIcon.className = 'fas fa-exclamation-circle';
-                msgTitle.textContent = '❌ त्रुटी';
-                msgText.textContent = 'सर्व्हरशी संपर्क साधताना त्रुटी आली. कृपया पुन्हा प्रयत्न करा.';
+                Swal.fire({
+                    title: 'त्रुटी',
+                    text: 'सर्व्हरशी संपर्क साधताना त्रुटी आली. कृपया पुन्हा प्रयत्न करा.',
+                    icon: 'error',
+                    confirmButtonColor: '#dc2626',
+                    confirmButtonText: 'बंद करा'
+                });
                 console.error('Error:', error);
             }
 
@@ -857,17 +912,6 @@ include 'include/header.php';
             document.getElementById('issueDate').value = new Date().toISOString().split('T')[0];
             photoInput.value = '';
             updateFileUploadUI(null);
-            document.getElementById('successModal').classList.remove('show');
-        });
-
-        // FIX: Close the modal when clicking the "बंद करा" button
-        document.addEventListener('DOMContentLoaded', function () {
-            const closeBtn = document.getElementById('closeSuccess');
-            if (closeBtn) {
-                closeBtn.addEventListener('click', function () {
-                    document.getElementById('successModal').classList.remove('show');
-                });
-            }
         });
     </script>
 

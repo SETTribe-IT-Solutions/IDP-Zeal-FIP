@@ -5,7 +5,7 @@ session_start();
 if (isset($_SESSION['username'])) {
     header("Location: user_dashboard.php");
 } else {
-    header("Location: login.php");
+    header("Location: landingpage.php");
 }
 exit;
 ?>

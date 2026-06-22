@@ -38,11 +38,12 @@ if ($basePath === '' || $basePath === '/') {
 // Build absolute URL for reliability
 $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
-$loginUrl = $host ? "{$scheme}://{$host}{$basePath}/login.php" : "{$basePath}/login.php";
+$redirectUrl = $host ? "{$scheme}://{$host}{$basePath}/landingpage.php" : "{$basePath}/landingpage.php";
+
 
 // Prefer PHP redirect when possible
 if (!headers_sent()) {
-        header("Location: {$loginUrl}");
+        header("Location: {$redirectUrl}");
         // End buffering and exit to stop further output
         ob_end_flush();
         exit;

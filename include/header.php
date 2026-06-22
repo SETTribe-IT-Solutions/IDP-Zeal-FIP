@@ -9,11 +9,31 @@ if (!isset($active_page)) {
     $active_page = basename($_SERVER['PHP_SELF'], '.php');
 }
 
+// Define page titles for menu context
+$page_titles = [
+    'landingpage' => 'Home',
+    'user_dashboard' => 'Dashboard',
+    'issueform' => 'Add Issue',
+    'complaint_report' => 'Issue Report',
+    'create_user' => 'Create User',
+    'forgetpassward' => 'Change Password',
+    'login' => 'Login',
+    'logout' => 'Logout'
+];
+
+// Get page title from map or use default
+if (!isset($page_title)) {
+    $page_title = isset($page_titles[$active_page]) ? $page_titles[$active_page] : 'Portal';
+}
+if (!isset($page_description)) {
+    $page_description = '';
+}
+
 // User details mockup
 $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : "Shri. Rajesh Patil";
 $user_role = isset($_SESSION['user_role']) ? $_SESSION['user_role'] : "Admin Officer";
 $user_dept = isset($_SESSION['user_dept']) ? $_SESSION['user_dept'] : "Finance Dept";
-$user_initials = "RP";
+$user_initials = isset($_SESSION['user_initials']) ? $_SESSION['user_initials'] : "RP";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -21,7 +41,7 @@ $user_initials = "RP";
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZP Hingoli - Inter Department Portal</title>
+    <title><?php echo htmlspecialchars($page_title); ?> - ZP Hingoli Inter Department Portal</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -234,6 +254,31 @@ $user_initials = "RP";
 
         .brand-logo-img:hover {
             transform: scale(1.05);
+        }
+
+        .header-image-card {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 130px;
+            height: 52px;
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.20), rgba(30, 58, 138, 0.15));
+            border: 1px solid rgba(14, 165, 233, 0.18);
+            border-radius: 14px;
+            box-shadow: 0 10px 20px rgba(15, 23, 42, 0.09);
+            margin-right: 12px;
+            overflow: hidden;
+            transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+        }
+
+        .header-image-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 14px 28px rgba(15, 23, 42, 0.16);
+        }
+
+        .header-image-card svg {
+            width: 100%;
+            height: auto;
         }
 
         .header-divider {
@@ -907,7 +952,6 @@ $user_initials = "RP";
         }
 
         @media (max-width: 1024px) {
-
             .header-nav,
             .header-search {
                 display: none;
@@ -922,13 +966,115 @@ $user_initials = "RP";
             }
         }
 
-        @media (max-width: 480px) {
-            .brand-text {
+        @media (max-width: 768px) {
+            .header-container {
+                padding: 0 16px;
+                gap: 10px;
+            }
+
+            .brand-logo-img {
                 display: none;
             }
 
+            .header-divider {
+                display: none;
+            }
+
+            .brand-emblem-img {
+                height: 36px;
+            }
+
+            .brand-title {
+                font-size: 16px;
+            }
+
+            .brand-subtitle {
+                font-size: 9px;
+                letter-spacing: 0.04em;
+            }
+
+            .header-actions {
+                gap: 8px;
+            }
+
+            .action-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 14px;
+            }
+
+            .header-btn {
+                padding: 6px 12px;
+                font-size: 11px;
+            }
+
+            .profile-trigger {
+                padding: 4px;
+                gap: 4px;
+            }
+
+            .profile-avatar {
+                width: 28px;
+                height: 28px;
+                font-size: 11px;
+            }
+        }
+
+        @media (max-width: 480px) {
             .header-container {
-                padding: 0 16px;
+                gap: 8px;
+            }
+
+            .brand-emblem-img {
+                height: 30px;
+            }
+
+            .brand-title {
+                font-size: 14px;
+            }
+
+            .brand-subtitle {
+                display: none;
+            }
+
+            .header-actions {
+                gap: 6px;
+            }
+
+            .header-btn {
+                padding: 5px 10px;
+                font-size: 10px;
+            }
+
+            .action-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 12px;
+            }
+
+            .profile-trigger {
+                padding: 3px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .brand-emblem-img {
+                display: none;
+            }
+
+            .brand-title {
+                font-size: 13px;
+            }
+
+            .header-btn {
+                padding: 4px 8px;
+                font-size: 9.5px;
+            }
+
+            .action-btn {
+                width: 30px;
+                height: 30px;
+                font-size: 11px;
             }
         }
 
@@ -1233,6 +1379,44 @@ $user_initials = "RP";
                 padding: 20px;
             }
         }
+
+        /* Login/Register buttons in header */
+        .header-btn {
+            padding: 8px 18px;
+            font-size: 13px;
+            font-weight: 700;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-btn-primary {
+            background: linear-gradient(135deg, #0ea5e9, #2563eb);
+            color: #ffffff;
+            border: none;
+        }
+
+        .header-btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+            background: linear-gradient(135deg, #38bdf8, #3b82f6);
+        }
+
+        .header-btn-outline {
+            border: 1.5px solid #2563eb;
+            color: #2563eb;
+            background: transparent;
+        }
+
+        .header-btn-outline:hover {
+            transform: translateY(-1px);
+            background: #2563eb;
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
     </style>
 </head>
 
@@ -1244,15 +1428,14 @@ $user_initials = "RP";
 
             <!-- Left: Maharashtra Emblem -->
             <div class="header-left">
-                <a href="index.php">
-                    <img src="assets/maharashtra-emblem.png" alt="Maharashtra State Emblem"
-                        class="brand-emblem-img">
+                <a href="user_dashboard.php">
+                    <img src="assets/maharashtra-emblem.png" alt="Maharashtra State Emblem" class="brand-emblem-img">
                 </a>
             </div>
 
             <!-- Middle: Center Title & Branding -->
             <div class="header-middle">
-                <a href="index.php" class="brand-text-wrapper">
+                <a href="user_dashboard.php" class="brand-text-wrapper">
                     <h1 class="brand-title">Zilla Parishad Hingoli</h1>
                     <p class="brand-subtitle">Inter-Department Portal</p>
                 </a>
@@ -1273,39 +1456,45 @@ $user_initials = "RP";
                         <i class="fa-solid fa-moon"></i>
                     </button>
 
-                    <!-- User Profile Menu -->
-                    <div class="profile-trigger">
-                        <div class="profile-avatar">
-                            <?php echo $user_initials; ?>
-                        </div>
-                        <div class="profile-info">
-                            <span class="profile-name"><?php echo $user_name; ?></span>
-                            <span class="profile-dept"><?php echo $user_dept; ?></span>
-                        </div>
-                        <i class="fa-solid fa-chevron-down nav-dropdown-indicator"
-                            style="margin-right: 6px; font-size: 10px;"></i>
-
-                        <div class="dropdown-menu profile-dropdown">
-                            <div class="profile-dd-header">
-                                <span class="profile-dd-role"><?php echo $user_role; ?></span>
-                                <div class="profile-dd-name"><?php echo $user_name; ?></div>
-                                <div class="profile-dd-email">rajesh.patil@maharashtra.gov.in</div>
+                    <?php if (isset($_SESSION['username'])): ?>
+                        <!-- User Profile Menu -->
+                        <div class="profile-trigger">
+                            <div class="profile-avatar">
+                                <?php echo $user_initials; ?>
                             </div>
-                            <a href="profile.php" class="profile-dropdown-link">
-                                <i class="fa-regular fa-user"></i> My Profile
-                            </a>
-                            <a href="settings.php" class="profile-dropdown-link">
-                                <i class="fa-solid fa-gear"></i> Settings
-                            </a>
-                            <a href="tasks.php" class="profile-dropdown-link">
-                                <i class="fa-solid fa-list-check"></i> Tasks Assigned
-                            </a>
-                            <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 6px 0;">
-                            <a href="logout.php" class="profile-dropdown-link logout-link">
-                                <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
-                            </a>
+                            <div class="profile-info">
+                                <span class="profile-name"><?php echo $user_name; ?></span>
+                                <span class="profile-dept"><?php echo $user_dept; ?></span>
+                            </div>
+                            <i class="fa-solid fa-chevron-down nav-dropdown-indicator"
+                                style="margin-right: 6px; font-size: 10px;"></i>
+
+                            <div class="dropdown-menu profile-dropdown">
+                                <div class="profile-dd-header">
+                                    <span class="profile-dd-role"><?php echo $user_role; ?></span>
+                                    <div class="profile-dd-name"><?php echo $user_name; ?></div>
+                                    <div class="profile-dd-email">rajesh.patil@maharashtra.gov.in</div>
+                                </div>
+                                <a href="profile.php" class="profile-dropdown-link">
+                                    <i class="fa-regular fa-user"></i> My Profile
+                                </a>
+                                <a href="settings.php" class="profile-dropdown-link">
+                                    <i class="fa-solid fa-gear"></i> Settings
+                                </a>
+                                <a href="tasks.php" class="profile-dropdown-link">
+                                    <i class="fa-solid fa-list-check"></i> Tasks Assigned
+                                </a>
+                                <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 6px 0;">
+                                <a href="logout.php" class="profile-dropdown-link logout-link">
+                                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+                                </a>
+                            </div>
                         </div>
-                    </div>
+                    <?php else: ?>
+                        <!-- Login / Register Buttons for Unauthenticated Users -->
+                        <a href="login.php" class="header-btn header-btn-outline">लॉगिन / Login</a>
+                        <a href="create_user.php" class="header-btn header-btn-primary">नोंदणी / Register</a>
+                    <?php endif; ?>
 
                 </div>
             </div>
@@ -1313,6 +1502,8 @@ $user_initials = "RP";
         </div>
     </header>
     <!-- Header End -->
+
+
 
     <!-- Core Portal Interactions Script -->
     <script>

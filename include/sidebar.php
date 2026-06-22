@@ -165,32 +165,45 @@
 
 <!-- Sidebar -->
 <aside id="sidebar" class="sidebar">
+    <div>
+        <div class="sidebar-brand">
+            <span>
+            </span>
+        </div>
 
-    <ul class="sidebar-menu">
-        <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'landingpage.php') ? 'active' : ''; ?>">
-            <a href="landingpage.php">Home</a>
-        </li>
+        <ul class="sidebar-menu">
+            <li
+                class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'landingpage.php') ? 'active' : ''; ?>">
+                <a href="landingpage.php">Home</a>
+            </li>
 
-        <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'user_dashboard.php') ? 'active' : ''; ?>">
-            <a href="user_dashboard.php">Dashboard</a>
-        </li>
+            <li
+                class="sidebar-item <?php echo in_array(basename($_SERVER['PHP_SELF']), ['user_dashboard.php', 'BDO.php', 'THO.php', 'CEO.php', 'Hod.php', 'gram_panchayat.php', 'anganwadi.php']) ? 'active' : ''; ?>">
+                <a href="user_dashboard.php">Dashboard</a>
+            </li>
 
-        <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'issueform.php') ? 'active' : ''; ?>">
-            <a href="issueform.php">Add Issue</a>
-        </li>
+            <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'issueform.php') ? 'active' : ''; ?>">
+                <a href="issueform.php">Add Issue</a>
+            </li>
 
-        <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'complaint_report.php') ? 'active' : ''; ?>">
-            <a href="complaint_report.php">Issue Report</a>
-        </li>
+            <li
+                class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'complaint_report.php') ? 'active' : ''; ?>">
+                <a href="complaint_report.php">Issue Report</a>
+            </li>
 
-        <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'assign_issues.php') ? 'active' : ''; ?>">
-            <a href="assign_issues.php">Assigned Issues</a>
-        </li>
+            <li
+                class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'assign_issues.php') ? 'active' : ''; ?>">
+                <a href="assign_issues.php">Assigned Issues</a>
+            </li>
 
-        <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'change-password.php') ? 'active' : ''; ?>">
-            <a href="forgetpassward.php">Change Password</a>
-        </li>
-    </ul>
+
+
+            <li
+                class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'change-password.php') ? 'active' : ''; ?>">
+                <a href="forgetpassward.php">Change Password</a>
+            </li>
+        </ul>
+    </div>
 
     <div class="sidebar-bottom">
         <a href="logout.php" title="Logout">Logout</a>

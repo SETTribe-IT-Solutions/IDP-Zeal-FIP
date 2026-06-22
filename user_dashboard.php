@@ -516,14 +516,14 @@ include 'include/sidebar.php';
         }
 
         @media screen and (max-width: 768px) {
-            .main-content {
-                margin-left: 220px;
-            }
-
-            .main-content.collapsed {
-                margin-left: 72px;
-            }
-        }
+    .main-content {
+        margin-left: 0;
+        padding: 20px 16px;
+    }
+    .main-content.collapsed {
+        margin-left: 0;
+    }
+}
 
         /* Welcome Container Styles */
         .welcome-container {

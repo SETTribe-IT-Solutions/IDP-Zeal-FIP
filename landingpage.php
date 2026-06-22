@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 session_start();
 
 if (isset($_SESSION['username'])) {
@@ -11,7 +11,7 @@ $active_page = 'landingpage';
 $page_title = 'Home';
 $page_description = 'Official Zilla Parishad Hingoli portal for inter-department issue management and district information.';
 
-include 'include/header.php';
+
 ?>
 
 <style>
@@ -20,13 +20,13 @@ include 'include/header.php';
         display: grid;
         grid-template-columns: 1.2fr 0.9fr;
         gap: 30px;
-        background: linear-gradient(140deg, rgba(15, 23, 42, 0.96), rgba(14, 165, 233, 0.85));
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: linear-gradient(140deg, rgba(15, 23, 42, 0.98), rgba(14, 165, 233, 0.90));
         border-radius: var(--radius-lg);
         padding: 42px;
         overflow: hidden;
         color: #ffffff;
         margin-bottom: 40px;
+        box-shadow: 0 28px 70px rgba(15, 23, 42, 0.28);
     }
 
     .landing-hero::before,
@@ -57,6 +57,99 @@ include 'include/header.php';
     .landing-hero .hero-panel {
         position: relative;
         z-index: 1;
+    }
+
+    .landing-hero .hero-visual {
+        min-height: 360px;
+        width: 100%;
+        border-radius: 24px;
+        background: radial-gradient(circle at top left, rgba(59, 130, 246, 0.48), rgba(14, 165, 233, 0.16) 36%),
+                    radial-gradient(circle at bottom right, rgba(236, 72, 153, 0.24), transparent 30%);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+        position: relative;
+        overflow: hidden;
+        display: grid;
+        place-items: center;
+    }
+
+    .landing-hero .hero-visual .hero-illustration {
+        width: 100%;
+        max-width: 360px;
+        display: grid;
+        grid-template-columns: 1fr;
+        align-items: center;
+        justify-items: center;
+        gap: 18px;
+        padding: 24px;
+    }
+
+    .landing-hero .hero-visual .hero-card {
+        width: 100%;
+        padding: 28px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 28px;
+        background: rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        box-shadow: 0 22px 44px rgba(0, 0, 0, 0.16);
+    }
+
+    .landing-hero .hero-visual .hero-card + .hero-card {
+        margin-top: 14px;
+    }
+
+    .landing-hero .hero-visual .hero-logo,
+    .landing-hero .hero-visual .hero-emblem {
+        width: min(140px, 100%);
+        height: auto;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.18);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        padding: 12px;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+    }
+
+    .landing-hero .hero-visual .hero-illustration-text {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+        padding: 14px 18px;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.22);
+        color: #fff;
+        font-weight: 700;
+        font-size: 0.95rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+
+    .landing-hero .hero-visual .hero-illustration-text {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 12px 18px;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.24);
+        color: #fff;
+        font-weight: 700;
+        font-size: 0.95rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+
+    .landing-hero .hero-visual::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.18), transparent 22%),
+                    radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.08), transparent 26%);
+        pointer-events: none;
     }
 
     .landing-hero .hero-badge {
@@ -136,8 +229,15 @@ include 'include/header.php';
         min-width: 170px;
         padding: 14px 22px;
         font-weight: 700;
+        border-radius: 999px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+        transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
     }
 
+    .landing-hero .hero-actions .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.22);
+    }
 
 
     .landing-notes {
@@ -145,10 +245,13 @@ include 'include/header.php';
         grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 20px;
         margin-bottom: 40px;
+        align-items: stretch;
+        grid-auto-rows: minmax(180px, auto);
     }
 
     .landing-note {
         position: relative;
+        min-height: 180px;
         overflow: hidden;
         background: rgba(255, 255, 255, 0.96);
         border-radius: var(--radius-lg);
@@ -503,6 +606,12 @@ include 'include/header.php';
 
     .section-container {
         animation: fadeInUp 0.8s ease-out;
+        background: rgba(255, 255, 255, 0.94);
+        border-radius: 28px;
+        padding: 30px 28px;
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.06);
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        margin-bottom: 24px;
     }
 
     @keyframes fadeInUp {
@@ -518,19 +627,37 @@ include 'include/header.php';
     }
 
     @media (max-width: 1024px) {
+        .main-content {
+            margin-left: 0 !important;
+            padding: 24px !important;
+        }
+
         .landing-hero {
             grid-template-columns: 1fr;
             padding: 32px;
         }
 
-        .landing-notes,
-        .feature-grid,
-        .quick-list {
-            grid-template-columns: 1fr;
-        }
-
         .landing-hero .hero-visual {
             min-height: 320px;
+        }
+
+        .landing-notes,
+        .info-banner,
+        .feature-grid,
+        .quick-list,
+        .leadership-grid,
+        .gallery-grid {
+            grid-template-columns: 1fr;
+            gap: 18px;
+        }
+
+        .landing-note,
+        .feature-card,
+        .quick-card,
+        .info-card,
+        .leadership-card,
+        .gallery-item {
+            padding: 20px;
         }
     }
 
@@ -540,14 +667,23 @@ include 'include/header.php';
             gap: 20px;
         }
 
-        .landing-notes {
-            grid-template-columns: 1fr;
-            gap: 16px;
+        .landing-hero .hero-actions {
+            flex-direction: column;
+            align-items: stretch;
         }
 
+        .landing-hero .hero-actions .btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .landing-notes,
+        .info-banner,
         .feature-grid,
-        .quick-list {
-            grid-template-columns: 1fr;
+        .quick-list,
+        .leadership-grid,
+        .gallery-grid {
+            gap: 16px;
         }
 
         .landing-hero .hero-title {
@@ -562,7 +698,7 @@ include 'include/header.php';
     @media (max-width: 640px) {
         .landing-hero {
             padding: 22px;
-            gap: 20px;
+            gap: 18px;
         }
 
         .landing-hero .hero-title {
@@ -573,26 +709,54 @@ include 'include/header.php';
             font-size: 0.95rem;
         }
 
+        .landing-hero .hero-badge {
+            width: fit-content;
+        }
+
+        .landing-hero .hero-visual {
+            min-height: 260px;
+        }
+
+        .landing-hero .hero-actions {
+            gap: 12px;
+        }
+
+        .landing-hero .hero-actions .btn {
+            padding: 14px 18px;
+        }
+
+        .landing-notes,
+        .info-banner,
         .feature-grid,
-        .quick-list {
+        .quick-list,
+        .leadership-grid,
+        .gallery-grid {
             grid-template-columns: 1fr;
-            gap: 16px;
+            gap: 14px;
         }
 
         .feature-card,
-        .quick-card {
-            padding: 20px;
+        .quick-card,
+        .info-card,
+        .leadership-card,
+        .gallery-item,
+        .landing-note {
+            padding: 18px;
         }
 
-        .hero-illustration {
-            max-width: 300px;
-            height: 300px;
+        .section-title {
+            font-size: 1rem;
+            flex-wrap: wrap;
+            gap: 8px;
         }
 
-        .person-avatar {
-            width: 75px;
-            height: 95px;
-            font-size: 2rem;
+        .notice-tabs {
+            justify-content: stretch;
+        }
+
+        .notice-tab {
+            flex: 1;
+            text-align: center;
         }
     }
 
@@ -661,6 +825,11 @@ include 'include/header.php';
             </div>
         </div>
         <div class="hero-visual">
+            <div class="hero-illustration">
+                <img src="assets/zp-logo.png" alt="ZP Hingoli Logo" class="hero-logo">
+                <img src="assets/maharashtra-emblem.png" alt="Maharashtra Emblem" class="hero-emblem">
+                <span class="hero-illustration-text"><i class="fa-solid fa-city"></i> Official District Service Portal</span>
+            </div>
         </div>
     </section>
 
@@ -786,4 +955,3 @@ include 'include/header.php';
     });
 </script>
 
-<?php include 'include/footer.php'; ?>

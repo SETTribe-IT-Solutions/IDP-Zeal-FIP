@@ -14,23 +14,33 @@ $complaints = [];
 $dbError = '';
 
 // Determine query filter based on user role
-$role = $_SESSION['user_system_role'] ?? '';
+$role = !empty($_SESSION['user_system_role']) ? $_SESSION['user_system_role'] : ($_SESSION['user_role'] ?? '');
 $where = "1=1";
 $params = [];
 $types = "";
 
-if ($role === 'CEO') {
+$normalizedRole = strtolower(trim($role));
+
+if ($normalizedRole === 'ceo') {
     $where = "1=1";
-} elseif ($role === 'ग्रामपंचायत अधिकारी' || $role === 'अंगणवाडी सेविका' || $role === 'शिक्षक') {
+} elseif ($role === 'ग्रामपंचायत अधिकारी' || $role === 'अंगणवाडी सेविका' || $role === 'शिक्षक' || $normalizedRole === 'teacher') {
     $where = "mobile = ?";
     $params[] = $_SESSION['user_mobile'] ?? '';
     $types .= "s";
 } else {
     // BDO, THO, HoD
-    $where = "department = ? AND department_head = ?";
-    $params[] = $_SESSION['user_dept'] ?? '';
-    $params[] = $_SESSION['user_designation'] ?? '';
-    $types .= "ss";
+    $user_dept = $_SESSION['user_dept'] ?? '';
+    $user_taluka = $_SESSION['user_taluka'] ?? '';
+    if (!empty($user_taluka)) {
+        $where = "department = ? AND taluka = ?";
+        $params[] = $user_dept;
+        $params[] = $user_taluka;
+        $types .= "ss";
+    } else {
+        $where = "department = ?";
+        $params[] = $user_dept;
+        $types .= "s";
+    }
 }
 
 $query = "SELECT * FROM tbl_raiseissue WHERE $where ORDER BY issue_date DESC";
@@ -114,11 +124,21 @@ function formatDate($dateString)
 <?php include('include/sidebar.php'); ?>
 
 <main class="main-content">
+    <?php
+    $view = $_GET['view'] ?? 'assigned';
+    if ($view === 'transfer') {
+        $page_header_title = '📋 तक्रार हस्तांतरण (Transfer Issues)';
+        $page_header_desc = 'इतर विभागांकडे वर्ग करावयाच्या तक्रारींचे हस्तांतरण करा';
+    } else {
+        $page_header_title = '📋 नियुक्त तक्रारी (Assigned Issues)';
+        $page_header_desc = 'आपल्या विभागातील नियुक्त तक्रारींचे निवारण व योग्य ती क्रिया करा';
+    }
+    ?>
     <!-- Page Header -->
-    <div class="header-container">
+    <div class="page-header-container">
         <div class="page-title">
-            <h1>📋 तक्रार क्रिया आणि हस्तांतरण</h1>
-            <p>आपल्या तक्रारींसाठी क्रिया करा आणि आवश्यक असल्यास ट्रान्सफर करा</p>
+            <h1><?php echo htmlspecialchars($page_header_title); ?></h1>
+            <p><?php echo htmlspecialchars($page_header_desc); ?></p>
         </div>
         <button class="btn-primary" onclick="openNewComplaintForm()">
             ➕ नवीन तक्रार दाखल करा
@@ -199,10 +219,13 @@ function formatDate($dateString)
                             <td><span class="badge-status <?= $badgeClass; ?>"><?= htmlspecialchars($status); ?></span></td>
                             <td class="action-cell">
                                 <?php if ($can_perform_actions): ?>
-                                    <button class="btn-icon btn-action" title="क्रिया"
-                                        onclick="actionComplaint('<?= htmlspecialchars($complaint['issue_number']); ?>')">निराकरण</button>
-                                    <button class="btn-icon btn-transfer" title="हस्तांतरण"
-                                        onclick="openTransferModal('<?= htmlspecialchars($complaint['issue_number']); ?>')">हस्तांतरण</button>
+                                    <?php if ($view === 'transfer'): ?>
+                                        <button class="btn-icon btn-transfer" title="हस्तांतरण"
+                                            onclick="openTransferModal('<?= htmlspecialchars($complaint['issue_number']); ?>')">हस्तांतरण</button>
+                                    <?php else: ?>
+                                        <button class="btn-icon btn-action" title="क्रिया"
+                                            onclick="actionComplaint('<?= htmlspecialchars($complaint['issue_number']); ?>')">निराकरण</button>
+                                    <?php endif; ?>
                                 <?php else: ?>
                                     <span class="badge-status open">View Only</span>
                                 <?php endif; ?>
@@ -287,7 +310,7 @@ function formatDate($dateString)
 
     <!-- Styles -->
     <style>
-        .header-container {
+        .page-header-container {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -778,7 +801,7 @@ function formatDate($dateString)
         }
 
         @media (max-width: 768px) {
-            .header-container {
+            .page-header-container {
                 flex-direction: column;
                 align-items: stretch;
             }

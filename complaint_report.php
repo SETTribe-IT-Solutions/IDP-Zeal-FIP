@@ -14,23 +14,33 @@ $complaints = [];
 $dbError = '';
 
 // Determine query filter based on user role
-$role = $_SESSION['user_system_role'] ?? '';
+$role = !empty($_SESSION['user_system_role']) ? $_SESSION['user_system_role'] : ($_SESSION['user_role'] ?? '');
 $where = "1=1";
 $params = [];
 $types = "";
 
-if ($role === 'CEO') {
+$normalizedRole = strtolower(trim($role));
+
+if ($normalizedRole === 'ceo') {
     $where = "1=1";
-} elseif ($role === 'ग्रामपंचायत अधिकारी' || $role === 'अंगणवाडी सेविका' || $role === 'शिक्षक') {
+} elseif ($role === 'ग्रामपंचायत अधिकारी' || $role === 'अंगणवाडी सेविका' || $role === 'शिक्षक' || $normalizedRole === 'teacher') {
     $where = "mobile = ?";
     $params[] = $_SESSION['user_mobile'] ?? '';
     $types .= "s";
 } else {
     // BDO, THO, HoD
-    $where = "department = ? AND department_head = ?";
-    $params[] = $_SESSION['user_dept'] ?? '';
-    $params[] = $_SESSION['user_designation'] ?? '';
-    $types .= "ss";
+    $user_dept = $_SESSION['user_dept'] ?? '';
+    $user_taluka = $_SESSION['user_taluka'] ?? '';
+    if (!empty($user_taluka)) {
+        $where = "department = ? AND taluka = ?";
+        $params[] = $user_dept;
+        $params[] = $user_taluka;
+        $types .= "ss";
+    } else {
+        $where = "department = ?";
+        $params[] = $user_dept;
+        $types .= "s";
+    }
 }
 
 $query = "SELECT * FROM tbl_raiseissue WHERE $where ORDER BY issue_date DESC";
@@ -115,7 +125,7 @@ function formatDate($dateString)
 
 <main class="main-content">
     <!-- Page Header -->
-    <div class="header-container">
+    <div class="page-header-container">
         <div class="page-title">
             <h1>📋 माझी तक्रारी</h1>
             <p>आपल्या सर्व तक्रारीचे रेकॉर्ड पहा आणि व्यवस्थापित करा</p>
@@ -315,7 +325,7 @@ function formatDate($dateString)
 
     <!-- Styles -->
     <style>
-        .header-container {
+        .page-header-container {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -823,7 +833,7 @@ function formatDate($dateString)
         }
 
         @media (max-width: 768px) {
-            .header-container {
+            .page-header-container {
                 flex-direction: column;
                 align-items: stretch;
             }

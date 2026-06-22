@@ -1,3 +1,36 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+$role = !empty($_SESSION['user_system_role']) ? $_SESSION['user_system_role'] : ($_SESSION['user_role'] ?? '');
+$normalizedRole = strtolower(trim($role));
+
+// Helper function to get the dashboard url based on role
+if (!function_exists('getDashboardUrl')) {
+    function getDashboardUrl($role) {
+        $normalized = strtolower(trim($role));
+        switch ($normalized) {
+            case 'bdo':
+                return 'BDO.php';
+            case 'tho':
+                return 'THO.php';
+            case 'ceo':
+                return 'CEO.php';
+            case 'hod':
+                return 'Hod.php';
+            case 'ग्रामपंचायत अधिकारी':
+                return 'gram_panchayat.php';
+            case 'अंगणवाडी सेविका':
+                return 'anganwadi.php';
+            default:
+                return 'user_dashboard.php';
+        }
+    }
+}
+
+$dashboard_url = getDashboardUrl($role);
+?>
 <style>
     /* ===== SIDEBAR ===== */
     .sidebar {
@@ -43,6 +76,18 @@
         transition: all 0.3s ease;
         font-size: 16px;
         font-weight: 500;
+    }
+
+    .sidebar-item a i {
+        margin-right: 12px;
+        width: 20px;
+        text-align: center;
+        font-size: 16px;
+        transition: transform 0.3s ease;
+    }
+    
+    .sidebar-item a:hover i {
+        transform: scale(1.1);
     }
 
     .sidebar-item a:hover {
@@ -172,36 +217,51 @@
         </div>
 
         <ul class="sidebar-menu">
-            <li
-                class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'landingpage.php') ? 'active' : ''; ?>">
-                <a href="landingpage.php">Home</a>
+            <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'landingpage.php') ? 'active' : ''; ?>">
+                <a href="landingpage.php"><i class="fa-solid fa-house"></i> गृहपृष्ठ (Home)</a>
             </li>
 
-            <li
-                class="sidebar-item <?php echo in_array(basename($_SERVER['PHP_SELF']), ['user_dashboard.php', 'BDO.php', 'THO.php', 'CEO.php', 'Hod.php', 'gram_panchayat.php', 'anganwadi.php']) ? 'active' : ''; ?>">
-                <a href="user_dashboard.php">Dashboard</a>
-            </li>
+            <!-- Role-based items -->
+            <?php if ($normalizedRole === 'ग्रामपंचायत अधिकारी' || $normalizedRole === 'शिक्षक' || $normalizedRole === 'अंगणवाडी सेविका' || $normalizedRole === 'teacher'): ?>
+                <li class="sidebar-item <?php echo in_array(basename($_SERVER['PHP_SELF']), ['user_dashboard.php', 'gram_panchayat.php', 'anganwadi.php']) ? 'active' : ''; ?>">
+                    <a href="<?php echo $dashboard_url; ?>"><i class="fa-solid fa-chart-line"></i> डॅशबोर्ड (Dashboard)</a>
+                </li>
+                <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'issueform.php') ? 'active' : ''; ?>">
+                    <a href="issueform.php"><i class="fa-solid fa-plus-circle"></i> समस्या नोंदवा (Raise Issue)</a>
+                </li>
+                <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'complaint_report.php') ? 'active' : ''; ?>">
+                    <a href="complaint_report.php"><i class="fa-solid fa-file-invoice"></i> माझ्या तक्रारी (My Issues)</a>
+                </li>
+            <?php elseif (in_array($normalizedRole, ['bdo', 'tho', 'hod'])): ?>
+                <li class="sidebar-item <?php echo in_array(basename($_SERVER['PHP_SELF']), ['user_dashboard.php', 'BDO.php', 'THO.php', 'Hod.php']) ? 'active' : ''; ?>">
+                    <a href="<?php echo $dashboard_url; ?>"><i class="fa-solid fa-chart-line"></i> डॅशबोर्ड (Dashboard)</a>
+                </li>
+                <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'assign_issues.php' && ($_GET['view'] ?? '') !== 'transfer') ? 'active' : ''; ?>">
+                    <a href="assign_issues.php?view=assigned"><i class="fa-solid fa-list-check"></i> नियुक्त तक्रारी (Assigned Issues)</a>
+                </li>
+                <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'assign_issues.php' && ($_GET['view'] ?? '') === 'transfer') ? 'active' : ''; ?>">
+                    <a href="assign_issues.php?view=transfer"><i class="fa-solid fa-right-left"></i> तक्रार हस्तांतरण (Transfer Issues)</a>
+                </li>
+            <?php else: ?>
+                <!-- Default / CEO / Admin fallback view -->
+                <li class="sidebar-item <?php echo in_array(basename($_SERVER['PHP_SELF']), ['user_dashboard.php', 'BDO.php', 'THO.php', 'CEO.php', 'Hod.php', 'gram_panchayat.php', 'anganwadi.php']) ? 'active' : ''; ?>">
+                    <a href="<?php echo $dashboard_url; ?>"><i class="fa-solid fa-chart-line"></i> डॅशबोर्ड (Dashboard)</a>
+                </li>
+                <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'issueform.php') ? 'active' : ''; ?>">
+                    <a href="issueform.php"><i class="fa-solid fa-plus-circle"></i> समस्या नोंदवा (Raise Issue)</a>
+                </li>
+                <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'complaint_report.php') ? 'active' : ''; ?>">
+                    <a href="complaint_report.php"><i class="fa-solid fa-file-invoice"></i> तक्रार अहवाल (Issue Report)</a>
+                </li>
+                <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'assign_issues.php' && ($_GET['view'] ?? '') !== 'transfer') ? 'active' : ''; ?>">
+                    <a href="assign_issues.php?view=assigned"><i class="fa-solid fa-list-check"></i> नियुक्त तक्रारी (Assigned Issues)</a>
+                </li>
+                <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'assign_issues.php' && ($_GET['view'] ?? '') === 'transfer') ? 'active' : ''; ?>">
+                    <a href="assign_issues.php?view=transfer"><i class="fa-solid fa-right-left"></i> तक्रार हस्तांतरण (Transfer Issues)</a>
+                </li>
+            <?php endif; ?>
 
-            <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'issueform.php') ? 'active' : ''; ?>">
-                <a href="issueform.php">Add Issue</a>
-            </li>
 
-            <li
-                class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'complaint_report.php') ? 'active' : ''; ?>">
-                <a href="complaint_report.php">Issue Report</a>
-            </li>
-
-            <li
-                class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'assign_issues.php') ? 'active' : ''; ?>">
-                <a href="assign_issues.php">Assigned Issues</a>
-            </li>
-
-
-
-            <li
-                class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'change-password.php') ? 'active' : ''; ?>">
-                <a href="forgetpassward.php">Change Password</a>
-            </li>
         </ul>
     </div>
 
@@ -210,6 +270,7 @@
     </div>
 
 </aside>
+
 
 <!-- JavaScript for Toggle Functionality -->
 <script>

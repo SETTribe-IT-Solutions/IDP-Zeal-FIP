@@ -22,23 +22,33 @@ try {
     $conn = db_connect();
 
     // Determine query filter based on user role
-    $role = $_SESSION['user_system_role'] ?? '';
+    $role = !empty($_SESSION['user_system_role']) ? $_SESSION['user_system_role'] : ($_SESSION['user_role'] ?? '');
     $where = "1=1";
     $params = [];
     $types = "";
 
-    if ($role === 'CEO') {
+    $normalizedRole = strtolower(trim($role));
+
+    if ($normalizedRole === 'ceo') {
         $where = "1=1";
-    } elseif ($role === 'ग्रामपंचायत अधिकारी' || $role === 'अंगणवाडी सेविका' || $role === 'शिक्षक') {
+    } elseif ($role === 'ग्रामपंचायत अधिकारी' || $role === 'अंगणवाडी सेविका' || $role === 'शिक्षक' || $normalizedRole === 'teacher') {
         $where = "mobile = ?";
         $params[] = $_SESSION['user_mobile'] ?? '';
         $types .= "s";
     } else {
         // BDO, THO, HoD
-        $where = "department = ? AND department_head = ?";
-        $params[] = $_SESSION['user_dept'] ?? '';
-        $params[] = $_SESSION['user_designation'] ?? '';
-        $types .= "ss";
+        $user_dept = $_SESSION['user_dept'] ?? '';
+        $user_taluka = $_SESSION['user_taluka'] ?? '';
+        if (!empty($user_taluka)) {
+            $where = "department = ? AND taluka = ?";
+            $params[] = $user_dept;
+            $params[] = $user_taluka;
+            $types .= "ss";
+        } else {
+            $where = "department = ?";
+            $params[] = $user_dept;
+            $types .= "s";
+        }
     }
 
     // Query stats

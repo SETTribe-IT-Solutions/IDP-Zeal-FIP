@@ -1547,7 +1547,7 @@ $user_initials = isset($_SESSION['user_initials']) ? $_SESSION['user_initials'] 
                             </div>
                             <div class="profile-info">
                                 <span class="profile-name"><?php echo $user_name; ?></span>
-                                <span class="profile-dept"><?php echo $user_dept; ?></span>
+                                <span class="profile-dept"><?php echo $user_role; ?></span>
                             </div>
 
 

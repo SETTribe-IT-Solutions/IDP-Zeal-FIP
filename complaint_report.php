@@ -9,86 +9,35 @@ if (!isset($_SESSION['username'])) {
 
 require_once 'include/config.php';
 
+$role = $_SESSION['user_system_role'] ?? $_SESSION['user_role'] ?? '';
+
 $conn = db_connect();
 $complaints = [];
 $dbError = '';
 
-// Determine query filter based on user role
-$role = !empty($_SESSION['user_system_role']) ? $_SESSION['user_system_role'] : ($_SESSION['user_role'] ?? '');
-$where = "1=1";
-$params = [];
-$types = "";
+$sql = "SELECT
+            issue_number,
+            photo,
+            description,
+            department,
+            village,
+            registration_type,
+            issue_date,
+            status
+        FROM tbl_raiseissue
+        ORDER BY issue_date DESC";
 
-$normalizedRole = strtolower(trim($role));
+$result = $conn->query($sql);
 
-if ($normalizedRole === 'ceo') {
-    $where = "1=1";
-} elseif ($role === 'ग्रामपंचायत अधिकारी' || $role === 'अंगणवाडी सेविका' || $role === 'शिक्षक' || $normalizedRole === 'teacher') {
-    $where = "mobile = ?";
-    $params[] = $_SESSION['user_mobile'] ?? '';
-    $types .= "s";
-} else {
-    // BDO, THO, HoD
-    $user_dept = $_SESSION['user_dept'] ?? '';
-    $user_taluka = $_SESSION['user_taluka'] ?? '';
-    if (!empty($user_taluka)) {
-        $where = "department = ? AND taluka = ?";
-        $params[] = $user_dept;
-        $params[] = $user_taluka;
-        $types .= "ss";
-    } else {
-        $where = "department = ?";
-        $params[] = $user_dept;
-        $types .= "s";
-    }
+if (!$result) {
+    die("SQL Error: " . $conn->error);
 }
 
-$query = "SELECT * FROM tbl_raiseissue WHERE $where ORDER BY issue_date DESC";
-$stmt = $conn->prepare($query);
-
-if ($stmt) {
-    if (!empty($params)) {
-        $stmt->bind_param($types, ...$params);
-    }
-    $stmt->execute();
-    $result = $stmt->get_result();
-    if ($result) {
-        $complaints = $result->fetch_all(MYSQLI_ASSOC);
-        $result->free();
-    } else {
-        $dbError = $conn->error;
-    }
-    $stmt->close();
-} else {
-    $dbError = $conn->error;
+while ($row = $result->fetch_assoc()) {
+    $complaints[] = $row;
 }
 
-// Fetch distinct departments from database
-$distinct_departments = [];
-$dept_res = $conn->query("SELECT DISTINCT department AS dept FROM users WHERE department IS NOT NULL AND department != ''");
-if ($dept_res) {
-    while ($row = $dept_res->fetch_assoc()) {
-        $dept = trim($row['dept']);
-        if ($dept !== '' && !in_array($dept, $distinct_departments)) {
-            $distinct_departments[] = $dept;
-        }
-    }
-}
-sort($distinct_departments);
-
-// Fetch department to designation mappings from users table
-$dept_designations = [];
-$map_res = $conn->query("SELECT DISTINCT department, designation FROM users WHERE department IS NOT NULL AND department != '' AND designation IS NOT NULL AND designation != '' ORDER BY designation ASC");
-if ($map_res) {
-    while ($row = $map_res->fetch_assoc()) {
-        $dept = trim($row['department']);
-        $desg = trim($row['designation']);
-        if (!isset($dept_designations[$dept])) {
-            $dept_designations[$dept] = [];
-        }
-        $dept_designations[$dept][] = $desg;
-    }
-}
+// echo "Total Records Found : " . count($complaints);
 
 $conn->close();
 
@@ -102,14 +51,10 @@ function badgeClass($status)
     switch (strtolower(trim($status))) {
         case 'pending':
             return 'pending';
-        case 'in progress':
-            return 'in-progress';
         case 'resolved':
             return 'resolved';
-        case 'closed':
-            return 'closed';
         default:
-            return 'open';
+            return 'Total';
     }
 }
 
@@ -144,13 +89,11 @@ function formatDate($dateString)
             </div>
 
             <div class="filter-controls">
-                <select id="statusFilter" class="filter-select">
-                    <option value="">सर्व स्थिती</option>
-                    <option value="Open">🟢 उघडलेली</option>
-                    <option value="In Progress">🟡 प्रक्रियेतील</option>
-                    <option value="Resolved">🟣 निराकृत</option>
-                    <option value="Closed">🔴 बंद</option>
-                </select>
+               <select id="statusFilter" class="filter-select" onchange="filterByStatus()">
+    <option value="">🟢 एकूण</option>
+    <option value="Pending">🟡 प्रलंबित</option>
+    <option value="Resolved">🟣 निराकृत</option>
+</select>
 
                 <select id="departmentFilter" class="filter-select">
                     <option value="">सर्व विभाग</option>
@@ -191,7 +134,8 @@ function formatDate($dateString)
                         $badgeClass = badgeClass($status);
                         $photoSrc = !empty($complaint['photo']) ? htmlspecialchars($complaint['photo']) : 'https://via.placeholder.com/50?text=Photo';
                         ?>
-                        <tr class="complaint-row" data-status="<?= htmlspecialchars($status); ?>"
+                        <tr class="complaint-row"
+                            data-status="<?= strtolower(trim($status)); ?>"
                             data-department="<?= htmlspecialchars($complaint['department']); ?>"
                             data-village="<?= htmlspecialchars($complaint['village']); ?>">
                             <td class="complaint-id"><?= htmlspecialchars($complaint['issue_number']); ?></td>
@@ -901,6 +845,31 @@ function formatDate($dateString)
     <script>
         const deptDesignations = <?php echo json_encode($dept_designations); ?>;
 
+    ...
+    
+    function filterByStatus() {
+
+    let status = document.getElementById('statusFilter').value;
+
+    fetch('fetch_complaints.php?status=' + encodeURIComponent(status))
+    .then(response => response.text())
+    .then(data => {
+
+        document.getElementById('complaintTableBody').innerHTML = data;
+
+    })
+    .catch(error => {
+
+        console.error(error);
+
+    });
+}
+    
+
+    function editComplaint(id) {
+        ...
+    }
+
         const departmentSelect = document.getElementById('transferDepartment');
         const deptHeadSelect = document.getElementById('transferDeptHead');
 
@@ -948,8 +917,14 @@ function formatDate($dateString)
                 const status = row.getAttribute('data-status');
                 const department = row.getAttribute('data-department');
 
-                const matchesSearch = complaintId.includes(searchTerm) || subject.includes(searchTerm);
-                const matchesStatus = !statusFilter || status === statusFilter;
+               const matchesSearch =
+        complaintId.includes(searchTerm) ||
+        subject.includes(searchTerm);
+
+    const matchesStatus =
+        statusFilter === '' ||
+        status.toLowerCase().trim() === statusFilter.toLowerCase().trim();
+                
                 const matchesDepartment = !departmentFilter || department === departmentFilter;
 
                 if (matchesSearch && matchesStatus && matchesDepartment) {

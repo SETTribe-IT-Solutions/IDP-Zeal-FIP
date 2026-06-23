@@ -9,6 +9,8 @@ define('DB_NAME', 'u196817721_IDP_FIP_Zeal');
 
 define('DB_CHARSET', 'utf8mb4');
 
+
+
 function db_connect() {
     $mysqli = new mysqli(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME);
     if ($mysqli->connect_errno) {

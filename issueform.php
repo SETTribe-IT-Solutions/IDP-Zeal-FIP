@@ -1,9 +1,10 @@
 <?php
-// Start session
+// Start session (optional, as config.php already handles it)
 session_start();
 
 // Include database configuration
 require_once 'include/config.php';
+require_once 'issue_db.php';   // <-- Now provides generateIssueNumber() and is safe to include
 
 $conn = db_connect();
 
@@ -148,8 +149,6 @@ include 'include/header.php';
         display: block;
     }
 
-
-
     .container {
         max-width: 850px;
         width: 100%;
@@ -192,7 +191,6 @@ include 'include/header.php';
         font-size: 13px;
         margin-top: 6px;
     }
-
 
     .form-row {
         display: grid;
@@ -549,9 +547,6 @@ include 'include/header.php';
     }
 </style>
 
-<!-- REMOVED THE </head> and <body> tags here because header.php handles them -->
-<!-- This ensures our modal stays INSIDE the body tag correctly -->
-
 <?php include 'include/sidebar.php'; ?>
 
 <main class="main-content">
@@ -560,8 +555,6 @@ include 'include/header.php';
             <h1><i class="fas fa-ticket-alt"></i>समस्या नोंदणी प्रणाली</h1>
             <p>कृपया आपली समस्या खालील फॉर्म मध्ये नोंदवा</p>
         </div>
-
-        <!-- Alerts will be shown using SweetAlert2 -->
 
         <form id="issueForm" enctype="multipart/form-data">
             <div class="form-row">
@@ -917,7 +910,3 @@ include 'include/header.php';
 
     <?php include 'include/footer.php'; ?>
 </main>
-
-</body>
-
-</html>

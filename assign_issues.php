@@ -218,17 +218,22 @@ function formatDate($dateString)
                             <td><?= formatDate($complaint['issue_date']); ?></td>
                             <td><span class="badge-status <?= $badgeClass; ?>"><?= htmlspecialchars($status); ?></span></td>
                             <td class="action-cell">
-                                <?php if ($can_perform_actions): ?>
-                                    <?php if ($view === 'transfer'): ?>
-                                        <button class="btn-icon btn-transfer" title="हस्तांतरण"
-                                            onclick="openTransferModal('<?= htmlspecialchars($complaint['issue_number']); ?>')">हस्तांतरण</button>
-                                    <?php else: ?>
-                                        <button class="btn-icon btn-action" title="क्रिया"
-                                            onclick="actionComplaint('<?= htmlspecialchars($complaint['issue_number']); ?>')">निराकरण</button>
-                                    <?php endif; ?>
-                                <?php else: ?>
-                                    <span class="badge-status open">View Only</span>
-                                <?php endif; ?>
+                                <?php if (strtolower($status) === 'resolved'): ?>
+    <button class="btn-icon btn-action" disabled style="background:green;">
+        <i class="fa-solid fa-check"></i> Resolved
+    </button>
+<?php else: ?>
+    <button class="btn-icon btn-action"
+        onclick="handleResolveClick(this)"
+        data-status="<?= strtolower($status); ?>"
+        data-issue='<?= json_encode($complaint); ?>'>
+        <i class="fa-solid fa-check"></i> Resolve
+    </button>
+<?php endif; ?>
+                                <button class="btn-icon btn-transfer" title="हस्तांतरण"
+                                    onclick="openTransferModal('<?= htmlspecialchars($complaint['issue_number']); ?>')">
+                                    <i class="fa-solid fa-right-left"></i> Transfer
+                                </button>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -257,51 +262,109 @@ function formatDate($dateString)
         <div class="modal-overlay" onclick="closeTransferModal()"></div>
         <div class="modal-content">
             <div class="modal-header">
-                <h2>तक्रार हस्तांतरण</h2>
+                <h2>समस्या हस्तांतरित करा</h2>
                 <button class="modal-close" onclick="closeTransferModal()">×</button>
             </div>
             <div class="modal-body">
                 <form id="transferForm">
                     <input type="hidden" id="complaintIdTransfer" />
 
-                    <div class="form-group">
-                        <label>समस्या क्रमांक</label>
-                        <input type="text" id="transferIssueNumDisplay" class="form-control" readonly />
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="font-weight: 600; color: #1e293b; font-size: 1rem;">
+                            समस्या क्रमांक: <span id="transferIssueNumVal" style="font-weight: bold; color: #000; margin-left: 5px;"></span>
+                        </label>
                     </div>
 
                     <div class="form-group">
-                        <label for="transferDepartment">विभाग निवडा:</label>
-                        <select id="transferDepartment" class="form-control" required>
-                            <option value="">-- विभाग निवडा --</option>
-                            <?php foreach ($distinct_departments as $dept): ?>
-                                <option value="<?php echo htmlspecialchars($dept); ?>">
-                                    <?php echo htmlspecialchars($dept); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
+                        <label for="transferDepartment" style="font-weight: 600; margin-bottom: 6px; display: block; color: #1e293b;">लक्ष्य विभाग निवडा:</label>
+                        <select id="transferUser" class="form-control" required>
+    <option value="">-- अधिकारी निवडा --</option>
+    <?php
+    $conn = db_connect();
+    $res = $conn->query("
+        SELECT username, designation, taluka 
+        FROM users 
+        WHERE designation IS NOT NULL AND designation != ''
+        ORDER BY designation ASC
+    ");
+
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $label = $row['designation'] . ' - ' . $row['taluka'];
+            echo "<option value='" . htmlspecialchars($row['username']) . "'>" 
+                . htmlspecialchars($label) . "</option>";
+        }
+    }
+    $conn->close();
+    ?>
+</select>
                     </div>
 
                     <div class="form-group">
-                        <label for="transferDeptHead">संबंधित विभाग प्रमुख:</label>
-                        <select id="transferDeptHead" class="form-control" required>
-                            <option value="">-- निवडा विभाग प्रमुख --</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="transferDate">हस्तांतरण दिनांक:</label>
-                        <input type="text" id="transferDate" class="form-control" readonly />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="transferNotes">टिप्पणी:</label>
-                        <textarea id="transferNotes" class="form-control" rows="4"
+                        <label for="transferNotes" style="font-weight: 600; margin-bottom: 6px; display: block; color: #1e293b;">हस्तांतरण कारण:</label>
+                        <textarea id="transferNotes" class="form-control" rows="4" required style="border-radius: 8px; border: 1px solid #cbd5e1; padding: 10px 12px;"
                             placeholder="हस्तांतरणाचे कारण लिहा..."></textarea>
                     </div>
 
-                    <div class="modal-footer">
-                        <button type="button" class="btn-secondary" onclick="closeTransferModal()">रद्द करा</button>
-                        <button type="submit" class="btn-primary">हस्तांतरण करा</button>
+                    <div class="modal-footer" style="border-top: none; padding-top: 10px;">
+                        <button type="button" class="btn-secondary" onclick="closeTransferModal()" style="background-color: #64748b; color: white; border: none; border-radius: 6px; padding: 10px 20px;">रद्द करा</button>
+                        <button type="submit" class="btn-primary" style="background-color: #eab308; border-color: #ca8a04; color: white; border: none; border-radius: 6px; padding: 10px 20px;">हस्तांतरित करा</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resolve Modal -->
+    <div id="resolveModal" class="modal" style="display: none;">
+        <div class="modal-overlay" onclick="closeResolveModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>समस्या निवारण करा (Resolve Issue)</h2>
+                <button class="modal-close" onclick="closeResolveModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="resolveForm" enctype="multipart/form-data">
+                    <input type="hidden" name="issue_number" id="resolveIssueNumber" />
+                    
+                    <div class="form-group-row">
+                        <strong>समस्या क्रमांक:</strong>
+                        <span id="resolveIssueNumDisplay"></span>
+                    </div>
+                    <div class="form-group-row">
+                        <strong>समस्या विषय:</strong>
+                        <span id="resolveDescDisplay"></span>
+                    </div>
+                    <div class="form-group-row">
+                        <strong>विभाग:</strong>
+                        <span id="resolveDeptDisplay"></span>
+                    </div>
+                    <div class="form-group-row">
+                        <strong>गाव:</strong>
+                        <span id="resolveVillageDisplay"></span>
+                    </div>
+                    <div class="form-group-row">
+                        <strong>प्रकार:</strong>
+                        <span id="resolveTypeDisplay"></span>
+                    </div>
+                    <div class="form-group-row">
+                        <strong>स्थिती:</strong>
+                        <span class="badge-status resolved">Resolved</span>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 15px;">
+                        <label for="resolvePhoto" style="font-weight: 600; margin-bottom: 6px; display: block; color: #1e293b;">निवारण फोटो अपलोड करा (Upload Photo):</label>
+                        <input type="file" name="photo" id="resolvePhoto" class="form-control" accept="image/*" required style="border-radius: 8px; border: 1px solid #cbd5e1; padding: 10px 12px;" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="resolveRemark" style="font-weight: 600; margin-bottom: 6px; display: block; color: #1e293b;">निवारण टिप्पणी (Resolved Remark):</label>
+                        <textarea name="resolved_remark" id="resolveRemark" class="form-control" rows="4" required style="border-radius: 8px; border: 1px solid #cbd5e1; padding: 10px 12px;" placeholder="निवारणाचे कारण किंवा टिप्पणी लिहा..."></textarea>
+                    </div>
+
+                    <div class="modal-footer" style="border-top: none; padding-top: 10px;">
+                        <button type="button" class="btn-secondary" onclick="closeResolveModal()" style="background-color: #64748b; color: white; border: none; border-radius: 6px; padding: 10px 20px;">रद्द करा</button>
+                        <button type="submit" class="btn-primary" style="background-color: #22c55e; border: none; border-radius: 6px; padding: 10px 20px; color: white;">निवारण करा</button>
                     </div>
                 </form>
             </div>
@@ -579,14 +642,15 @@ function formatDate($dateString)
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 60px;
+            width: auto;
             height: 35px;
             cursor: pointer;
-            padding: 4px 8px;
+            padding: 6px 12px;
             border-radius: 6px;
             font-size: 0.85rem;
             font-weight: 600;
             transition: background 0.15s ease, transform 0.12s ease;
+            gap: 6px;
         }
 
         .btn-action {
@@ -862,6 +926,26 @@ function formatDate($dateString)
                 font-size: 0.75rem;
                 padding: 4px 8px;
             }
+
+            .form-group-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 10px 0;
+                border-bottom: 1px solid #f1f5f9;
+                font-size: 0.95rem;
+            }
+            .form-group-row strong {
+                color: #475569;
+                font-weight: 600;
+            }
+            .form-group-row span {
+                color: #0f172a;
+                font-weight: 500;
+                text-align: right;
+                max-width: 60%;
+                word-break: break-word;
+            }
         }
     </style>
 
@@ -1008,14 +1092,8 @@ function formatDate($dateString)
 
         function openTransferModal(complaintId) {
             document.getElementById('complaintIdTransfer').value = complaintId;
-            document.getElementById('transferIssueNumDisplay').value = complaintId;
-            setCurrentDateTime();
+            document.getElementById('transferIssueNumVal').textContent = complaintId;
             document.getElementById('transferModal').style.display = 'flex';
-            // Populate dept head if department was preset
-            const deptVal = document.getElementById('transferDepartment').value;
-            if (deptVal) {
-                populateDeptHeads(deptVal);
-            }
         }
 
         function closeTransferModal() {
@@ -1023,41 +1101,23 @@ function formatDate($dateString)
             document.getElementById('transferForm').reset();
         }
 
-        function setCurrentDateTime() {
-            const now = new Date();
-            const options = {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
-            };
-            const dateTimeString = now.toLocaleDateString('en-GB', options).replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$2-$1') + ' ' +
-                now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-            document.getElementById('transferDate').value = dateTimeString;
-        }
-
         // Handle transfer form submission via AJAX
         document.getElementById('transferForm').addEventListener('submit', function (e) {
             e.preventDefault();
             const complaintId = document.getElementById('complaintIdTransfer').value;
-            const department = document.getElementById('transferDepartment').value;
-            const deptHead = document.getElementById('transferDeptHead').value;
+            const transferTo = document.getElementById('transferUser').value;
             const notes = document.getElementById('transferNotes').value;
 
-            if (!department || !deptHead) {
-                alert('कृपया विभाग आणि संबंधित विभाग प्रमुख निवडा');
-                return;
-            }
+            if (!transferTo) {
+    alert('कृपया अधिकारी निवडा');
+    return;
+}
 
             fetch('transfer_complaint.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: 'issue_number=' + encodeURIComponent(complaintId) +
-                    '&department=' + encodeURIComponent(department) +
-                    '&department_head=' + encodeURIComponent(deptHead) +
+                    '&department=' + encodeURIComponent(transferTo) +
                     '&notes=' + encodeURIComponent(notes)
             })
                 .then(response => response.json())
@@ -1075,11 +1135,51 @@ function formatDate($dateString)
                 });
         });
 
+        // Resolve Modal JS Handlers
+        function openResolveModal(complaint) {
+            document.getElementById('resolveIssueNumber').value = complaint.issue_number;
+            document.getElementById('resolveIssueNumDisplay').textContent = complaint.issue_number;
+            document.getElementById('resolveDescDisplay').textContent = complaint.description;
+            document.getElementById('resolveDeptDisplay').textContent = complaint.department;
+            document.getElementById('resolveVillageDisplay').textContent = complaint.village;
+            document.getElementById('resolveTypeDisplay').textContent = complaint.registration_type;
+            document.getElementById('resolveModal').style.display = 'flex';
+        }
+
+        function closeResolveModal() {
+            document.getElementById('resolveModal').style.display = 'none';
+            document.getElementById('resolveForm').reset();
+        }
+
+        // Handle resolve form submission via AJAX
+        document.getElementById('resolveForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+
+            fetch('resolve_complaint.php', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('तक्रार यशस्वीरित्या निराकृत केली गेली!');
+                        location.reload();
+                    } else {
+                        alert('त्रुटी: ' + data.message);
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('निराकरण प्रक्रिया दरम्यान त्रुटी आली.');
+                });
+        });
+
         // Close modal when clicking overlay
         document.addEventListener('click', function (e) {
-            const modal = document.getElementById('transferModal');
-            if (e.target === document.querySelector('.modal-overlay')) {
+            if (e.target.classList.contains('modal-overlay')) {
                 closeTransferModal();
+                closeResolveModal();
             }
         });
 
@@ -1087,6 +1187,21 @@ function formatDate($dateString)
         window.addEventListener('load', function () {
             filterComplaints();
         });
+        function handleResolveClick(btn) {
+
+    let status = btn.getAttribute("data-status");
+
+    // ❌ STOP popup if resolved
+    if (status === "resolved") {
+        alert("Already resolved");
+        return;
+    }
+
+    let complaint = JSON.parse(btn.getAttribute("data-issue"));
+
+    // ✅ open modal
+    openResolveModal(complaint);
+}
     </script>
 
     <?php include('include/footer.php'); ?>

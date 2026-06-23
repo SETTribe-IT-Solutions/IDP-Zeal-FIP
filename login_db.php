@@ -17,7 +17,7 @@ if (empty($username) || empty($password)) {
 }
 
 // Prepared Statement
-$sql = "SELECT name, designation, department, mobile_no, username, password, role FROM users WHERE username = ?";
+$sql = "SELECT name, designation, department, mobile_no, username, password, role, system_role, taluka FROM users WHERE username = ?";
 $stmt = mysqli_prepare($conn, $sql);
 if (!$stmt) {
     header('Location: login.php?error=invalid');
@@ -87,6 +87,7 @@ if ($result && mysqli_num_rows($result) === 1) {
         $_SESSION['user_dept'] = $user['department'];
         $_SESSION['user_designation'] = $user['designation'];
         $_SESSION['user_mobile'] = $user['mobile_no'];
+        $_SESSION['user_taluka'] = $user['taluka'] ?? '';
 
         header('Location: ' . $redirect);
         exit;

@@ -64,7 +64,7 @@ $page_description = 'Official Zilla Parishad Hingoli portal for inter-department
         width: 100%;
         border-radius: 24px;
         background: radial-gradient(circle at top left, rgba(59, 130, 246, 0.48), rgba(14, 165, 233, 0.16) 36%),
-                    radial-gradient(circle at bottom right, rgba(236, 72, 153, 0.24), transparent 30%);
+            radial-gradient(circle at bottom right, rgba(236, 72, 153, 0.24), transparent 30%);
         box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
         position: relative;
         overflow: hidden;
@@ -95,7 +95,7 @@ $page_description = 'Official Zilla Parishad Hingoli portal for inter-department
         box-shadow: 0 22px 44px rgba(0, 0, 0, 0.16);
     }
 
-    .landing-hero .hero-visual .hero-card + .hero-card {
+    .landing-hero .hero-visual .hero-card+.hero-card {
         margin-top: 14px;
     }
 
@@ -148,7 +148,7 @@ $page_description = 'Official Zilla Parishad Hingoli portal for inter-department
         position: absolute;
         inset: 0;
         background: radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.18), transparent 22%),
-                    radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.08), transparent 26%);
+            radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.08), transparent 26%);
         pointer-events: none;
     }
 
@@ -806,8 +806,9 @@ $page_description = 'Official Zilla Parishad Hingoli portal for inter-department
         background: rgba(248, 250, 252, 0.95);
     }
 </style>
-
+<?php include('include/header.php'); ?>
 <main class="main-content">
+
     <section class="landing-hero">
         <div class="hero-panel">
             <span class="hero-badge"><i class="fa-solid fa-shield-halved"></i> जिल्हा परिषद हिंगोली पोर्टल | Zilha
@@ -828,7 +829,8 @@ $page_description = 'Official Zilla Parishad Hingoli portal for inter-department
             <div class="hero-illustration">
                 <img src="assets/zp-logo.png" alt="ZP Hingoli Logo" class="hero-logo">
                 <img src="assets/maharashtra-emblem.png" alt="Maharashtra Emblem" class="hero-emblem">
-                <span class="hero-illustration-text"><i class="fa-solid fa-city"></i> Official District Service Portal</span>
+                <span class="hero-illustration-text"><i class="fa-solid fa-city"></i> Official District Service
+                    Portal</span>
             </div>
         </div>
     </section>
@@ -954,4 +956,3 @@ $page_description = 'Official Zilla Parishad Hingoli portal for inter-department
         });
     });
 </script>
-

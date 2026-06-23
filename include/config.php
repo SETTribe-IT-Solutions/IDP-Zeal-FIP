@@ -37,3 +37,28 @@ function generateIssueNumber($conn) {
 
     return $issueNumber;
 }
+
+// Dynamically auto-populate session state with taluka and system_role if missing
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+if (isset($_SESSION['username']) && (!isset($_SESSION['user_taluka']) || !isset($_SESSION['user_system_role']))) {
+    $conn = db_connect();
+    $stmt = $conn->prepare("SELECT taluka, system_role FROM users WHERE username = ?");
+    if ($stmt) {
+        $stmt->bind_param("s", $_SESSION['username']);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        if ($row = $res->fetch_assoc()) {
+            if (!isset($_SESSION['user_taluka'])) {
+                $_SESSION['user_taluka'] = $row['taluka'] ?? '';
+            }
+            if (!isset($_SESSION['user_system_role'])) {
+                $_SESSION['user_system_role'] = $row['system_role'] ?? '';
+            }
+        }
+        $stmt->close();
+    }
+    $conn->close();
+}
+

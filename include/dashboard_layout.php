@@ -27,17 +27,17 @@ if (!isset($dashboard_icon)) {
 
         @media screen and (max-width: 768px) {
             .main-content {
-                margin-left: 220px;
+                margin-left: 0;
             }
 
             .main-content.collapsed {
-                margin-left: 72px;
+                margin-left: 0;
             }
         }
 
         @media (max-width: 480px) {
             .main-content {
-                margin-left: 220px;
+                margin-left: 0;
             }
         }
 
@@ -665,6 +665,7 @@ if (!isset($dashboard_icon)) {
                             <th>गाव / तालुका</th>
                             <th>तारीख</th>
                             <th>स्थिती</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -676,6 +677,21 @@ if (!isset($dashboard_icon)) {
                                 <td><?php echo htmlspecialchars($issue['village'] . ', ' . ($issue['taluka'] ?? 'Hingoli')); ?></td>
                                 <td><?php echo date('d M Y', strtotime($issue['issue_date'])); ?></td>
                                 <td><span class="status-badge <?php echo getStatusBadgeClass($issue['status'] ?? 'Open'); ?>"><?php echo translateStatus($issue['status'] ?? 'Open'); ?></span></td>
+                                <td>
+<td>
+<?php if (strtolower($issue['status']) === 'resolved'): ?>
+    <button disabled style="background:green;color:white;">
+        ✅ Resolved
+    </button>
+<?php else: ?>
+    <button class="resolve-btn"
+            data-id="<?php echo $issue['issue_number']; ?>"
+            data-status="<?php echo strtolower($issue['status']); ?>">
+        Resolve
+    </button>
+<?php endif; ?>
+</td>
+</td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -690,3 +706,24 @@ if (!isset($dashboard_icon)) {
         </div>
     </div>
 </main>
+<script>
+document.querySelectorAll(".resolve-btn").forEach(btn => {
+    btn.addEventListener("click", function () {
+
+        let status = this.getAttribute("data-status");
+
+        // ❌ STOP POPUP if already resolved
+        if (status === "resolved") {
+            alert("Already resolved");
+            return;
+        }
+
+        // ✅ OPEN YOUR EXISTING MODAL
+        let issueNumber = this.getAttribute("data-id");
+
+        // 👉 IMPORTANT: call your existing popup function here
+        // Example (change if different):
+        openResolveModal(issueNumber);
+    });
+});
+</script>

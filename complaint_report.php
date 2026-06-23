@@ -15,34 +15,89 @@ $conn = db_connect();
 $complaints = [];
 $dbError = '';
 
+$user_village = '';
+if (isset($_SESSION['username'])) {
+    $stmt = $conn->prepare("SELECT village FROM users WHERE username = ?");
+    if ($stmt) {
+        $stmt->bind_param("s", $_SESSION['username']);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        if ($res && $row = $res->fetch_assoc()) {
+            $user_village = trim($row['village'] ?? '');
+        }
+        $stmt->close();
+    }
+}
+
 $sql = "SELECT
             issue_number,
             photo,
             description,
             department,
+            department_head,
             village,
+            taluka,
             registration_type,
             issue_date,
             status
-        FROM tbl_raiseissue
-        ORDER BY issue_date DESC";
+        FROM tbl_raiseissue";
 
-$result = $conn->query($sql);
+if (!empty($user_village)) {
+    $sql .= " WHERE village = ?";
+}
+$sql .= " ORDER BY id DESC";
 
-if (!$result) {
-    die("SQL Error: " . $conn->error);
+$stmt = $conn->prepare($sql);
+if ($stmt) {
+    if (!empty($user_village)) {
+        $stmt->bind_param("s", $user_village);
+    }
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $complaints[] = $row;
+        }
+        $result->free();
+    } else {
+        $dbError = $conn->error;
+    }
+    $stmt->close();
+} else {
+    $dbError = $conn->error;
 }
 
-while ($row = $result->fetch_assoc()) {
-    $complaints[] = $row;
+// Fetch distinct departments from users table
+$distinct_departments = [];
+$dept_res = $conn->query("SELECT DISTINCT department AS dept FROM users WHERE department IS NOT NULL AND department != ''");
+if ($dept_res) {
+    while ($row = $dept_res->fetch_assoc()) {
+        $dept = trim($row['dept']);
+        if ($dept !== '' && !in_array($dept, $distinct_departments)) {
+            $distinct_departments[] = $dept;
+        }
+    }
 }
+sort($distinct_departments);
 
-// echo "Total Records Found : " . count($complaints);
+// Fetch department to designation mappings from users table
+$dept_designations = [];
+$map_res = $conn->query("SELECT DISTINCT department, designation FROM users WHERE department IS NOT NULL AND department != '' AND designation IS NOT NULL AND designation != '' ORDER BY designation ASC");
+if ($map_res) {
+    while ($row = $map_res->fetch_assoc()) {
+        $dept = trim($row['department']);
+        $desg = trim($row['designation']);
+        if (!isset($dept_designations[$dept])) {
+            $dept_designations[$dept] = [];
+        }
+        $dept_designations[$dept][] = $desg;
+    }
+}
 
 $conn->close();
 
 $can_perform_actions = false;
-if (in_array($role, ['CEO', 'BDO', 'THO', 'HoD'])) {
+if (in_array(strtolower($role), ['ceo', 'bdo', 'tho', 'hod'])) {
     $can_perform_actions = true;
 }
 
@@ -89,11 +144,11 @@ function formatDate($dateString)
             </div>
 
             <div class="filter-controls">
-               <select id="statusFilter" class="filter-select" onchange="filterByStatus()">
-    <option value="">🟢 एकूण</option>
-    <option value="Pending">🟡 प्रलंबित</option>
-    <option value="Resolved">🟣 निराकृत</option>
-</select>
+                <select id="statusFilter" class="filter-select">
+                    <option value="">🟢 एकूण</option>
+                    <option value="Pending">🟡 प्रलंबित</option>
+                    <option value="Resolved">🟣 निराकृत</option>
+                </select>
 
                 <select id="departmentFilter" class="filter-select">
                     <option value="">सर्व विभाग</option>
@@ -112,18 +167,19 @@ function formatDate($dateString)
 
     <!-- Complaints Table -->
     <div class="table-wrapper">
-        <table class="complaints-table">
+        <table id="complaintsTable" class="complaints-table">
             <thead>
                 <tr>
                     <th>समस्या क्रमांक</th>
                     <th>फोटो</th>
                     <th>समस्या विषय</th>
                     <th>विभाग</th>
+                    <th>नियुक्त अधिकारी</th>
                     <th>गाव</th>
+                    <th>तालुका</th>
                     <th>प्रकार</th>
                     <th>दिनांक</th>
                     <th>स्थिती</th>
-                    <th>कृती</th>
                 </tr>
             </thead>
             <tbody id="complaintTableBody">
@@ -132,63 +188,31 @@ function formatDate($dateString)
                         <?php
                         $status = $complaint['status'] ?? 'Open';
                         $badgeClass = badgeClass($status);
-                        $photoSrc = !empty($complaint['photo']) ? htmlspecialchars($complaint['photo']) : 'https://via.placeholder.com/50?text=Photo';
                         ?>
-                        <tr class="complaint-row"
-                            data-status="<?= strtolower(trim($status)); ?>"
+                        <tr class="complaint-row" data-status="<?= strtolower(trim($status)); ?>"
                             data-department="<?= htmlspecialchars($complaint['department']); ?>"
                             data-village="<?= htmlspecialchars($complaint['village']); ?>">
                             <td class="complaint-id"><?= htmlspecialchars($complaint['issue_number']); ?></td>
                             <td class="photo-cell">
-                                <img src="<?= $photoSrc; ?>" alt="तक्रार फोटो" class="complaint-photo">
+                                <?php if (!empty($complaint['photo'])): ?>
+                                    <img src="<?= htmlspecialchars($complaint['photo']); ?>" alt="तक्रार फोटो"
+                                        class="complaint-photo">
+                                <?php else: ?>
+                                    <span class="no-file-text" style="color: #64748b; font-size: 0.85rem; font-style: italic;">No
+                                        File</span>
+                                <?php endif; ?>
                             </td>
                             <td class="complaint-subject">
                                 <strong><?= htmlspecialchars($complaint['description']); ?></strong>
                                 <p class="complaint-desc"><?= htmlspecialchars($complaint['description']); ?></p>
                             </td>
                             <td><?= htmlspecialchars($complaint['department']); ?></td>
+                            <td><?= htmlspecialchars($complaint['department_head'] ?? 'विभाग प्रमुख'); ?></td>
                             <td><?= htmlspecialchars($complaint['village']); ?></td>
+                            <td><?= htmlspecialchars($complaint['taluka'] ?? 'Hingoli'); ?></td>
                             <td><span class="badge-type"><?= htmlspecialchars($complaint['registration_type']); ?></span></td>
                             <td><?= formatDate($complaint['issue_date']); ?></td>
                             <td><span class="badge-status <?= $badgeClass; ?>"><?= htmlspecialchars($status); ?></span></td>
-                            <td class="action-cell">
-                                <?php if ($can_perform_actions): ?>
-                                    <button class="btn-icon btn-edit" title="संपादित करा" aria-label="Edit complaint"
-                                        onclick="editComplaint('<?= htmlspecialchars($complaint['issue_number']); ?>')">
-                                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"
-                                            focusable="false">
-                                            <path
-                                                d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z" />
-                                        </svg>
-                                    </button>
-                                <?php endif; ?>
-                                <button class="btn-icon btn-view" title="तपशील पहा" aria-label="View complaint"
-                                    onclick="viewComplaint('<?= htmlspecialchars($complaint['issue_number']); ?>')">
-                                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"
-                                        focusable="false">
-                                        <path
-                                            d="M12 6a9.77 9.77 0 0 0-9.46 7 9.77 9.77 0 0 0 18.92 0A9.77 9.77 0 0 0 12 6zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" />
-                                    </svg>
-                                </button>
-                                <?php if ($can_perform_actions): ?>
-                                    <button class="btn-icon btn-delete" title="हटवा" aria-label="Delete complaint"
-                                        onclick="deleteComplaint('<?= htmlspecialchars($complaint['issue_number']); ?>')">
-                                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"
-                                            focusable="false">
-                                            <path
-                                                d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
-                                        </svg>
-                                    </button>
-                                    <button class="btn-icon btn-transfer" title="Transfer" aria-label="Transfer complaint"
-                                        onclick="openTransferModal('<?= htmlspecialchars($complaint['issue_number']); ?>')">
-                                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"
-                                            focusable="false">
-                                            <path
-                                                d="M16 8l-4-4-4 4h3v5h2v-5h3zm4 2v10H4V10h3V8H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-10h-3z" />
-                                        </svg>
-                                    </button>
-                                <?php endif; ?>
-                            </td>
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
@@ -204,12 +228,7 @@ function formatDate($dateString)
         <button class="btn-primary" onclick="openNewComplaintForm()">नवीन तक्रार दाखल करा</button>
     </div>
 
-    <!-- Pagination -->
-    <div class="pagination">
-        <button class="page-btn" onclick="previousPage()">← मागे</button>
-        <span class="page-info">पृष्ठ <span id="currentPage">1</span> / <span id="totalPages">1</span></span>
-        <button class="page-btn" onclick="nextPage()">पुढे →</button>
-    </div>
+
 
     <!-- Transfer Modal -->
     <div id="transferModal" class="modal" style="display: none;">
@@ -394,7 +413,7 @@ function formatDate($dateString)
         .table-wrapper {
             background: white;
             border-radius: 10px;
-            overflow: hidden;
+            overflow-x: auto;
             box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
             margin-bottom: 24px;
         }
@@ -731,34 +750,82 @@ function formatDate($dateString)
             margin-bottom: 24px;
         }
 
-        /* Pagination */
-        .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 12px;
-            margin-top: 24px;
-        }
-
-        .page-btn {
+        /* --- DataTables Custom Styling --- */
+        .dataTables_wrapper {
+            padding: 20px;
             background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 24px;
+        }
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter {
+            margin-bottom: 20px;
+            color: #475569;
+            font-weight: 500;
+        }
+        .dataTables_wrapper .dataTables_filter input {
+            padding: 8px 12px;
             border: 1px solid #cbd5e1;
-            padding: 8px 16px;
             border-radius: 6px;
-            cursor: pointer;
-            font-weight: 500;
+            background-color: white;
+            color: #1e293b;
+            outline: none;
             transition: all 0.3s ease;
+            margin-left: 8px;
         }
-
-        .page-btn:hover {
-            background: #3b82f6;
-            color: white;
+        .dataTables_wrapper .dataTables_filter input:focus {
             border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
-
-        .page-info {
+        .dataTables_wrapper .dataTables_length select {
+            padding: 6px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            background-color: white;
+            color: #1e293b;
+            outline: none;
+            margin: 0 4px;
+        }
+        .dataTables_wrapper .dataTables_info {
+            padding-top: 20px;
             color: #64748b;
+            font-size: 13px;
+        }
+        .dataTables_wrapper .dataTables_paginate {
+            padding-top: 16px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 6px;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            padding: 6px 12px !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 6px !important;
+            background: white !important;
+            color: #475569 !important;
+            cursor: pointer;
+            transition: all 0.2s ease !important;
             font-weight: 500;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            background: #3b82f6 !important;
+            color: white !important;
+            border-color: #3b82f6 !important;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+            background: #2563eb !important;
+            color: white !important;
+            border-color: #2563eb !important;
+            font-weight: 700;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button.disabled,
+        .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
+            background: #f1f5f9 !important;
+            color: #94a3b8 !important;
+            border-color: #cbd5e1 !important;
+            cursor: not-allowed;
         }
 
         /* Responsive Design */
@@ -845,31 +912,6 @@ function formatDate($dateString)
     <script>
         const deptDesignations = <?php echo json_encode($dept_designations); ?>;
 
-    ...
-    
-    function filterByStatus() {
-
-    let status = document.getElementById('statusFilter').value;
-
-    fetch('fetch_complaints.php?status=' + encodeURIComponent(status))
-    .then(response => response.text())
-    .then(data => {
-
-        document.getElementById('complaintTableBody').innerHTML = data;
-
-    })
-    .catch(error => {
-
-        console.error(error);
-
-    });
-}
-    
-
-    function editComplaint(id) {
-        ...
-    }
-
         const departmentSelect = document.getElementById('transferDepartment');
         const deptHeadSelect = document.getElementById('transferDeptHead');
 
@@ -895,62 +937,46 @@ function formatDate($dateString)
             }
         }
 
-        // Search Functionality
-        document.getElementById('searchInput').addEventListener('keyup', function () {
-            filterComplaints();
-        });
-
-        // Filter Functionality
-        document.getElementById('statusFilter').addEventListener('change', filterComplaints);
-        document.getElementById('departmentFilter').addEventListener('change', filterComplaints);
-
-        function filterComplaints() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const statusFilter = document.getElementById('statusFilter').value;
-            const departmentFilter = document.getElementById('departmentFilter').value;
-            const rows = document.querySelectorAll('.complaint-row');
-            let visibleCount = 0;
-
-            rows.forEach(row => {
-                const complaintId = row.querySelector('.complaint-id').textContent.toLowerCase();
-                const subject = row.querySelector('.complaint-subject').textContent.toLowerCase();
-                const status = row.getAttribute('data-status');
-                const department = row.getAttribute('data-department');
-
-               const matchesSearch =
-        complaintId.includes(searchTerm) ||
-        subject.includes(searchTerm);
-
-    const matchesStatus =
-        statusFilter === '' ||
-        status.toLowerCase().trim() === statusFilter.toLowerCase().trim();
-                
-                const matchesDepartment = !departmentFilter || department === departmentFilter;
-
-                if (matchesSearch && matchesStatus && matchesDepartment) {
-                    row.style.display = '';
-                    visibleCount++;
-                } else {
-                    row.style.display = 'none';
+        $(document).ready(function() {
+            const table = $('#complaintsTable').DataTable({
+                "dom": 'lrtip',
+                "pageLength": 10,
+                "lengthMenu": [10, 25, 50, 100],
+                "ordering": true,
+                "order": [],
+                "language": {
+                    "lengthMenu": "दाखवा _MENU_ नोंदी",
+                    "paginate": {
+                        "previous": "← मागे",
+                        "next": "पुढे →"
+                    },
+                    "info": "एकूण _TOTAL_ पैकी _START_ ते _END_ दाखवत आहे",
+                    "infoEmpty": "माहिती उपलब्ध नाही",
+                    "zeroRecords": "कोणतेही रेकॉर्ड सापडले नाहीत"
                 }
             });
 
-            // Show empty state if no results
-            const emptyState = document.getElementById('emptyState');
-            if (visibleCount === 0) {
-                emptyState.style.display = 'block';
-                document.querySelector('.table-wrapper').style.display = 'none';
-            } else {
-                emptyState.style.display = 'none';
-                document.querySelector('.table-wrapper').style.display = 'block';
-            }
-        }
+            $('#searchInput').on('keyup', function() {
+                table.search(this.value).draw();
+            });
+
+            $('#statusFilter').on('change', function() {
+                // Column index 9 is the status column (0-indexed) after adding Assigned Officer column
+                table.column(9).search(this.value).draw();
+            });
+
+            $('#departmentFilter').on('change', function() {
+                // Column index 3 is the department column
+                table.column(3).search(this.value).draw();
+            });
+        });
 
         function resetFilters() {
             document.getElementById('searchInput').value = '';
             document.getElementById('statusFilter').value = '';
             document.getElementById('departmentFilter').value = '';
-            filterComplaints();
+            const table = $('#complaintsTable').DataTable();
+            table.search('').columns().search('').draw();
         }
 
         function editComplaint(id) {
@@ -972,22 +998,23 @@ function formatDate($dateString)
         }
 
         function exportComplaints() {
-            let csv = 'समस्या क्रमांक,विषय,विभाग,गाव,प्रकार,दिनांक,स्थिती\n';
-            const rows = document.querySelectorAll('.complaint-row');
+            let csv = 'समस्या क्रमांक,विषय,विभाग,नियुक्त अधिकारी,गाव,तालुका,प्रकार,दिनांक,स्थिती\n';
+            const table = $('#complaintsTable').DataTable();
+            const filteredRows = table.rows({ search: 'applied' }).nodes();
 
-            rows.forEach(row => {
-                if (row.style.display !== 'none') {
-                    const id = row.querySelector('.complaint-id').textContent;
-                    const subject = row.querySelector('.complaint-subject strong').textContent;
-                    const cells = row.querySelectorAll('td');
-                    const department = cells[3].textContent.trim();
-                    const village = cells[4].textContent.trim();
-                    const type = cells[5].textContent.trim();
-                    const date = cells[6].textContent.trim();
-                    const status = cells[7].textContent.trim();
+            filteredRows.each(function(row) {
+                const id = row.querySelector('.complaint-id').textContent.trim();
+                const subject = row.querySelector('.complaint-subject strong').textContent.trim();
+                const cells = row.querySelectorAll('td');
+                const department = cells[3].textContent.trim();
+                const deptHead = cells[4].textContent.trim();
+                const village = cells[5].textContent.trim();
+                const taluka = cells[6].textContent.trim();
+                const type = cells[7].textContent.trim();
+                const date = cells[8].textContent.trim();
+                const status = cells[9].textContent.trim();
 
-                    csv += '"' + id + '","' + subject + '","' + department + '","' + village + '","' + type + '","' + date + '","' + status + '"\n';
-                }
+                csv += '"' + id + '","' + subject + '","' + department + '","' + deptHead + '","' + village + '","' + taluka + '","' + type + '","' + date + '","' + status + '"\n';
             });
 
             const link = document.createElement('a');
@@ -996,20 +1023,11 @@ function formatDate($dateString)
             link.click();
         }
 
-        function previousPage() {
-            alert('मागील पृष्ठकडे जाणे...');
-        }
-
-        function nextPage() {
-            alert('पुढील पृष्ठकडे जाणे...');
-        }
-
         function openTransferModal(complaintId) {
             document.getElementById('complaintIdTransfer').value = complaintId;
             document.getElementById('transferIssueNumDisplay').value = complaintId;
             setCurrentDateTime();
             document.getElementById('transferModal').style.display = 'flex';
-            // Populate dept head if department was preset
             const deptVal = document.getElementById('transferDepartment').value;
             if (deptVal) {
                 populateDeptHeads(deptVal);
@@ -1083,7 +1101,7 @@ function formatDate($dateString)
 
         // Initialize on page load
         window.addEventListener('load', function () {
-            filterComplaints();
+            // Already initialized via jQuery document ready
         });
     </script>
 

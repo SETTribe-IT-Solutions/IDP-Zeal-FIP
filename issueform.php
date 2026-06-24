@@ -7,6 +7,23 @@ require_once 'include/config.php';
 require_once 'issue_db.php';   // <-- Now provides generateIssueNumber() and is safe to include
 
 $conn = db_connect();
+$is_edit_mode = false;
+$edit_issue = [];
+$edit_issue_number = trim($_GET['edit'] ?? '');
+
+if ($edit_issue_number !== '') {
+    $stmt = $conn->prepare("SELECT * FROM tbl_raiseissue WHERE issue_number = ? LIMIT 1");
+    if ($stmt) {
+        $stmt->bind_param("s", $edit_issue_number);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        if ($res && $row = $res->fetch_assoc()) {
+            $edit_issue = $row;
+            $is_edit_mode = true;
+        }
+        $stmt->close();
+    }
+}
 
 // Fetch logged-in user details if session is active
 $user_id = '';
@@ -557,30 +574,32 @@ include 'include/header.php';
         </div>
 
         <form id="issueForm" enctype="multipart/form-data">
+            <input type="hidden" id="editMode" name="edit_mode" value="<?php echo $is_edit_mode ? '1' : '0'; ?>">
+            <input type="hidden" id="existingPhoto" name="existing_photo" value="<?php echo htmlspecialchars($is_edit_mode ? ($edit_issue['photo'] ?? '') : ''); ?>">
             <div class="form-row">
                 <div class="form-group">
                     <label><i class="fas fa-hashtag"></i>समस्या क्रमांक</label>
-                    <input type="text" id="issueNumber" value="<?php echo htmlspecialchars($nextIssueNumber); ?>"
+                    <input type="text" id="issueNumber" name="issue_number" value="<?php echo htmlspecialchars($is_edit_mode ? ($edit_issue_number ?: $nextIssueNumber) : $nextIssueNumber); ?>"
                         readonly>
                 </div>
 
                 <div class="form-group">
                     <label><i class="fas fa-calendar-alt"></i>तारीख <span class="required">*</span></label>
-                    <input type="date" id="issueDate" name="issue_date" required>
+                    <input type="date" id="issueDate" name="issue_date" value="<?php echo htmlspecialchars($is_edit_mode ? ($edit_issue['issue_date'] ?? '') : ''); ?>" required>
                 </div>
 
                 <div class="form-group">
                     <label><i class="fas fa-map-marker-alt"></i>तालुका <span class="required">*</span></label>
                     <input type="text" id="taluka" name="taluka" placeholder="तालुका नाव"
                         pattern="[A-Za-z\u0900-\u097F ]+" title="कृपया फक्त अक्षरे आणि स्पेस वापरा"
-                        value="<?php echo htmlspecialchars($user_taluka); ?>" readonly required>
+                        value="<?php echo htmlspecialchars($is_edit_mode ? ($edit_issue['taluka'] ?? $user_taluka) : $user_taluka); ?>" readonly required>
                 </div>
 
                 <div class="form-group">
                     <label><i class="fas fa-city"></i>गाव <span class="required">*</span></label>
                     <input type="text" id="village" name="village" placeholder="गावाचे नाव"
                         pattern="[A-Za-z\u0900-\u097F ]+" title="कृपया फक्त अक्षरे आणि स्पेस वापरा"
-                        value="<?php echo htmlspecialchars($user_village); ?>" readonly required>
+                        value="<?php echo htmlspecialchars($is_edit_mode ? ($edit_issue['village'] ?? $user_village) : $user_village); ?>" readonly required>
                 </div>
 
                 <div class="form-group">
@@ -588,7 +607,7 @@ include 'include/header.php';
                     <select id="department" name="department" required>
                         <option value="">-- निवडा विभाग --</option>
                         <?php foreach ($distinct_departments as $dept): ?>
-                            <option value="<?php echo htmlspecialchars($dept); ?>" <?php echo ($user_department === $dept) ? 'selected' : ''; ?>>
+                            <option value="<?php echo htmlspecialchars($dept); ?>" <?php echo (($is_edit_mode ? ($edit_issue['department'] ?? '') : $user_department) === $dept) ? 'selected' : ''; ?>>
                                 <?php echo htmlspecialchars($dept); ?>
                             </option>
                         <?php endforeach; ?>
@@ -615,27 +634,27 @@ include 'include/header.php';
                 <div class="form-group">
                     <label><i class="fas fa-briefcase"></i>पद <span class="required">*</span></label>
                     <input type="text" id="position" name="position" placeholder="पद"
-                        value="<?php echo htmlspecialchars($user_role_display); ?>" readonly required>
+                        value="<?php echo htmlspecialchars($is_edit_mode ? ($edit_issue['position'] ?? $user_role_display) : $user_role_display); ?>" readonly required>
                 </div>
 
                 <div class="form-group full-width">
                     <label><i class="fas fa-phone"></i>तक्रारकर्त्याचे मोबाईल क्र <span
                             class="required">*</span></label>
                     <input type="tel" id="mobile" name="mobile" placeholder="10 अंकी मोबाईल क्रमांक" pattern="[0-9]{10}"
-                        maxlength="10" value="<?php echo htmlspecialchars($user_mobile); ?>" required>
+                        maxlength="10" value="<?php echo htmlspecialchars($is_edit_mode ? ($edit_issue['mobile'] ?? $user_mobile) : $user_mobile); ?>" required>
                 </div>
 
                 <div class="form-group full-width">
                     <label><i class="fas fa-pen"></i>सविस्तर समस्या <span class="required">*</span></label>
                     <textarea id="description" name="description" placeholder="समस्येचे सविस्तर वर्णन करा..."
-                        required></textarea>
+                        required><?php echo htmlspecialchars($is_edit_mode ? ($edit_issue['description'] ?? '') : ''); ?></textarea>
                 </div>
 
                 <div class="form-group full-width">
                     <label><i class="fas fa-image"></i>समस्या ठिकाण फोटो अपलोड करा</label>
                     <div class="file-upload-wrapper">
                         <i class="fas fa-cloud-upload-alt"></i>
-                        <p>फोटो क्लिक करा किंवा ड्रॅग करा</p>
+                        <p><?php echo $is_edit_mode ? 'नवीन फोटो निवडा, किंवा जुना फोटो ठेवण्यासाठी रिकामा सोडा' : 'फोटो क्लिक करा किंवा ड्रॅग करा'; ?></p>
                         <p style="font-size: 12px; color: #a0aec0;">JPG, PNG, GIF (Max 5MB)</p>
                         <input type="file" id="photo" name="photo" accept="image/*">
                     </div>
@@ -644,7 +663,7 @@ include 'include/header.php';
 
             <div class="btn-group">
                 <button type="submit" class="btn btn-submit" id="submitBtn">
-                    <span class="btn-text"><i class="fas fa-paper-plane"></i> समस्या नोंदवा</span>
+                    <span class="btn-text"><i class="fas fa-paper-plane"></i> <?php echo $is_edit_mode ? 'समस्या अद्यतन करा' : 'समस्या नोंदवा'; ?></span>
                     <span class="spinner"></span>
                 </button>
                 <button type="reset" class="btn btn-reset">
@@ -667,6 +686,9 @@ include 'include/header.php';
             position: <?php echo json_encode($user_role_display); ?>,
             mobile: <?php echo json_encode($user_mobile); ?>
         };
+
+        const isEditMode = <?php echo json_encode($is_edit_mode); ?>;
+        const editIssue = <?php echo json_encode($edit_issue, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 
         const deptDesignations = <?php echo json_encode($dept_designations); ?>;
 
@@ -696,32 +718,44 @@ include 'include/header.php';
         }
 
         function restorePrefilledValues() {
-            if (loggedInUser.taluka) {
-                document.getElementById('taluka').value = loggedInUser.taluka;
+            const source = isEditMode ? editIssue : loggedInUser;
+
+            if (source.taluka) {
+                document.getElementById('taluka').value = source.taluka;
             }
-            if (loggedInUser.village) {
-                document.getElementById('village').value = loggedInUser.village;
+            if (source.village) {
+                document.getElementById('village').value = source.village;
             }
-            if (loggedInUser.department) {
-                document.getElementById('department').value = loggedInUser.department;
+            if (source.department) {
+                document.getElementById('department').value = source.department;
             }
 
-            // Set readonly position value and populate department heads
-            if (loggedInUser.position) {
-                document.getElementById('position').value = loggedInUser.position;
+            if (source.position) {
+                document.getElementById('position').value = source.position;
             }
-            populateDeptHeads(loggedInUser.department);
+            populateDeptHeads(source.department || '', source.department_head || '');
 
-            if (loggedInUser.mobile) {
-                document.getElementById('mobile').value = loggedInUser.mobile;
+            if (source.mobile) {
+                document.getElementById('mobile').value = source.mobile;
+            }
+
+            if (isEditMode && source.description) {
+                document.getElementById('description').value = source.description;
+            }
+            if (isEditMode && source.registration_type) {
+                document.getElementById('regType').value = source.registration_type;
+            }
+            if (isEditMode && source.issue_date) {
+                document.getElementById('issueDate').value = source.issue_date;
             }
         }
 
         // Prefill values on initial load
         restorePrefilledValues();
 
-        // Set today's date
-        document.getElementById('issueDate').value = new Date().toISOString().split('T')[0];
+        if (!isEditMode) {
+            document.getElementById('issueDate').value = new Date().toISOString().split('T')[0];
+        }
 
         // File upload and drag/drop handlers
         const photoInput = document.getElementById('photo');
@@ -829,20 +863,31 @@ include 'include/header.php';
                 const result = await response.json();
 
                 if (result.success) {
-                    Swal.fire({
-                        title: 'यशस्वी!',
-                        html: result.message + '<br><strong>समस्या क्रमांक:</strong> ' + result.issue_number,
-                        icon: 'success',
-                        confirmButtonColor: '#0284c7',
-                        confirmButtonText: 'बंद करा'
-                    });
+                    if (isEditMode) {
+                        Swal.fire({
+                            title: 'यशस्वी!',
+                            text: result.message,
+                            icon: 'success',
+                            confirmButtonColor: '#0284c7',
+                            confirmButtonText: 'ठीक आहे'
+                        }).then(() => {
+                            window.location.href = 'complaint_report.php';
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'यशस्वी!',
+                            icon: 'success',
+                            confirmButtonColor: '#0284c7',
+                            confirmButtonText: 'बंद करा'
+                        });
 
-                    document.getElementById('issueNumber').value = result.issue_number;
-                    const currentIssueNumber = result.issue_number;
-                    document.getElementById('issueForm').reset();
-                    restorePrefilledValues();
-                    document.getElementById('issueNumber').value = currentIssueNumber;
-                    document.getElementById('issueDate').value = new Date().toISOString().split('T')[0];
+                        document.getElementById('issueNumber').value = result.issue_number;
+                        const currentIssueNumber = result.issue_number;
+                        document.getElementById('issueForm').reset();
+                        restorePrefilledValues();
+                        document.getElementById('issueNumber').value = currentIssueNumber;
+                        document.getElementById('issueDate').value = new Date().toISOString().split('T')[0];
+                    }
                 } else {
                     Swal.fire({
                         title: 'त्रुटी',
@@ -902,7 +947,7 @@ include 'include/header.php';
             e.preventDefault();
             document.getElementById('issueForm').reset();
             restorePrefilledValues();
-            document.getElementById('issueDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('issueDate').value = isEditMode ? (editIssue.issue_date || '') : new Date().toISOString().split('T')[0];
             photoInput.value = '';
             updateFileUploadUI(null);
         });

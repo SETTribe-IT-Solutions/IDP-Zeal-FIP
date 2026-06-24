@@ -226,16 +226,16 @@ $dashboard_url = getDashboardUrl($role);
                     <a href="<?php echo $dashboard_url; ?>"><i class="fa-solid fa-chart-line"></i> डॅशबोर्ड (Dashboard)</a>
                 </li>
                 <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'issueform.php') ? 'active' : ''; ?>">
-                    <a href="issueform.php"><i class="fa-solid fa-plus-circle"></i> समस्या नोंदवा (Raise Issue)</a>
+                    <a href="issueform.php"><i class="fa-solid fa-plus-circle"></i>समस्या नोंदवा(Raise Issue)</a>
                 </li>
                 <li
                     class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'complaint_report.php') ? 'active' : ''; ?>">
-                    <a href="complaint_report.php"><i class="fa-solid fa-file-invoice"></i> माझ्या तक्रारी (My Issues)</a>
+                    <a href="complaint_report.php"><i class="fa-solid fa-file-invoice"></i>माझ्या तक्रारी(My Issues)</a>
                 </li>
             <?php elseif (in_array($normalizedRole, ['bdo', 'tho', 'hod'])): ?>
                 <li
                     class="sidebar-item <?php echo in_array(basename($_SERVER['PHP_SELF']), ['user_dashboard.php', 'BDO.php', 'THO.php', 'Hod.php']) ? 'active' : ''; ?>">
-                    <a href="<?php echo $dashboard_url; ?>"><i class="fa-solid fa-chart-line"></i> डॅशबोर्ड (Dashboard)</a>
+                    <a href="<?php echo $dashboard_url; ?>"><i class="fa-solid fa-chart-line"></i>डॅशबोर्ड(Dashboard)</a>
                 </li>
                 <li
                     class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'assign_issues.php' && ($_GET['view'] ?? '') !== 'transfer') ? 'active' : ''; ?>">

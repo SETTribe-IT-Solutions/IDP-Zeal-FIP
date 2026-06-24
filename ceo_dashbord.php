@@ -3,7 +3,7 @@
 
 session_start();
 
-include("include/config.php");
+include("/include/config.php");
 
 $conn = getDBConnection();
 

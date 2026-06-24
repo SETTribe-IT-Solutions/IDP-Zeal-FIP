@@ -1,6 +1,6 @@
 <?php
 // Include configuration
-require_once 'include/config.php';
+require_once __DIR__ . '/include/config.php';
 
 function generateIssueNumber($conn) {
     $prefix = 'ISSUE-';

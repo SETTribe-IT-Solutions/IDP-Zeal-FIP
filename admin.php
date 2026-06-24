@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/include/config.php';
 
 if (empty($_SESSION['username']) || ($_SESSION['user_role'] ?? '') !== 'admin') {
     header('Location: login.php');

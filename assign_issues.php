@@ -13,7 +13,9 @@ $conn = db_connect();
 $complaints = [];
 $dbError = '';
 
-// Determine query filter based on user role
+$view = $_GET['view'] ?? 'assigned';
+
+// Determine query filter based on user role and view tab
 $role = !empty($_SESSION['user_system_role']) ? $_SESSION['user_system_role'] : ($_SESSION['user_role'] ?? '');
 $where = "1=1";
 $params = [];
@@ -21,25 +23,32 @@ $types = "";
 
 $normalizedRole = strtolower(trim($role));
 
-if ($normalizedRole === 'ceo') {
-    $where = "1=1";
-} elseif ($role === 'ग्रामपंचायत अधिकारी' || $role === 'अंगणवाडी सेविका' || $role === 'शिक्षक' || $normalizedRole === 'teacher') {
-    $where = "mobile = ?";
-    $params[] = $_SESSION['user_mobile'] ?? '';
+if ($view === 'transfer') {
+    $where = "transfer_to = ?";
+    $params[] = $_SESSION['username'] ?? '';
     $types .= "s";
 } else {
-    // BDO, THO, HoD
-    $user_dept = $_SESSION['user_dept'] ?? '';
-    $user_taluka = $_SESSION['user_taluka'] ?? '';
-    if (!empty($user_taluka)) {
-        $where = "department = ? AND taluka = ?";
-        $params[] = $user_dept;
-        $params[] = $user_taluka;
-        $types .= "ss";
-    } else {
-        $where = "department = ?";
-        $params[] = $user_dept;
+    // view === 'assigned'
+    if ($normalizedRole === 'ceo') {
+        $where = "(transfer_to IS NULL OR transfer_to = '')";
+    } elseif ($role === 'ग्रामपंचायत अधिकारी' || $role === 'अंगणवाडी सेविका' || $role === 'शिक्षक' || $normalizedRole === 'teacher') {
+        $where = "mobile = ? AND (transfer_to IS NULL OR transfer_to = '')";
+        $params[] = $_SESSION['user_mobile'] ?? '';
         $types .= "s";
+    } else {
+        // BDO, THO, HoD
+        $user_desg = $_SESSION['user_designation'] ?? '';
+        $user_taluka = $_SESSION['user_taluka'] ?? '';
+        if (!empty($user_taluka)) {
+            $where = "department_head = ? AND taluka = ? AND (transfer_to IS NULL OR transfer_to = '')";
+            $params[] = $user_desg;
+            $params[] = $user_taluka;
+            $types .= "ss";
+        } else {
+            $where = "department_head = ? AND (transfer_to IS NULL OR transfer_to = '')";
+            $params[] = $user_desg;
+            $types .= "s";
+        }
     }
 }
 
@@ -63,7 +72,7 @@ if ($stmt) {
     $dbError = $conn->error;
 }
 
-// Fetch distinct departments from database
+// Fetch distinct departments from users table
 $distinct_departments = [];
 $dept_res = $conn->query("SELECT DISTINCT department AS dept FROM users WHERE department IS NOT NULL AND department != ''");
 if ($dept_res) {
@@ -76,29 +85,44 @@ if ($dept_res) {
 }
 sort($distinct_departments);
 
-// Fetch department to designation mappings from users table
-$dept_designations = [];
-$map_res = $conn->query("SELECT DISTINCT department, designation FROM users WHERE department IS NOT NULL AND department != '' AND designation IS NOT NULL AND designation != '' ORDER BY designation ASC");
-if ($map_res) {
-    while ($row = $map_res->fetch_assoc()) {
+// Fetch all users with department and designation for transfer mapping
+$dept_users_list = [];
+$username_to_dept = [];
+$username_to_name = [];
+$users_res = $conn->query("SELECT username, name, designation, department, taluka FROM users WHERE department IS NOT NULL AND department != '' AND designation IS NOT NULL AND designation != '' ORDER BY name ASC");
+if ($users_res) {
+    while ($row = $users_res->fetch_assoc()) {
+        $username = trim($row['username']);
         $dept = trim($row['department']);
-        $desg = trim($row['designation']);
-        if (!isset($dept_designations[$dept])) {
-            $dept_designations[$dept] = [];
+        $name = trim($row['name']);
+
+        $username_to_dept[$username] = $dept;
+        $username_to_name[$username] = $name;
+
+        if (!isset($dept_users_list[$dept])) {
+            $dept_users_list[$dept] = [];
         }
-        $dept_designations[$dept][] = $desg;
+        $dept_users_list[$dept][] = [
+            'username' => $username,
+            'name' => $name,
+            'designation' => $row['designation'],
+            'taluka' => $row['taluka']
+        ];
     }
 }
 
 $conn->close();
 
 $can_perform_actions = false;
-if (in_array($role, ['CEO', 'BDO', 'THO', 'HoD'])) {
+if (in_array(strtolower($role), ['bdo', 'tho', 'hod'])) {
     $can_perform_actions = true;
 }
 
-function badgeClass($status)
+function badgeClass($status, $transfer_to = '')
 {
+    if (!empty($transfer_to) && strtolower(trim($status)) === 'pending') {
+        return 'transfer';
+    }
     switch (strtolower(trim($status))) {
         case 'pending':
             return 'pending';
@@ -121,6 +145,9 @@ function formatDate($dateString)
 ?>
 
 <?php include('include/header.php'); ?>
+<!-- DataTables Responsive CSS & JS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
 <?php include('include/sidebar.php'); ?>
 
 <main class="main-content">
@@ -140,9 +167,7 @@ function formatDate($dateString)
             <h1><?php echo htmlspecialchars($page_header_title); ?></h1>
             <p><?php echo htmlspecialchars($page_header_desc); ?></p>
         </div>
-        <button class="btn-primary" onclick="openNewComplaintForm()">
-            ➕ नवीन तक्रार दाखल करा
-        </button>
+
     </div>
 
     <!-- Filters & Search Section -->
@@ -156,10 +181,9 @@ function formatDate($dateString)
             <div class="filter-controls">
                 <select id="statusFilter" class="filter-select">
                     <option value="">सर्व स्थिती</option>
-                    <option value="Open">🟢 उघडलेली</option>
-                    <option value="In Progress">🟡 प्रक्रियेतील</option>
+                    <option value="Pending">🟡 प्रलंबित</option>
                     <option value="Resolved">🟣 निराकृत</option>
-                    <option value="Closed">🔴 बंद</option>
+                    <option value="Transfer">🔵 हस्तांतरित</option>
                 </select>
 
                 <select id="departmentFilter" class="filter-select">
@@ -179,14 +203,16 @@ function formatDate($dateString)
 
     <!-- Complaints Table -->
     <div class="table-wrapper">
-        <table class="complaints-table">
+        <table id="complaintsTable" class="complaints-table">
             <thead>
                 <tr>
                     <th>समस्या क्रमांक</th>
                     <th>फोटो</th>
                     <th>समस्या विषय</th>
                     <th>विभाग</th>
+                    <th>नियुक्त अधिकारी</th>
                     <th>गाव</th>
+                    <th>तालुका</th>
                     <th>प्रकार</th>
                     <th>दिनांक</th>
                     <th>स्थिती</th>
@@ -198,45 +224,68 @@ function formatDate($dateString)
                     <?php foreach ($complaints as $complaint): ?>
                         <?php
                         $status = $complaint['status'] ?? 'Open';
-                        $badgeClass = badgeClass($status);
-                        $photoSrc = !empty($complaint['photo']) ? htmlspecialchars($complaint['photo']) : 'https://via.placeholder.com/50?text=Photo';
+                        $display_status = $status;
+                        if (!empty($complaint['transfer_to']) && strtolower(trim($status)) === 'pending') {
+                            $display_status = 'Transfer';
+                        }
+                        $badgeClass = badgeClass($status, $complaint['transfer_to'] ?? '');
+
+                        $dept_display = $complaint['department'];
+                        if (isset($username_to_dept[$dept_display])) {
+                            $dept_display = $username_to_dept[$dept_display];
+                        }
                         ?>
-                        <tr class="complaint-row" data-status="<?= htmlspecialchars($status); ?>"
-                            data-department="<?= htmlspecialchars($complaint['department']); ?>"
+                        <tr class="complaint-row" data-status="<?= htmlspecialchars($display_status); ?>"
+                            data-department="<?= htmlspecialchars($dept_display); ?>"
                             data-village="<?= htmlspecialchars($complaint['village']); ?>">
                             <td class="complaint-id"><?= htmlspecialchars($complaint['issue_number']); ?></td>
                             <td class="photo-cell">
-                                <img src="<?= $photoSrc; ?>" alt="तक्रार फोटो" class="complaint-photo">
+                                <?php if (!empty($complaint['photo'])): ?>
+                                    <img src="<?= htmlspecialchars($complaint['photo']); ?>" alt="तक्रार फोटो"
+                                        class="complaint-photo">
+                                <?php else: ?>
+                                    <span class="no-file-text" style="color: #64748b; font-size: 0.85rem; font-style: italic;">No
+                                        File</span>
+                                <?php endif; ?>
                             </td>
                             <td class="complaint-subject">
                                 <strong><?= htmlspecialchars($complaint['description']); ?></strong>
                                 <p class="complaint-desc"><?= htmlspecialchars($complaint['description']); ?></p>
                             </td>
-                            <td><?= htmlspecialchars($complaint['department']); ?></td>
+                            <td><?= htmlspecialchars($dept_display); ?></td>
+                            <td><?= htmlspecialchars($complaint['department_head'] ?? 'विभाग प्रमुख'); ?></td>
                             <td><?= htmlspecialchars($complaint['village']); ?></td>
+                            <td><?= htmlspecialchars($complaint['taluka'] ?? 'Hingoli'); ?></td>
                             <td><span class="badge-type"><?= htmlspecialchars($complaint['registration_type']); ?></span></td>
                             <td><?= formatDate($complaint['issue_date']); ?></td>
-                            <td><span class="badge-status <?= $badgeClass; ?>"><?= htmlspecialchars($status); ?></span></td>
-                            <td class="action-cell">
-                                <?php if (strtolower($status) === 'resolved'): ?>
-    <button class="btn-icon btn-action" disabled style="background:green;">
-        <i class="fa-solid fa-check"></i> Resolved
-    </button>
-<?php else: ?>
-    <button class="btn-icon btn-action"
-        onclick="handleResolveClick(this)"
-        data-status="<?= strtolower($status); ?>"
-        data-issue='<?= json_encode($complaint); ?>'>
-        <i class="fa-solid fa-check"></i> Resolve
-    </button>
-<?php endif; ?>
-                                <button class="btn-icon btn-transfer" title="हस्तांतरण"
-                                    onclick="openTransferModal('<?= htmlspecialchars($complaint['issue_number']); ?>')">
-                                    <i class="fa-solid fa-right-left"></i> Transfer
-                                </button>
+                            <td><span class="badge-status <?= $badgeClass; ?>"><?= htmlspecialchars($display_status); ?></span>
                             </td>
-                        </tr>
-                    <?php endforeach; ?>
+                            <td>
+                                <div class="action-cell">
+                                    <?php if (in_array(strtolower($status), ['resolved', 'closed'])): ?>
+                                        <button class="btn-icon btn-action" disabled
+                                            style="background-color: #cbd5e1; border-color: #cbd5e1; color: #94a3b8; cursor: not-allowed;"
+                                            title="<?= htmlspecialchars($status); ?>">
+                                            <i class="fa-solid fa-check"></i> <?= htmlspecialchars($status); ?>
+                                        </button>
+                                        <button class="btn-icon btn-transfer" disabled
+                                            style="background-color: #cbd5e1; border-color: #cbd5e1; color: #94a3b8; cursor: not-allowed;"
+                                            title="हस्तांतरण">
+                                            <i class="fa-solid fa-right-left"></i> Transfer
+                                        </button>
+                                    <?php else: ?>
+                                        <button class="btn-icon btn-action" onclick="handleResolveClick(this)"
+                                            data-status="<?= strtolower($status); ?>" data-issue='<?= json_encode($complaint); ?>'>
+                                            <i class="fa-solid fa-check"></i> Resolve
+                                        </button>
+                                        <button class="btn-icon btn-transfer" title="हस्तांतरण" onclick="openTransferModal('<?= htmlspecialchars($complaint['issue_number']); ?>', '<?= htmlspecialchars($complaint['department']); ?>', '<?= htmlspecialchars($complaint['taluka']); ?>')">
+                                                        <i class="fa-solid fa-right-left"></i> Transfer
+                                                    </button>
+                                            <?php endif; ?>
+                                        </div>
+                                    </td>
+                                </tr>
+                        <?php endforeach; ?>
                 <?php endif; ?>
             </tbody>
         </table>
@@ -250,12 +299,7 @@ function formatDate($dateString)
         <button class="btn-primary" onclick="openNewComplaintForm()">नवीन तक्रार दाखल करा</button>
     </div>
 
-    <!-- Pagination -->
-    <div class="pagination">
-        <button class="page-btn" onclick="previousPage()">← मागे</button>
-        <span class="page-info">पृष्ठ <span id="currentPage">1</span> / <span id="totalPages">1</span></span>
-        <button class="page-btn" onclick="nextPage()">पुढे →</button>
-    </div>
+    <!-- Pagination is handled automatically by DataTables -->
 
     <!-- Transfer Modal -->
     <div id="transferModal" class="modal" style="display: none;">
@@ -271,44 +315,36 @@ function formatDate($dateString)
 
                     <div class="form-group" style="margin-bottom: 15px;">
                         <label style="font-weight: 600; color: #1e293b; font-size: 1rem;">
-                            समस्या क्रमांक: <span id="transferIssueNumVal" style="font-weight: bold; color: #000; margin-left: 5px;"></span>
+                            समस्या क्रमांक: <span id="transferIssueNumVal"
+                                style="font-weight: bold; color: #000; margin-left: 5px;"></span>
                         </label>
                     </div>
 
                     <div class="form-group">
-                        <label for="transferDepartment" style="font-weight: 600; margin-bottom: 6px; display: block; color: #1e293b;">लक्ष्य विभाग निवडा:</label>
+                        <label for="transferUser"
+                            style="font-weight: 600; margin-bottom: 6px; display: block; color: #1e293b;">लक्ष्य अधिकारी
+                            निवडा (Select Target Officer):</label>
                         <select id="transferUser" class="form-control" required>
-    <option value="">-- अधिकारी निवडा --</option>
-    <?php
-    $conn = db_connect();
-    $res = $conn->query("
-        SELECT username, designation, taluka 
-        FROM users 
-        WHERE designation IS NOT NULL AND designation != ''
-        ORDER BY designation ASC
-    ");
-
-    if ($res) {
-        while ($row = $res->fetch_assoc()) {
-            $label = $row['designation'] . ' - ' . $row['taluka'];
-            echo "<option value='" . htmlspecialchars($row['username']) . "'>" 
-                . htmlspecialchars($label) . "</option>";
-        }
-    }
-    $conn->close();
-    ?>
-</select>
+                            <option value="">-- अधिकारी निवडा --</option>
+                        </select>
                     </div>
 
                     <div class="form-group">
-                        <label for="transferNotes" style="font-weight: 600; margin-bottom: 6px; display: block; color: #1e293b;">हस्तांतरण कारण:</label>
-                        <textarea id="transferNotes" class="form-control" rows="4" required style="border-radius: 8px; border: 1px solid #cbd5e1; padding: 10px 12px;"
+                        <label for="transferNotes"
+                            style="font-weight: 600; margin-bottom: 6px; display: block; color: #1e293b;">हस्तांतरण
+                            कारण:</label>
+                        <textarea id="transferNotes" class="form-control" rows="4" required
+                            style="border-radius: 8px; border: 1px solid #cbd5e1; padding: 10px 12px;"
                             placeholder="हस्तांतरणाचे कारण लिहा..."></textarea>
                     </div>
 
                     <div class="modal-footer" style="border-top: none; padding-top: 10px;">
-                        <button type="button" class="btn-secondary" onclick="closeTransferModal()" style="background-color: #64748b; color: white; border: none; border-radius: 6px; padding: 10px 20px;">रद्द करा</button>
-                        <button type="submit" class="btn-primary" style="background-color: #eab308; border-color: #ca8a04; color: white; border: none; border-radius: 6px; padding: 10px 20px;">हस्तांतरित करा</button>
+                        <button type="button" class="btn-secondary" onclick="closeTransferModal()"
+                            style="background-color: #64748b; color: white; border: none; border-radius: 6px; padding: 10px 20px;">रद्द
+                            करा</button>
+                        <button type="submit" class="btn-primary"
+                            style="background-color: #eab308; border-color: #ca8a04; color: white; border: none; border-radius: 6px; padding: 10px 20px;">हस्तांतरित
+                            करा</button>
                     </div>
                 </form>
             </div>
@@ -326,7 +362,7 @@ function formatDate($dateString)
             <div class="modal-body">
                 <form id="resolveForm" enctype="multipart/form-data">
                     <input type="hidden" name="issue_number" id="resolveIssueNumber" />
-                    
+
                     <div class="form-group-row">
                         <strong>समस्या क्रमांक:</strong>
                         <span id="resolveIssueNumDisplay"></span>
@@ -353,18 +389,29 @@ function formatDate($dateString)
                     </div>
 
                     <div class="form-group" style="margin-top: 15px;">
-                        <label for="resolvePhoto" style="font-weight: 600; margin-bottom: 6px; display: block; color: #1e293b;">निवारण फोटो अपलोड करा (Upload Photo):</label>
-                        <input type="file" name="photo" id="resolvePhoto" class="form-control" accept="image/*" required style="border-radius: 8px; border: 1px solid #cbd5e1; padding: 10px 12px;" />
+                        <label for="resolvePhoto"
+                            style="font-weight: 600; margin-bottom: 6px; display: block; color: #1e293b;">निवारण फोटो
+                            अपलोड करा (Upload Photo):</label>
+                        <input type="file" name="photo" id="resolvePhoto" class="form-control" accept="image/*" required
+                            style="border-radius: 8px; border: 1px solid #cbd5e1; padding: 10px 12px;" />
                     </div>
 
                     <div class="form-group">
-                        <label for="resolveRemark" style="font-weight: 600; margin-bottom: 6px; display: block; color: #1e293b;">निवारण टिप्पणी (Resolved Remark):</label>
-                        <textarea name="resolved_remark" id="resolveRemark" class="form-control" rows="4" required style="border-radius: 8px; border: 1px solid #cbd5e1; padding: 10px 12px;" placeholder="निवारणाचे कारण किंवा टिप्पणी लिहा..."></textarea>
+                        <label for="resolveRemark"
+                            style="font-weight: 600; margin-bottom: 6px; display: block; color: #1e293b;">निवारण टिप्पणी
+                            (Resolved Remark):</label>
+                        <textarea name="resolved_remark" id="resolveRemark" class="form-control" rows="4" required
+                            style="border-radius: 8px; border: 1px solid #cbd5e1; padding: 10px 12px;"
+                            placeholder="निवारणाचे कारण किंवा टिप्पणी लिहा..."></textarea>
                     </div>
 
                     <div class="modal-footer" style="border-top: none; padding-top: 10px;">
-                        <button type="button" class="btn-secondary" onclick="closeResolveModal()" style="background-color: #64748b; color: white; border: none; border-radius: 6px; padding: 10px 20px;">रद्द करा</button>
-                        <button type="submit" class="btn-primary" style="background-color: #22c55e; border: none; border-radius: 6px; padding: 10px 20px; color: white;">निवारण करा</button>
+                        <button type="button" class="btn-secondary" onclick="closeResolveModal()"
+                            style="background-color: #64748b; color: white; border: none; border-radius: 6px; padding: 10px 20px;">रद्द
+                            करा</button>
+                        <button type="submit" class="btn-primary"
+                            style="background-color: #22c55e; border: none; border-radius: 6px; padding: 10px 20px; color: white;">निवारण
+                            करा</button>
                     </div>
                 </form>
             </div>
@@ -630,6 +677,100 @@ function formatDate($dateString)
             color: #991b1b;
         }
 
+        .badge-status.transfer {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+        }
+
+        /* --- DataTables Custom Styling --- */
+        .dataTables_wrapper {
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 24px;
+        }
+
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter {
+            margin-bottom: 20px;
+            color: #475569;
+            font-weight: 500;
+        }
+
+        .dataTables_wrapper .dataTables_filter input {
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            background-color: white;
+            color: #1e293b;
+            outline: none;
+            transition: all 0.3s ease;
+            margin-left: 8px;
+        }
+
+        .dataTables_wrapper .dataTables_filter input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .dataTables_wrapper .dataTables_length select {
+            padding: 6px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            background-color: white;
+            color: #1e293b;
+            outline: none;
+            margin: 0 4px;
+        }
+
+        .dataTables_wrapper .dataTables_info {
+            padding-top: 20px;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .dataTables_wrapper .dataTables_paginate {
+            padding-top: 16px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 6px;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            padding: 6px 12px !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 6px !important;
+            background: white !important;
+            color: #475569 !important;
+            cursor: pointer;
+            transition: all 0.2s ease !important;
+            font-weight: 500;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            background: #3b82f6 !important;
+            color: white !important;
+            border-color: #3b82f6 !important;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+            background: #2563eb !important;
+            color: white !important;
+            border-color: #2563eb !important;
+            font-weight: 700;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button.disabled,
+        .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
+            background: #f1f5f9 !important;
+            color: #94a3b8 !important;
+            border-color: #cbd5e1 !important;
+            cursor: not-allowed;
+        }
+
         /* Action Cell */
         .action-cell {
             display: flex;
@@ -673,7 +814,7 @@ function formatDate($dateString)
             background-color: #d97706;
         }
 
-        /* Modal Styles */
+        /* Modal Styles Redesign */
         .modal {
             position: fixed;
             top: 0;
@@ -684,6 +825,13 @@ function formatDate($dateString)
             display: flex;
             align-items: center;
             justify-content: center;
+            backdrop-filter: blur(4px);
+            transition: all 0.3s ease;
+        }
+
+        /* Ensure SweetAlert dialogs show on top of the modals */
+        .swal2-container {
+            z-index: 999999 !important;
         }
 
         .modal-overlay {
@@ -692,106 +840,204 @@ function formatDate($dateString)
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(15, 23, 42, 0.6);
             cursor: pointer;
         }
 
         .modal-content {
             position: relative;
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             max-width: 500px;
             width: 90%;
-            max-height: 80vh;
+            max-height: 85vh;
             overflow-y: auto;
             z-index: 2001;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #e2e8f0;
+            animation: modalSlideUp 0.3s ease-out;
+        }
+
+        @keyframes modalSlideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
         }
 
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 24px;
-            border-bottom: 1px solid #e2e8f0;
+            padding: 20px 24px;
+            background: linear-gradient(135deg, #1e3a8a, #2563eb);
+            color: white;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+            border-bottom: none;
         }
 
         .modal-header h2 {
             margin: 0;
-            color: #1e293b;
-            font-size: 1.5rem;
+            color: white;
+            font-size: 1.25rem;
+            font-weight: 700;
+            font-family: 'Outfit', sans-serif;
+            letter-spacing: -0.01em;
         }
 
         .modal-close {
-            background: none;
+            background: rgba(255, 255, 255, 0.1);
             border: none;
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             cursor: pointer;
-            color: #64748b;
+            color: white;
             padding: 0;
             width: 32px;
             height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 6px;
-            transition: all 0.3s ease;
+            border-radius: 50%;
+            transition: all 0.2s ease;
         }
 
         .modal-close:hover {
-            background: #f1f5f9;
-            color: #1e293b;
+            background: rgba(255, 255, 255, 0.25);
+            transform: rotate(90deg);
+            color: white;
         }
 
         .modal-body {
             padding: 24px;
+            background-color: #ffffff;
         }
 
+        /* Form Row Layout inside Modals */
+        .form-group-row {
+            display: grid;
+            grid-template-columns: 140px 1fr;
+            gap: 10px;
+            padding: 10px 14px;
+            background: #f8fafc;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border: 1px solid #e2e8f0;
+            align-items: center;
+            font-size: 0.95rem;
+        }
+
+        .form-group-row strong {
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .form-group-row span {
+            color: #0f172a;
+            font-weight: 600;
+            word-break: break-word;
+        }
+
+        /* Modern Input Styling for Modals */
         .form-group {
             margin-bottom: 20px;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             color: #1e293b;
             font-weight: 600;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
         }
 
         .form-control {
             width: 100%;
             padding: 10px 14px;
             border: 1px solid #cbd5e1;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 0.95rem;
             font-family: inherit;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease-in-out;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+            background-color: #fff;
+            color: #0f172a;
         }
 
         .form-control:focus {
             outline: none;
             border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
         }
 
-        .form-control[readonly] {
-            background: #f8fafc;
-            color: #64748b;
-            cursor: not-allowed;
+        .form-control::placeholder {
+            color: #94a3b8;
         }
 
+        /* Modal Footer Styling */
         .modal-footer {
             display: flex;
             gap: 12px;
-            padding: 20px 24px;
+            padding: 16px 24px;
+            background-color: #f8fafc;
             border-top: 1px solid #e2e8f0;
             justify-content: flex-end;
+            margin-top: 20px;
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
         }
 
-        .modal-footer .btn-primary,
-        .modal-footer .btn-secondary {
+        .modal-footer button {
             margin: 0;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .modal-footer .btn-secondary {
+            background: #f1f5f9 !important;
+            color: #475569 !important;
+            border: 1px solid #cbd5e1 !important;
+        }
+
+        .modal-footer .btn-secondary:hover {
+            background: #e2e8f0 !important;
+            color: #1e293b !important;
+        }
+
+        /* Specific Submission Button Styling */
+        #transferForm .btn-primary {
+            background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+            color: white !important;
+            border: 1px solid #d97706 !important;
+            box-shadow: 0 4px 10px rgba(245, 158, 11, 0.25) !important;
+        }
+
+        #transferForm .btn-primary:hover {
+            background: linear-gradient(135deg, #d97706, #b45309) !important;
+            box-shadow: 0 6px 14px rgba(245, 158, 11, 0.35) !important;
+            transform: translateY(-1px);
+        }
+
+        #resolveForm .btn-primary {
+            background: linear-gradient(135deg, #10b981, #059669) !important;
+            color: white !important;
+            border: 1px solid #059669 !important;
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25) !important;
+        }
+
+        #resolveForm .btn-primary:hover {
+            background: linear-gradient(135deg, #059669, #047857) !important;
+            box-shadow: 0 6px 14px rgba(16, 185, 129, 0.35) !important;
+            transform: translateY(-1px);
         }
 
         /* Empty State */
@@ -896,6 +1142,28 @@ function formatDate($dateString)
                 text-align: left;
                 padding: 8px 6px;
             }
+
+            /* Prevent DataTable controls overflow and center them on mobile */
+            .dataTables_wrapper {
+                padding: 12px !important;
+            }
+            .dataTables_wrapper .dataTables_length,
+            .dataTables_wrapper .dataTables_filter {
+                text-align: center;
+                float: none;
+                margin-bottom: 12px;
+            }
+            .dataTables_wrapper .dataTables_filter input {
+                width: 100%;
+                margin-left: 0;
+                margin-top: 6px;
+                box-sizing: border-box;
+            }
+            .dataTables_wrapper .dataTables_paginate {
+                justify-content: center !important;
+                flex-wrap: wrap;
+                gap: 4px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -935,10 +1203,12 @@ function formatDate($dateString)
                 border-bottom: 1px solid #f1f5f9;
                 font-size: 0.95rem;
             }
+
             .form-group-row strong {
                 color: #475569;
                 font-weight: 600;
             }
+
             .form-group-row span {
                 color: #0f172a;
                 font-weight: 500;
@@ -947,87 +1217,145 @@ function formatDate($dateString)
                 word-break: break-word;
             }
         }
+
+        /* Custom DataTables Responsive Styles */
+        table.dataTable.dtr-inline.collapsed > tbody > tr > td.dtr-control,
+        table.dataTable.dtr-inline.collapsed > tbody > tr > th.dtr-control {
+            position: relative;
+            padding-left: 35px !important;
+            cursor: pointer;
+        }
+
+        table.dataTable.dtr-inline.collapsed > tbody > tr > td.dtr-control:before,
+        table.dataTable.dtr-inline.collapsed > tbody > tr > th.dtr-control:before {
+            top: 50%;
+            left: 10px;
+            height: 18px;
+            width: 18px;
+            margin-top: -9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            color: white !important;
+            border: 2px solid var(--bg-card, #ffffff);
+            border-radius: 50%;
+            box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+            box-sizing: border-box;
+            font-family: var(--font-body), sans-serif;
+            content: "+";
+            background-color: var(--primary-light, #2563eb);
+            font-weight: 700;
+            font-size: 14px;
+            line-height: 1;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        table.dataTable.dtr-inline.collapsed > tbody > tr.parent > td.dtr-control:before,
+        table.dataTable.dtr-inline.collapsed > tbody > tr.parent > th.dtr-control:before {
+            content: "−";
+            background-color: var(--danger-color, #dc2626);
+            transform: rotate(180deg);
+        }
+
+        /* Styling for the expanded child row */
+        table.dataTable > tbody > tr.child {
+            background-color: var(--bg-hover, #f1f5f9) !important;
+        }
+
+        table.dataTable > tbody > tr.child:hover {
+            background-color: var(--bg-hover, #f1f5f9) !important;
+        }
+
+        table.dataTable > tbody > tr.child ul.dtr-details {
+            display: block;
+            list-style-type: none;
+            margin: 0;
+            padding: 12px 16px;
+            width: 100%;
+        }
+
+        table.dataTable > tbody > tr.child ul.dtr-details > li {
+            border-bottom: 1px solid var(--border-color, #e2e8f0);
+            padding: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            gap: 15px;
+        }
+
+        table.dataTable > tbody > tr.child ul.dtr-details > li:last-child {
+            border-bottom: none;
+        }
+
+        table.dataTable > tbody > tr.child span.dtr-title {
+            font-weight: 600;
+            color: var(--text-secondary, #475569);
+            min-width: 120px;
+        }
+
+        table.dataTable > tbody > tr.child span.dtr-data {
+            color: var(--text-primary, #0f172a);
+            text-align: right;
+            word-break: break-word;
+        }
     </style>
 
     <!-- JavaScript Functions -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        const deptDesignations = <?php echo json_encode($dept_designations); ?>;
+        const deptUsersList = <?php echo json_encode($dept_users_list); ?>;
 
-        const departmentSelect = document.getElementById('transferDepartment');
-        const deptHeadSelect = document.getElementById('transferDeptHead');
-
-        if (departmentSelect) {
-            departmentSelect.addEventListener('change', function () {
-                populateDeptHeads(this.value);
-            });
-        }
-
-        function populateDeptHeads(selectedDept, selectedHead = '') {
-            if (!deptHeadSelect) return;
-            deptHeadSelect.innerHTML = '<option value="">-- निवडा विभाग प्रमुख --</option>';
-            if (selectedDept && deptDesignations[selectedDept]) {
-                deptDesignations[selectedDept].forEach(function (desg) {
-                    const option = document.createElement('option');
-                    option.value = desg;
-                    option.textContent = desg;
-                    if (desg === selectedHead) {
-                        option.selected = true;
-                    }
-                    deptHeadSelect.appendChild(option);
-                });
-            }
-        }
-
-        // Search Functionality
-        document.getElementById('searchInput').addEventListener('keyup', function () {
-            filterComplaints();
-        });
-
-        // Filter Functionality
-        document.getElementById('statusFilter').addEventListener('change', filterComplaints);
-        document.getElementById('departmentFilter').addEventListener('change', filterComplaints);
-
-        function filterComplaints() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const statusFilter = document.getElementById('statusFilter').value;
-            const departmentFilter = document.getElementById('departmentFilter').value;
-            const rows = document.querySelectorAll('.complaint-row');
-            let visibleCount = 0;
-
-            rows.forEach(row => {
-                const complaintId = row.querySelector('.complaint-id').textContent.toLowerCase();
-                const subject = row.querySelector('.complaint-subject').textContent.toLowerCase();
-                const status = row.getAttribute('data-status');
-                const department = row.getAttribute('data-department');
-
-                const matchesSearch = complaintId.includes(searchTerm) || subject.includes(searchTerm);
-                const matchesStatus = !statusFilter || status === statusFilter;
-                const matchesDepartment = !departmentFilter || department === departmentFilter;
-
-                if (matchesSearch && matchesStatus && matchesDepartment) {
-                    row.style.display = '';
-                    visibleCount++;
-                } else {
-                    row.style.display = 'none';
+        $(document).ready(function () {
+            const table = $('#complaintsTable').DataTable({
+                "dom": 'lrtip',
+                "pageLength": 10,
+                "lengthMenu": [10, 25, 50, 100],
+                "ordering": true,
+                "order": [],
+                "responsive": true,
+                "columnDefs": [
+                    { "responsivePriority": 1, "targets": 0 }, // समस्या क्रमांक
+                    { "responsivePriority": 1, "targets": 2 }, // समस्या विषय (description)
+                    { "responsivePriority": 2, "targets": 10 }, // क्रिया (buttons) - collapses on smaller screens
+                    { "responsivePriority": 3, "targets": 9 }  // स्थिती
+                ],
+                "language": {
+                    "lengthMenu": "दाखवा _MENU_ नोंदी",
+                    "paginate": {
+                        "previous": "← मागे",
+                        "next": "पुढे →"
+                    },
+                    "info": "एकूण _TOTAL_ पैकी _START_ ते _END_ दाखवत आहे",
+                    "infoEmpty": "माहिती उपलब्ध नाही",
+                    "zeroRecords": "कोणतेही रेकॉर्ड सापडले नाहीत"
                 }
             });
 
-            // Show empty state if no results
-            const emptyState = document.getElementById('emptyState');
-            if (visibleCount === 0) {
-                emptyState.style.display = 'block';
-                document.querySelector('.table-wrapper').style.display = 'none';
-            } else {
-                emptyState.style.display = 'none';
-                document.querySelector('.table-wrapper').style.display = 'block';
-            }
-        }
+            $('#searchInput').on('keyup', function () {
+                table.search(this.value).draw();
+            });
+
+            $('#statusFilter').on('change', function () {
+                // Exact matching for status column (Index 9) ignoring surrounding whitespace
+                const val = this.value;
+                table.column(9).search(val ? '^\\s*' + val + '\\s*$' : '', true, false).draw();
+            });
+
+            $('#departmentFilter').on('change', function () {
+                // Exact matching for department column (Index 3) ignoring surrounding whitespace
+                const val = this.value;
+                table.column(3).search(val ? '^\\s*' + val + '\\s*$' : '', true, false).draw();
+            });
+        });
 
         function resetFilters() {
             document.getElementById('searchInput').value = '';
             document.getElementById('statusFilter').value = '';
             document.getElementById('departmentFilter').value = '';
-            filterComplaints();
+            const table = $('#complaintsTable').DataTable();
+            table.search('').columns().search('').draw();
         }
 
         function actionComplaint(issueNumber) {
@@ -1058,22 +1386,23 @@ function formatDate($dateString)
         }
 
         function exportComplaints() {
-            let csv = 'समस्या क्रमांक,विषय,विभाग,गाव,प्रकार,दिनांक,स्थिती\n';
-            const rows = document.querySelectorAll('.complaint-row');
+            let csv = 'समस्या क्रमांक,विषय,विभाग,नियुक्त अधिकारी,गाव,तालुका,प्रकार,दिनांक,स्थिती\n';
+            const table = $('#complaintsTable').DataTable();
+            const filteredRows = table.rows({ search: 'applied' }).nodes();
 
-            rows.forEach(row => {
-                if (row.style.display !== 'none') {
-                    const id = row.querySelector('.complaint-id').textContent;
-                    const subject = row.querySelector('.complaint-subject strong').textContent;
-                    const cells = row.querySelectorAll('td');
-                    const department = cells[3].textContent.trim();
-                    const village = cells[4].textContent.trim();
-                    const type = cells[5].textContent.trim();
-                    const date = cells[6].textContent.trim();
-                    const status = cells[7].textContent.trim();
+            filteredRows.each(function (row) {
+                const id = row.querySelector('.complaint-id').textContent.trim();
+                const subject = row.querySelector('.complaint-subject strong').textContent.trim();
+                const cells = row.querySelectorAll('td');
+                const department = cells[3].textContent.trim();
+                const deptHead = cells[4].textContent.trim();
+                const village = cells[5].textContent.trim();
+                const taluka = cells[6].textContent.trim();
+                const type = cells[7].textContent.trim();
+                const date = cells[8].textContent.trim();
+                const status = cells[9].textContent.trim();
 
-                    csv += '"' + id + '","' + subject + '","' + department + '","' + village + '","' + type + '","' + date + '","' + status + '"\n';
-                }
+                csv += '"' + id + '","' + subject + '","' + department + '","' + deptHead + '","' + village + '","' + taluka + '","' + type + '","' + date + '","' + status + '"\n';
             });
 
             const link = document.createElement('a');
@@ -1082,17 +1411,78 @@ function formatDate($dateString)
             link.click();
         }
 
-        function previousPage() {
-            alert('मागील पृष्ठकडे जाणे...');
-        }
-
-        function nextPage() {
-            alert('पुढील पृष्ठकडे जाणे...');
-        }
-
-        function openTransferModal(complaintId) {
+        function openTransferModal(complaintId, department, taluka) {
             document.getElementById('complaintIdTransfer').value = complaintId;
             document.getElementById('transferIssueNumVal').textContent = complaintId;
+
+            const transferUserSelect = document.getElementById('transferUser');
+            transferUserSelect.innerHTML = '<option value="">-- अधिकारी निवडा --</option>';
+
+            // Find the actual department if a username was passed
+            let targetDept = department;
+            for (const deptName in deptUsersList) {
+                const userFound = deptUsersList[deptName].find(u => u.username === department);
+                if (userFound) {
+                    targetDept = deptName;
+                    break;
+                }
+            }
+
+            const currentLoggedUser = '<?php echo $_SESSION['username'] ?? ''; ?>';
+
+            function formatUserOptionText(user) {
+                let text = user.designation || '';
+                if (user.taluka) {
+                    text += ' - ' + user.taluka;
+                }
+                return text;
+            }
+
+            const issueTaluka = (taluka || '').trim().toLowerCase();
+
+            // 1. Related designations of that department
+            if (targetDept && deptUsersList[targetDept]) {
+                deptUsersList[targetDept].forEach(function (user) {
+                    if (user.username !== currentLoggedUser && user.username !== department) {
+                        const userTaluka = (user.taluka || '').trim().toLowerCase();
+
+                        // Filter by taluka if it is defined for both the issue and target user (or if target user is district-level)
+                        if (!issueTaluka || issueTaluka === userTaluka || !userTaluka) {
+                            if (!transferUserSelect.querySelector('option[value="' + user.username + '"]')) {
+                                const option = document.createElement('option');
+                                option.value = user.username;
+                                option.textContent = formatUserOptionText(user);
+                                transferUserSelect.appendChild(option);
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 2. BDO of that taluka
+            for (const deptName in deptUsersList) {
+                deptUsersList[deptName].forEach(function (user) {
+                    if (user.username !== currentLoggedUser && user.username !== department) {
+                        const isBDO = user.username.toLowerCase().startsWith('bdo') ||
+                            user.designation.includes('गट विकास अधिकारी') ||
+                            user.username.toLowerCase().includes('bdo');
+                        if (isBDO) {
+                            const userTaluka = (user.taluka || '').trim().toLowerCase();
+
+                            if (issueTaluka === userTaluka || !userTaluka) {
+                                // Prevent duplicate option
+                                if (!transferUserSelect.querySelector('option[value="' + user.username + '"]')) {
+                                    const option = document.createElement('option');
+                                    option.value = user.username;
+                                    option.textContent = formatUserOptionText(user);
+                                    transferUserSelect.appendChild(option);
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
             document.getElementById('transferModal').style.display = 'flex';
         }
 
@@ -1109,9 +1499,14 @@ function formatDate($dateString)
             const notes = document.getElementById('transferNotes').value;
 
             if (!transferTo) {
-    alert('कृपया अधिकारी निवडा');
-    return;
-}
+                Swal.fire({
+                    title: 'त्रुटी!',
+                    text: 'कृपया अधिकारी निवडा',
+                    icon: 'warning',
+                    confirmButtonText: 'ठीक आहे'
+                });
+                return;
+            }
 
             fetch('transfer_complaint.php', {
                 method: 'POST',
@@ -1123,15 +1518,31 @@ function formatDate($dateString)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        alert('तक्रार यशस्वीरित्या हस्तांतरित केली गेली!');
-                        location.reload();
+                        Swal.fire({
+                            title: 'यशस्वी!',
+                            text: 'तक्रार यशस्वीरित्या हस्तांतरित केली गेली!',
+                            icon: 'success',
+                            confirmButtonText: 'ठीक आहे'
+                        }).then(() => {
+                            location.reload();
+                        });
                     } else {
-                        alert('त्रुटी: ' + data.message);
+                        Swal.fire({
+                            title: 'त्रुटी!',
+                            text: 'त्रुटी: ' + data.message,
+                            icon: 'error',
+                            confirmButtonText: 'ठीक आहे'
+                        });
                     }
                 })
                 .catch(err => {
                     console.error(err);
-                    alert('हस्तांतरण प्रक्रिया दरम्यान त्रुटी आली.');
+                    Swal.fire({
+                        title: 'त्रुटी!',
+                        text: 'हस्तांतरण प्रक्रिया दरम्यान त्रुटी आली.',
+                        icon: 'error',
+                        confirmButtonText: 'ठीक आहे'
+                    });
                 });
         });
 
@@ -1163,15 +1574,31 @@ function formatDate($dateString)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        alert('तक्रार यशस्वीरित्या निराकृत केली गेली!');
-                        location.reload();
+                        Swal.fire({
+                            title: 'Success!',
+                            text: 'Issue is successfully resolved',
+                            icon: 'success',
+                            confirmButtonText: 'OK'
+                        }).then(() => {
+                            location.reload();
+                        });
                     } else {
-                        alert('त्रुटी: ' + data.message);
+                        Swal.fire({
+                            title: 'त्रुटी!',
+                            text: 'त्रुटी: ' + data.message,
+                            icon: 'error',
+                            confirmButtonText: 'ठीक आहे'
+                        });
                     }
                 })
                 .catch(err => {
                     console.error(err);
-                    alert('निराकरण प्रक्रिया दरम्यान त्रुटी आली.');
+                    Swal.fire({
+                        title: 'त्रुटी!',
+                        text: 'निराकरण प्रक्रिया दरम्यान त्रुटी आली.',
+                        icon: 'error',
+                        confirmButtonText: 'ठीक आहे'
+                    });
                 });
         });
 
@@ -1185,23 +1612,23 @@ function formatDate($dateString)
 
         // Initialize on page load
         window.addEventListener('load', function () {
-            filterComplaints();
+            // Already handled by DataTable initialization
         });
         function handleResolveClick(btn) {
 
-    let status = btn.getAttribute("data-status");
+            let status = btn.getAttribute("data-status");
 
-    // ❌ STOP popup if resolved
-    if (status === "resolved") {
-        alert("Already resolved");
-        return;
-    }
+            // ❌ STOP popup if resolved
+            if (status === "resolved") {
+                alert("Already resolved");
+                return;
+            }
 
-    let complaint = JSON.parse(btn.getAttribute("data-issue"));
+            let complaint = JSON.parse(btn.getAttribute("data-issue"));
 
-    // ✅ open modal
-    openResolveModal(complaint);
-}
+            // ✅ open modal
+            openResolveModal(complaint);
+        }
     </script>
 
     <?php include('include/footer.php'); ?>

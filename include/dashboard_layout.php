@@ -540,6 +540,83 @@ if (!isset($dashboard_icon)) {
                 grid-template-columns: 1fr;
             }
         }
+
+        /* --- DataTables Custom Styling --- */
+        .dataTables_wrapper {
+            padding: 20px;
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+        }
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter {
+            margin-bottom: 20px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .dataTables_wrapper .dataTables_filter input {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            outline: none;
+            transition: all var(--transition-fast);
+            margin-left: 8px;
+        }
+        .dataTables_wrapper .dataTables_filter input:focus {
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+        }
+        .dataTables_wrapper .dataTables_length select {
+            padding: 6px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            outline: none;
+            margin: 0 4px;
+        }
+        .dataTables_wrapper .dataTables_info {
+            padding-top: 20px;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+        .dataTables_wrapper .dataTables_paginate {
+            padding-top: 16px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 6px;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            padding: 6px 12px !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: var(--radius-md) !important;
+            background: var(--bg-card) !important;
+            color: var(--text-secondary) !important;
+            cursor: pointer;
+            transition: all var(--transition-fast) !important;
+            font-weight: 500;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            background: var(--primary-light) !important;
+            color: white !important;
+            border-color: var(--primary-light) !important;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+            background: var(--primary-color) !important;
+            color: white !important;
+            border-color: var(--primary-color) !important;
+            font-weight: 700;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button.disabled,
+        .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
+            background: var(--bg-hover) !important;
+            color: var(--text-muted) !important;
+            border-color: var(--border-color) !important;
+            cursor: not-allowed;
+        }
     </style>
 
     <div class="welcome-container">
@@ -549,7 +626,8 @@ if (!isset($dashboard_icon)) {
                 <i class="fa-solid fa-circle-check"></i> जिल्हा परिषद हिंगोली - आय.डी.पी.
             </span>
             <h1 class="welcome-title">
-                <span class="highlight"><?php echo htmlspecialchars(preg_replace('/^Shri\.\s+/i', '', $user_display_name)); ?></span>
+                <span
+                    class="highlight"><?php echo htmlspecialchars(preg_replace('/^Shri\.\s+/i', '', $user_display_name)); ?></span>
             </h1>
             <p class="welcome-desc"><?php echo htmlspecialchars($dashboard_description); ?></p>
         </div>
@@ -564,7 +642,8 @@ if (!isset($dashboard_icon)) {
     </div>
 
     <div class="stats-header">
-        <h2><i class="<?php echo htmlspecialchars($dashboard_icon); ?>"></i> <?php echo htmlspecialchars($dashboard_title); ?> आकडेवारी</h2>
+        <h2><i class="<?php echo htmlspecialchars($dashboard_icon); ?>"></i>
+            <?php echo htmlspecialchars($dashboard_title); ?> आकडेवारी</h2>
         <span class="refresh-indicator"><i class="fa-solid fa-arrows-rotate"></i> रीअल-टाइम अपडेट</span>
     </div>
 
@@ -652,11 +731,12 @@ if (!isset($dashboard_icon)) {
     <div class="section-container">
         <div class="recent-header">
             <h2 class="section-title"><i class="fa-solid fa-list-check"></i> अलीकडील नोंदवलेल्या समस्या</h2>
-            <a href="complaint_report.php" class="view-all-link">सर्व समस्या पहा <i class="fa-solid fa-angles-right"></i></a>
+            <a href="complaint_report.php" class="view-all-link">सर्व समस्या पहा <i
+                    class="fa-solid fa-angles-right"></i></a>
         </div>
-        <div class="issues-table-card">
+        <div class="issues-table-card" style="border: none; background: transparent; box-shadow: none;">
             <?php if (!empty($recent_issues)): ?>
-                <table class="recent-table">
+                <table id="recentIssuesTable" class="recent-table">
                     <thead>
                         <tr>
                             <th>समस्या क्र.</th>
@@ -665,33 +745,22 @@ if (!isset($dashboard_icon)) {
                             <th>गाव / तालुका</th>
                             <th>तारीख</th>
                             <th>स्थिती</th>
-                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($recent_issues as $issue): ?>
                             <tr>
                                 <td class="issue-no">#<?php echo htmlspecialchars($issue['issue_number']); ?></td>
-                                <td class="issue-desc"><strong><?php echo htmlspecialchars(mb_strimwidth($issue['description'], 0, 80, '...')); ?></strong></td>
+                                <td class="issue-desc">
+                                    <strong><?php echo htmlspecialchars(mb_strimwidth($issue['description'], 0, 80, '...')); ?></strong>
+                                </td>
                                 <td><span class="dept-badge"><?php echo htmlspecialchars($issue['department']); ?></span></td>
-                                <td><?php echo htmlspecialchars($issue['village'] . ', ' . ($issue['taluka'] ?? 'Hingoli')); ?></td>
+                                <td><?php echo htmlspecialchars($issue['village'] . ', ' . ($issue['taluka'] ?? 'Hingoli')); ?>
+                                </td>
                                 <td><?php echo date('d M Y', strtotime($issue['issue_date'])); ?></td>
-                                <td><span class="status-badge <?php echo getStatusBadgeClass($issue['status'] ?? 'Open'); ?>"><?php echo translateStatus($issue['status'] ?? 'Open'); ?></span></td>
-                                <td>
-<td>
-<?php if (strtolower($issue['status']) === 'resolved'): ?>
-    <button disabled style="background:green;color:white;">
-        ✅ Resolved
-    </button>
-<?php else: ?>
-    <button class="resolve-btn"
-            data-id="<?php echo $issue['issue_number']; ?>"
-            data-status="<?php echo strtolower($issue['status']); ?>">
-        Resolve
-    </button>
-<?php endif; ?>
-</td>
-</td>
+                                <td><span
+                                        class="status-badge <?php echo getStatusBadgeClass($issue['status'] ?? 'Open'); ?>"><?php echo translateStatus($issue['status'] ?? 'Open'); ?></span>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -707,23 +776,23 @@ if (!isset($dashboard_icon)) {
     </div>
 </main>
 <script>
-document.querySelectorAll(".resolve-btn").forEach(btn => {
-    btn.addEventListener("click", function () {
-
-        let status = this.getAttribute("data-status");
-
-        // ❌ STOP POPUP if already resolved
-        if (status === "resolved") {
-            alert("Already resolved");
-            return;
+$(document).ready(function() {
+    $('#recentIssuesTable').DataTable({
+        "pageLength": 5,
+        "lengthMenu": [5, 10, 25, 50],
+        "ordering": true,
+        "order": [],
+        "language": {
+            "lengthMenu": "दाखवा _MENU_ नोंदी",
+            "paginate": {
+                "previous": "← मागे",
+                "next": "पुढे →"
+            },
+            "search": "शोधा:",
+            "info": "एकूण _TOTAL_ पैकी _START_ ते _END_ दाखवत आहे",
+            "infoEmpty": "माहिती उपलब्ध नाही",
+            "zeroRecords": "कोणतेही रेकॉर्ड सापडले नाहीत"
         }
-
-        // ✅ OPEN YOUR EXISTING MODAL
-        let issueNumber = this.getAttribute("data-id");
-
-        // 👉 IMPORTANT: call your existing popup function here
-        // Example (change if different):
-        openResolveModal(issueNumber);
     });
 });
 </script>

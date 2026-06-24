@@ -2,9 +2,10 @@
 // Include configuration
 require_once 'include/config.php';
 
-// --- generateIssueNumber function moved here ---
 function generateIssueNumber($conn) {
-    $issueNumber = '0001';
+    $prefix = 'ISSUE-';
+    $nextNumeric = 1;
+    $paddingLength = 4;
 
     $sql = "SELECT issue_number FROM tbl_raiseissue ORDER BY id DESC LIMIT 1";
     $result = $conn->query($sql);
@@ -12,11 +13,11 @@ function generateIssueNumber($conn) {
         $lastNumber = $row['issue_number'];
         if (preg_match('/(\d+)$/', $lastNumber, $match)) {
             $nextNumeric = intval($match[1]) + 1;
-            $issueNumber = str_pad((string)$nextNumeric, strlen($match[1]), '0', STR_PAD_LEFT);
+            $paddingLength = max(4, strlen($match[1]));
         }
     }
 
-    return $issueNumber;
+    return $prefix . str_pad((string)$nextNumeric, $paddingLength, '0', STR_PAD_LEFT);
 }
 // -------------------------------------------------
 
@@ -71,7 +72,7 @@ if (basename(__FILE__) == basename($_SERVER['SCRIPT_FILENAME'])) {
                 throw new Exception('Photo upload failed with error code: ' . $uploadError);
             }
 
-            $upload_dir = __DIR__ . '/uploads/';
+            $upload_dir = __DIR__ . '/issue_photos/';
             if (!is_dir($upload_dir) && !mkdir($upload_dir, 0755, true)) {
                 throw new Exception('Unable to create upload directory.');
             }
@@ -90,7 +91,7 @@ if (basename(__FILE__) == basename($_SERVER['SCRIPT_FILENAME'])) {
 
             $new_name = $issue_number . '.' . $ext;
             $target_path = $upload_dir . $new_name;
-            $photo_db = 'uploads/' . $new_name; // path to store in DB (web relative)
+            $photo_db = 'issue_photos/' . $new_name; // path to store in DB (web relative)
 
             if (!move_uploaded_file($_FILES['photo']['tmp_name'], $target_path)) {
                 throw new Exception('फोटो सेव्ह करताना त्रुटी आली.');

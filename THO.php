@@ -2,12 +2,12 @@
 session_start();
 require_once __DIR__ . '/config.php';
 
-if (empty($_SESSION['username']) || ($_SESSION['user_role'] ?? '') !== 'THO') {
+if (empty($_SESSION['username']) || strtolower($_SESSION['user_role'] ?? '') !== 'tho') {
     header('Location: login.php');
     exit;
 }
 
-$active_page = 'user_dashboard';
+// $active_page = 'user_dashboard';
 $page_title = 'THO Dashboard';
 $page_description = 'THO role dashboard with issue summary and quick actions.';
 $dashboard_title = 'THO Dashboard';

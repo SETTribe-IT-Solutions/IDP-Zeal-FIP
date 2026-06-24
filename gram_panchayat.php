@@ -7,7 +7,7 @@ if (empty($_SESSION['username']) || ($_SESSION['user_role'] ?? '') !== 'ग्�
     exit;
 }
 
-$active_page = 'user_dashboard';
+// $active_page = 'user_dashboard';
 $page_title = 'Gram Panchayat Dashboard';
 $page_description = 'Gram Panchayat role dashboard with local issue tracking and field updates.';
 $dashboard_title = 'Gram Panchayat Dashboard';

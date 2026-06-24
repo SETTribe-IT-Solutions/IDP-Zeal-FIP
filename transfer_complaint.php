@@ -29,7 +29,7 @@ if (empty($issue_number) || empty($department)) {
 
 try {
     $conn = db_connect();
-    
+
     // Check if the issue exists and get its internal ID
     $check_sql = "SELECT id, description FROM tbl_raiseissue WHERE issue_number = ?";
     $check_stmt = $conn->prepare($check_sql);
@@ -62,7 +62,7 @@ try {
             $dept_head_stmt->close();
         }
     }
-    
+
     if (empty($department_head)) {
         $department_head = 'विभाग प्रमुख'; // Fallback
     }
@@ -74,7 +74,7 @@ try {
         throw new Exception("Update preparation failed: " . $conn->error);
     }
     $update_stmt->bind_param("ssss", $department, $department_head, $department, $issue_number);
-    
+
     if ($update_stmt->execute()) {
         // Insert log in transfer table
         $insert_transfer_sql = "INSERT INTO transfer (issue_id, issue_no, transfer_to, transfer_by, reason) VALUES (?, ?, ?, ?, ?)";
@@ -89,7 +89,7 @@ try {
     } else {
         echo json_encode(['success' => false, 'message' => 'हस्तांतरण अयशस्वी: ' . $update_stmt->error]);
     }
-    
+
     $update_stmt->close();
     $conn->close();
 } catch (Exception $e) {

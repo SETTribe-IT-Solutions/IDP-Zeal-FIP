@@ -30,6 +30,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Basic validation
     if ($data['name'] === '') {
         $errors[] = 'Name is required.';
+    } elseif (!preg_match('/^[\p{L}\s]+$/u', $data['name'])) {
+        $errors[] = 'Name should only contain alphabets and spaces.';
     }
     if ($data['username'] === '') {
         $errors[] = 'Username is required.';
@@ -1564,6 +1566,7 @@ if (empty($system_roles)) {
                             validate(v) {
                                 if (!v.trim()) return 'Full name is required';
                                 if (v.trim().length < 2) return 'Name must be at least 2 characters';
+                                if (!/^[\p{L}\s]+$/u.test(v.trim())) return 'Name should only contain alphabets and spaces';
                                 return '';
                             }
                         },
@@ -1638,6 +1641,14 @@ if (empty($system_roles)) {
                         });
                         field.addEventListener('blur', function () { if (this.value) validateField(this); });
                     });
+
+                    // Name: alphabets and spaces only (including Marathi letters)
+                    var nameInput = document.getElementById('name');
+                    if (nameInput) {
+                        nameInput.addEventListener('input', function () {
+                            this.value = this.value.replace(/[^\p{L}\s]/gu, '');
+                        });
+                    }
 
                     // Mobile: digits only
                     var mobileInput = document.getElementById('mobile');

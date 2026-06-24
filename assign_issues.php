@@ -145,6 +145,9 @@ function formatDate($dateString)
 ?>
 
 <?php include('include/header.php'); ?>
+<!-- DataTables Responsive CSS & JS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
 <?php include('include/sidebar.php'); ?>
 
 <main class="main-content">
@@ -1139,6 +1142,28 @@ function formatDate($dateString)
                 text-align: left;
                 padding: 8px 6px;
             }
+
+            /* Prevent DataTable controls overflow and center them on mobile */
+            .dataTables_wrapper {
+                padding: 12px !important;
+            }
+            .dataTables_wrapper .dataTables_length,
+            .dataTables_wrapper .dataTables_filter {
+                text-align: center;
+                float: none;
+                margin-bottom: 12px;
+            }
+            .dataTables_wrapper .dataTables_filter input {
+                width: 100%;
+                margin-left: 0;
+                margin-top: 6px;
+                box-sizing: border-box;
+            }
+            .dataTables_wrapper .dataTables_paginate {
+                justify-content: center !important;
+                flex-wrap: wrap;
+                gap: 4px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -1192,6 +1217,89 @@ function formatDate($dateString)
                 word-break: break-word;
             }
         }
+
+        /* Custom DataTables Responsive Styles */
+        table.dataTable.dtr-inline.collapsed > tbody > tr > td.dtr-control,
+        table.dataTable.dtr-inline.collapsed > tbody > tr > th.dtr-control {
+            position: relative;
+            padding-left: 35px !important;
+            cursor: pointer;
+        }
+
+        table.dataTable.dtr-inline.collapsed > tbody > tr > td.dtr-control:before,
+        table.dataTable.dtr-inline.collapsed > tbody > tr > th.dtr-control:before {
+            top: 50%;
+            left: 10px;
+            height: 18px;
+            width: 18px;
+            margin-top: -9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            color: white !important;
+            border: 2px solid var(--bg-card, #ffffff);
+            border-radius: 50%;
+            box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+            box-sizing: border-box;
+            font-family: var(--font-body), sans-serif;
+            content: "+";
+            background-color: var(--primary-light, #2563eb);
+            font-weight: 700;
+            font-size: 14px;
+            line-height: 1;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        table.dataTable.dtr-inline.collapsed > tbody > tr.parent > td.dtr-control:before,
+        table.dataTable.dtr-inline.collapsed > tbody > tr.parent > th.dtr-control:before {
+            content: "−";
+            background-color: var(--danger-color, #dc2626);
+            transform: rotate(180deg);
+        }
+
+        /* Styling for the expanded child row */
+        table.dataTable > tbody > tr.child {
+            background-color: var(--bg-hover, #f1f5f9) !important;
+        }
+
+        table.dataTable > tbody > tr.child:hover {
+            background-color: var(--bg-hover, #f1f5f9) !important;
+        }
+
+        table.dataTable > tbody > tr.child ul.dtr-details {
+            display: block;
+            list-style-type: none;
+            margin: 0;
+            padding: 12px 16px;
+            width: 100%;
+        }
+
+        table.dataTable > tbody > tr.child ul.dtr-details > li {
+            border-bottom: 1px solid var(--border-color, #e2e8f0);
+            padding: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            gap: 15px;
+        }
+
+        table.dataTable > tbody > tr.child ul.dtr-details > li:last-child {
+            border-bottom: none;
+        }
+
+        table.dataTable > tbody > tr.child span.dtr-title {
+            font-weight: 600;
+            color: var(--text-secondary, #475569);
+            min-width: 120px;
+        }
+
+        table.dataTable > tbody > tr.child span.dtr-data {
+            color: var(--text-primary, #0f172a);
+            text-align: right;
+            word-break: break-word;
+        }
     </style>
 
     <!-- JavaScript Functions -->
@@ -1206,6 +1314,13 @@ function formatDate($dateString)
                 "lengthMenu": [10, 25, 50, 100],
                 "ordering": true,
                 "order": [],
+                "responsive": true,
+                "columnDefs": [
+                    { "responsivePriority": 1, "targets": 0 }, // समस्या क्रमांक
+                    { "responsivePriority": 1, "targets": 2 }, // समस्या विषय (description)
+                    { "responsivePriority": 2, "targets": 10 }, // क्रिया (buttons) - collapses on smaller screens
+                    { "responsivePriority": 3, "targets": 9 }  // स्थिती
+                ],
                 "language": {
                     "lengthMenu": "दाखवा _MENU_ नोंदी",
                     "paginate": {
@@ -1223,15 +1338,15 @@ function formatDate($dateString)
             });
 
             $('#statusFilter').on('change', function () {
-                // Exact matching for status column (Index 9)
+                // Exact matching for status column (Index 9) ignoring surrounding whitespace
                 const val = this.value;
-                table.column(9).search(val ? '^' + val + '$' : '', true, false).draw();
+                table.column(9).search(val ? '^\\s*' + val + '\\s*$' : '', true, false).draw();
             });
 
             $('#departmentFilter').on('change', function () {
-                // Exact matching for department column (Index 3)
+                // Exact matching for department column (Index 3) ignoring surrounding whitespace
                 const val = this.value;
-                table.column(3).search(val ? '^' + val + '$' : '', true, false).draw();
+                table.column(3).search(val ? '^\\s*' + val + '\\s*$' : '', true, false).draw();
             });
         });
 
@@ -1316,52 +1431,46 @@ function formatDate($dateString)
             const currentLoggedUser = '<?php echo $_SESSION['username'] ?? ''; ?>';
 
             function formatUserOptionText(user) {
-                let displayName = user.name;
-                const designation = user.designation || '';
-                const taluka = user.taluka || '';
-
-                if (designation && !displayName.includes(designation)) {
-                    displayName += ' (' + designation;
-                    if (taluka && !displayName.includes(taluka)) {
-                        displayName += ' - ' + taluka;
-                    }
-                    displayName += ')';
-                } else if (taluka && !displayName.includes(taluka)) {
-                    displayName += ' (' + taluka + ')';
+                let text = user.designation || '';
+                if (user.taluka) {
+                    text += ' - ' + user.taluka;
                 }
-                return displayName;
+                return text;
             }
 
+            const issueTaluka = (taluka || '').trim().toLowerCase();
+
+            // 1. Related designations of that department
             if (targetDept && deptUsersList[targetDept]) {
                 deptUsersList[targetDept].forEach(function (user) {
-                    if (user.username !== currentLoggedUser) {
-                        const issueTaluka = (taluka || '').trim().toLowerCase();
+                    if (user.username !== currentLoggedUser && user.username !== department) {
                         const userTaluka = (user.taluka || '').trim().toLowerCase();
 
-                        // Filter strictly by taluka if it is defined for both the issue and target user (or if target user is district-level)
+                        // Filter by taluka if it is defined for both the issue and target user (or if target user is district-level)
                         if (!issueTaluka || issueTaluka === userTaluka || !userTaluka) {
-                            const option = document.createElement('option');
-                            option.value = user.username;
-                            option.textContent = formatUserOptionText(user);
-                            transferUserSelect.appendChild(option);
+                            if (!transferUserSelect.querySelector('option[value="' + user.username + '"]')) {
+                                const option = document.createElement('option');
+                                option.value = user.username;
+                                option.textContent = formatUserOptionText(user);
+                                transferUserSelect.appendChild(option);
+                            }
                         }
                     }
                 });
             }
 
-            // Also show BDO for all transfers (filtered by taluka of the issue)
+            // 2. BDO of that taluka
             for (const deptName in deptUsersList) {
                 deptUsersList[deptName].forEach(function (user) {
-                    if (user.username !== currentLoggedUser) {
+                    if (user.username !== currentLoggedUser && user.username !== department) {
                         const isBDO = user.username.toLowerCase().startsWith('bdo') ||
                             user.designation.includes('गट विकास अधिकारी') ||
                             user.username.toLowerCase().includes('bdo');
                         if (isBDO) {
-                            const issueTaluka = (taluka || '').trim().toLowerCase();
                             const userTaluka = (user.taluka || '').trim().toLowerCase();
 
-                            if (!issueTaluka || issueTaluka === userTaluka || !userTaluka) {
-                                // Prevent duplicate option if BDO is already added (e.g. if targetDept is already Panchayat Samiti)
+                            if (issueTaluka === userTaluka || !userTaluka) {
+                                // Prevent duplicate option
                                 if (!transferUserSelect.querySelector('option[value="' + user.username + '"]')) {
                                     const option = document.createElement('option');
                                     option.value = user.username;
@@ -1466,10 +1575,10 @@ function formatDate($dateString)
                 .then(data => {
                     if (data.success) {
                         Swal.fire({
-                            title: 'यशस्वी!',
-                            text: 'तक्रार यशस्वीरित्या निराकृत केली गेली!',
+                            title: 'Success!',
+                            text: 'Issue is successfully resolved',
                             icon: 'success',
-                            confirmButtonText: 'ठीक आहे'
+                            confirmButtonText: 'OK'
                         }).then(() => {
                             location.reload();
                         });

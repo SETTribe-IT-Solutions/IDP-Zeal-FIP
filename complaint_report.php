@@ -9,7 +9,8 @@ if (!isset($_SESSION['username'])) {
 
 require_once 'include/config.php';
 
-$role = $_SESSION['user_system_role'] ?? $_SESSION['user_role'] ?? '';
+$can_perform_actions = true;
+$role = $_SESSION['role'] ?? '';
 
 $conn = db_connect();
 $complaints = [];
@@ -27,6 +28,86 @@ if (isset($_SESSION['username'])) {
         }
         $stmt->close();
     }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    header('Content-Type: application/json');
+
+    $action = $_POST['action'];
+    $issue_number = trim($_POST['issue_number'] ?? '');
+
+    if ($issue_number === '') {
+        echo json_encode(['success' => false, 'message' => 'Issue number is required.']);
+        $conn->close();
+        exit;
+    }
+
+    $villageClause = '';
+    if (!empty($user_village)) {
+        $villageClause = ' AND village = ?';
+    }
+
+    if ($action === 'delete_complaint') {
+        $stmt = $conn->prepare("DELETE FROM tbl_raiseissue WHERE issue_number = ?" . $villageClause);
+        if ($stmt) {
+            if (!empty($user_village)) {
+                $stmt->bind_param("ss", $issue_number, $user_village);
+            } else {
+                $stmt->bind_param("s", $issue_number);
+            }
+            $success = $stmt->execute();
+            $affected = $stmt->affected_rows;
+            $stmt->close();
+            echo json_encode([
+                'success' => $success && $affected > 0,
+                'message' => ($success && $affected > 0) ? 'Complaint deleted successfully.' : 'Complaint not found or could not be deleted.'
+            ]);
+        } else {
+            echo json_encode(['success' => false, 'message' => $conn->error]);
+        }
+        $conn->close();
+        exit;
+    }
+
+    if ($action === 'update_complaint') {
+        $description = trim($_POST['description'] ?? '');
+        $department = trim($_POST['department'] ?? '');
+        $department_head = trim($_POST['department_head'] ?? '');
+        $village = trim($_POST['village'] ?? '');
+        $taluka = trim($_POST['taluka'] ?? '');
+        $registration_type = trim($_POST['registration_type'] ?? '');
+        $issue_date = trim($_POST['issue_date'] ?? '');
+        $status = trim($_POST['status'] ?? '');
+
+        if ($description === '' || $department === '' || $village === '' || $taluka === '' || $registration_type === '' || $issue_date === '' || $status === '') {
+            echo json_encode(['success' => false, 'message' => 'Please fill all required fields.']);
+            $conn->close();
+            exit;
+        }
+
+        $stmt = $conn->prepare("UPDATE tbl_raiseissue SET description = ?, department = ?, department_head = ?, village = ?, taluka = ?, registration_type = ?, issue_date = ?, status = ? WHERE issue_number = ?" . $villageClause);
+        if ($stmt) {
+            if (!empty($user_village)) {
+                $stmt->bind_param("ssssssssss", $description, $department, $department_head, $village, $taluka, $registration_type, $issue_date, $status, $issue_number, $user_village);
+            } else {
+                $stmt->bind_param("sssssssss", $description, $department, $department_head, $village, $taluka, $registration_type, $issue_date, $status, $issue_number);
+            }
+            $success = $stmt->execute();
+            $stmt->close();
+            echo json_encode([
+                'success' => $success,
+                'message' => $success ? 'Complaint updated successfully.' : 'Complaint could not be updated.'
+            ]);
+        } else {
+            echo json_encode(['success' => false, 'message' => $conn->error]);
+        }
+        $conn->close();
+        exit;
+    }
+
+    echo json_encode(['success' => false, 'message' => 'Invalid action.']);
+    $conn->close();
+    exit;
 }
 
 $sql = "SELECT
@@ -118,6 +199,17 @@ function formatDate($dateString)
     $timestamp = strtotime($dateString);
     return $timestamp ? date('d F Y', $timestamp) : htmlspecialchars($dateString);
 }
+
+function isEditDisabled($status)
+{
+    $normalized = strtolower(trim((string) $status));
+    return in_array($normalized, ['resolved', 'transferred', 'transfered'], true);
+}
+
+function isDeleteDisabled($status)
+{
+    return isEditDisabled($status);
+}
 ?>
 
 <?php include('include/header.php'); ?>
@@ -180,6 +272,7 @@ function formatDate($dateString)
                     <th>प्रकार</th>
                     <th>दिनांक</th>
                     <th>स्थिती</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody id="complaintTableBody">
@@ -188,6 +281,8 @@ function formatDate($dateString)
                         <?php
                         $status = $complaint['status'] ?? 'Open';
                         $badgeClass = badgeClass($status);
+                        $editDisabled = isEditDisabled($status);
+                        $deleteDisabled = isDeleteDisabled($status);
                         ?>
                         <tr class="complaint-row" data-status="<?= strtolower(trim($status)); ?>"
                             data-department="<?= htmlspecialchars($complaint['department']); ?>"
@@ -213,6 +308,23 @@ function formatDate($dateString)
                             <td><span class="badge-type"><?= htmlspecialchars($complaint['registration_type']); ?></span></td>
                             <td><?= formatDate($complaint['issue_date']); ?></td>
                             <td><span class="badge-status <?= $badgeClass; ?>"><?= htmlspecialchars($status); ?></span></td>
+                            <td>
+                                <div class="action-cell">
+                                    <button type="button" class="btn-icon btn-edit" title="<?= $editDisabled ? 'Edit disabled for resolved or transferred complaints' : 'Edit'; ?>"
+                                        data-issue="<?= htmlspecialchars(json_encode($complaint), ENT_QUOTES, 'UTF-8'); ?>"
+                                        <?= $editDisabled ? 'disabled aria-disabled="true"' : 'onclick="openEditModalFromButton(this)"'; ?>>
+                                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25Zm17.71-10.04a1 1 0 0 0 0-1.41L18.2 3.29a1 1 0 0 0-1.41 0l-1.96 1.96 3.75 3.75 2.13-1.79Z" />
+                                        </svg>
+                                    </button>
+                                    <button type="button" class="btn-icon btn-delete" title="<?= $deleteDisabled ? 'Delete disabled for resolved or transferred complaints' : 'Delete'; ?>"
+                                        <?= $deleteDisabled ? 'disabled aria-disabled="true"' : 'onclick="deleteComplaint(' . htmlspecialchars(json_encode($complaint['issue_number']), ENT_QUOTES, 'UTF-8') . ')"'; ?>>
+                                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12ZM8 9h8v10H8V9Zm7.5-5-1-1h-5l-1 1H5v2h14V4h-3.5Z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
@@ -229,6 +341,80 @@ function formatDate($dateString)
     </div>
 
 
+
+    <div id="editModal" class="modal" style="display: none;">
+        <div class="modal-overlay" onclick="closeEditModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Complaint</h2>
+                <button class="modal-close" onclick="closeEditModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="editForm">
+                    <input type="hidden" id="editIssueNumber" />
+                    <div class="form-group">
+                        <label>Issue Number</label>
+                        <input type="text" id="editIssueDisplay" class="form-control" readonly />
+                    </div>
+                    <div class="form-group">
+                        <label for="editDescription">Description</label>
+                        <textarea id="editDescription" class="form-control" rows="4" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="editDepartment">Department</label>
+                        <select id="editDepartment" class="form-control" required>
+                            <option value="">-- Select Department --</option>
+                            <?php foreach ($distinct_departments as $dept): ?>
+                                <option value="<?php echo htmlspecialchars($dept); ?>">
+                                    <?php echo htmlspecialchars($dept); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editDepartmentHead">Assigned Officer</label>
+                        <select id="editDepartmentHead" class="form-control">
+                            <option value="">-- Select Officer --</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editVillage">Village</label>
+                            <input type="text" id="editVillage" class="form-control" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="editTaluka">Taluka</label>
+                            <input type="text" id="editTaluka" class="form-control" required />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editRegistrationType">Type</label>
+                            <input type="text" id="editRegistrationType" class="form-control" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="editIssueDate">Date</label>
+                            <input type="date" id="editIssueDate" class="form-control" required />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="editStatus">Status</label>
+                        <select id="editStatus" class="form-control" required>
+                            <option value="Pending">Pending</option>
+                            <option value="Resolved">Resolved</option>
+                            <option value="Open">Open</option>
+                            <option value="In-Progress">In-Progress</option>
+                            <option value="Closed">Closed</option>
+                        </select>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn-secondary" onclick="closeEditModal()">Cancel</button>
+                        <button type="submit" class="btn-primary">Update</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <!-- Transfer Modal -->
     <div id="transferModal" class="modal" style="display: none;">
@@ -580,6 +766,14 @@ function formatDate($dateString)
             background: rgba(59, 130, 246, 0.1);
         }
 
+        .btn-icon:disabled,
+        .btn-icon[aria-disabled="true"] {
+            opacity: 0.45;
+            cursor: not-allowed;
+            pointer-events: none;
+            background: transparent;
+        }
+
         .btn-view {
             color: #8b5cf6;
         }
@@ -710,6 +904,12 @@ function formatDate($dateString)
             background: #f8fafc;
             color: #64748b;
             cursor: not-allowed;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
         }
 
         .modal-footer {
@@ -908,6 +1108,8 @@ function formatDate($dateString)
         }
     </style>
 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <!-- JavaScript Functions -->
     <script>
         const deptDesignations = <?php echo json_encode($dept_designations); ?>;
@@ -944,6 +1146,9 @@ function formatDate($dateString)
                 "lengthMenu": [10, 25, 50, 100],
                 "ordering": true,
                 "order": [],
+                "columnDefs": [
+                    { "targets": 10, "orderable": false, "searchable": false }
+                ],
                 "language": {
                     "lengthMenu": "दाखवा _MENU_ नोंदी",
                     "paginate": {
@@ -979,18 +1184,55 @@ function formatDate($dateString)
             table.search('').columns().search('').draw();
         }
 
-        function editComplaint(id) {
-            alert('तक्रार #' + id + ' संपादित करण्याचे फॉर्म उघडणे...');
+        function openEditModalFromButton(button) {
+            const complaint = JSON.parse(button.getAttribute('data-issue'));
+            window.location.href = 'issueform.php?edit=' + encodeURIComponent(complaint.issue_number || '');
         }
 
-        function viewComplaint(id) {
-            alert('तक्रार #' + id + ' चे तपशील पहाणे...');
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+            document.getElementById('editForm').reset();
         }
 
         function deleteComplaint(id) {
-            if (confirm('क्या आप खरोखर हे तक्रार हटवू शकता?')) {
-                alert('तक्रार #' + id + ' हटवल्या गेले आहे');
-            }
+            Swal.fire({
+                title: 'Delete complaint?',
+                text: 'This action cannot be undone.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Delete',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#64748b'
+            }).then((result) => {
+                if (!result.isConfirmed) return;
+
+                fetch('complaint_report.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'action=delete_complaint&issue_number=' + encodeURIComponent(id)
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        Swal.fire({
+                            title: data.success ? 'Deleted' : 'Not deleted',
+                            text: data.message,
+                            icon: data.success ? 'success' : 'error'
+                        }).then(() => {
+                            if (data.success) {
+                                location.reload();
+                            }
+                        });
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        Swal.fire({
+                            title: 'Delete failed',
+                            text: 'Please try again.',
+                            icon: 'error'
+                        });
+                    });
+            });
         }
 
         function openNewComplaintForm() {
@@ -1054,6 +1296,39 @@ function formatDate($dateString)
                 now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
             document.getElementById('transferDate').value = dateTimeString;
         }
+
+        document.getElementById('editForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const payload = new URLSearchParams();
+            payload.append('action', 'update_complaint');
+            payload.append('issue_number', document.getElementById('editIssueNumber').value);
+            payload.append('description', document.getElementById('editDescription').value);
+            payload.append('department', document.getElementById('editDepartment').value);
+            payload.append('department_head', document.getElementById('editDepartmentHead').value);
+            payload.append('village', document.getElementById('editVillage').value);
+            payload.append('taluka', document.getElementById('editTaluka').value);
+            payload.append('registration_type', document.getElementById('editRegistrationType').value);
+            payload.append('issue_date', document.getElementById('editIssueDate').value);
+            payload.append('status', document.getElementById('editStatus').value);
+
+            fetch('complaint_report.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: payload.toString()
+            })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    if (data.success) {
+                        location.reload();
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('Update failed. Please try again.');
+                });
+        });
 
         // Handle transfer form submission via AJAX
         document.getElementById('transferForm').addEventListener('submit', function (e) {

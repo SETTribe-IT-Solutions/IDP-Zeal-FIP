@@ -11,7 +11,7 @@ $active_page = 'landingpage';
 $page_title = 'Home';
 $page_description = 'Official Zilla Parishad Hingoli portal for inter-department issue management and district information.';
 
-include 'include/header.php';
+// include 'include/header.php';
 ?>
 
 <style>
@@ -844,13 +844,5 @@ include 'include/header.php';
         </div>
     </div>
 
-        tabs.forEach(tab => {
-            tab.addEventListener('click', function () {
-                const target = this.dataset.target;
-
-                tabs.forEach(t => t.classList.toggle('active', t === this));
-                panels.forEach(panel => panel.classList.toggle('active', panel.id === target));
-            });
-        });
-    });
+       
 </script>

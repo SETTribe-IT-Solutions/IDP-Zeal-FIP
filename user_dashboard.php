@@ -8,7 +8,7 @@ if (!isset($_SESSION['username'])) {
 }
 
 // Include database configuration
-require_once 'include/config.php';
+require_once __DIR__ . '/include/config.php';
 
 // Fetch stats and recent items from DB with error fallbacks
 $total_issues = 0;

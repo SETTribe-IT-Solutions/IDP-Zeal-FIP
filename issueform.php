@@ -3,7 +3,7 @@
 session_start();
 
 // Include database configuration
-require_once 'include/config.php';
+require_once __DIR__ . '/include/config.php';
 require_once 'issue_db.php';   // <-- Now provides generateIssueNumber() and is safe to include
 
 $conn = db_connect();

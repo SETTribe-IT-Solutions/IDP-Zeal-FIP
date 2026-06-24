@@ -72,6 +72,32 @@ if ($stmt) {
     $dbError = $conn->error;
 }
 
+$transfers = [];
+if ($view === 'transfer' && !empty($complaints)) {
+    $issue_numbers = array_column($complaints, 'issue_number');
+    if (!empty($issue_numbers)) {
+        $placeholders = implode(',', array_fill(0, count($issue_numbers), '?'));
+        $trans_sql = "SELECT t.issue_no, u.department 
+                      FROM transfer t 
+                      JOIN users u ON BINARY t.transfer_by = BINARY u.username 
+                      WHERE t.issue_no IN ($placeholders)";
+        $trans_stmt = $conn->prepare($trans_sql);
+        if ($trans_stmt) {
+            $types = str_repeat('s', count($issue_numbers));
+            $trans_stmt->bind_param($types, ...$issue_numbers);
+            $trans_stmt->execute();
+            $trans_res = $trans_stmt->get_result();
+            if ($trans_res) {
+                while ($row = $trans_res->fetch_assoc()) {
+                    $transfers[$row['issue_no']] = $row['department'];
+                }
+                $trans_res->free();
+            }
+            $trans_stmt->close();
+        }
+    }
+}
+
 // Fetch distinct departments from users table
 $distinct_departments = [];
 $dept_res = $conn->query("SELECT DISTINCT department AS dept FROM users WHERE department IS NOT NULL AND department != ''");
@@ -203,13 +229,15 @@ function formatDate($dateString)
 
     <!-- Complaints Table -->
     <div class="table-wrapper">
-        <table id="complaintsTable" class="complaints-table">
+        <table id="complaintsTable" class="complaints-table dataTable dtr-inline">
             <thead>
                 <tr>
+                    <th style="width: 30px;"></th>
                     <th>समस्या क्रमांक</th>
                     <th>फोटो</th>
                     <th>समस्या विषय</th>
                     <th>विभाग</th>
+                    <th>मूळ विभाग</th>
                     <th>नियुक्त अधिकारी</th>
                     <th>गाव</th>
                     <th>तालुका</th>
@@ -238,6 +266,7 @@ function formatDate($dateString)
                         <tr class="complaint-row" data-status="<?= htmlspecialchars($display_status); ?>"
                             data-department="<?= htmlspecialchars($dept_display); ?>"
                             data-village="<?= htmlspecialchars($complaint['village']); ?>">
+                            <td></td>
                             <td class="complaint-id"><?= htmlspecialchars($complaint['issue_number']); ?></td>
                             <td class="photo-cell">
                                 <?php if (!empty($complaint['photo'])): ?>
@@ -253,6 +282,7 @@ function formatDate($dateString)
                                 <p class="complaint-desc"><?= htmlspecialchars($complaint['description']); ?></p>
                             </td>
                             <td><?= htmlspecialchars($dept_display); ?></td>
+                            <td><?= htmlspecialchars($transfers[$complaint['issue_number']] ?? $dept_display); ?></td>
                             <td><?= htmlspecialchars($complaint['department_head'] ?? 'विभाग प्रमुख'); ?></td>
                             <td><?= htmlspecialchars($complaint['village']); ?></td>
                             <td><?= htmlspecialchars($complaint['taluka'] ?? 'Hingoli'); ?></td>
@@ -278,7 +308,7 @@ function formatDate($dateString)
                                             data-status="<?= strtolower($status); ?>" data-issue='<?= json_encode($complaint); ?>'>
                                             <i class="fa-solid fa-check"></i> Resolve
                                         </button>
-                                        <button class="btn-icon btn-transfer" title="हस्तांतरण" onclick="openTransferModal('<?= htmlspecialchars($complaint['issue_number']); ?>', '<?= htmlspecialchars($complaint['department']); ?>', '<?= htmlspecialchars($complaint['taluka']); ?>')">
+                                        <button class="btn-icon btn-transfer" title="हस्तांतरण" onclick="openTransferModal('<?= htmlspecialchars($complaint['issue_number']); ?>', '<?= htmlspecialchars($transfers[$complaint['issue_number']] ?? $complaint['department']); ?>', '<?= htmlspecialchars($complaint['taluka']); ?>')">
                                                         <i class="fa-solid fa-right-left"></i> Transfer
                                                     </button>
                                             <?php endif; ?>
@@ -1314,12 +1344,18 @@ function formatDate($dateString)
                 "lengthMenu": [10, 25, 50, 100],
                 "ordering": true,
                 "order": [],
-                "responsive": true,
+                "responsive": {
+                    "details": {
+                        "type": 'column',
+                        "target": 0
+                    }
+                },
                 "columnDefs": [
-                    { "responsivePriority": 1, "targets": 0 }, // समस्या क्रमांक
-                    { "responsivePriority": 1, "targets": 2 }, // समस्या विषय (description)
-                    { "responsivePriority": 2, "targets": 10 }, // क्रिया (buttons) - collapses on smaller screens
-                    { "responsivePriority": 3, "targets": 9 }  // स्थिती
+                    { "className": 'dtr-control', "orderable": false, "targets": 0 },
+                    { "responsivePriority": 1, "targets": 1 }, // समस्या क्रमांक
+                    { "responsivePriority": 1, "targets": 3 }, // समस्या विषय (description)
+                    { "responsivePriority": 2, "targets": 12 }, // क्रिया (buttons) - collapses on smaller screens
+                    { "responsivePriority": 3, "targets": 11 }  // स्थिती
                 ],
                 "language": {
                     "lengthMenu": "दाखवा _MENU_ नोंदी",
@@ -1338,15 +1374,15 @@ function formatDate($dateString)
             });
 
             $('#statusFilter').on('change', function () {
-                // Exact matching for status column (Index 9) ignoring surrounding whitespace
+                // Exact matching for status column (Index 11) ignoring surrounding whitespace
                 const val = this.value;
-                table.column(9).search(val ? '^\\s*' + val + '\\s*$' : '', true, false).draw();
+                table.column(11).search(val ? '^\\s*' + val + '\\s*$' : '', true, false).draw();
             });
 
             $('#departmentFilter').on('change', function () {
-                // Exact matching for department column (Index 3) ignoring surrounding whitespace
+                // Exact matching for original department column (Index 5) ignoring surrounding whitespace
                 const val = this.value;
-                table.column(3).search(val ? '^\\s*' + val + '\\s*$' : '', true, false).draw();
+                table.column(5).search(val ? '^\\s*' + val + '\\s*$' : '', true, false).draw();
             });
         });
 
@@ -1386,7 +1422,7 @@ function formatDate($dateString)
         }
 
         function exportComplaints() {
-            let csv = 'समस्या क्रमांक,विषय,विभाग,नियुक्त अधिकारी,गाव,तालुका,प्रकार,दिनांक,स्थिती\n';
+            let csv = 'समस्या क्रमांक,विषय,विभाग,मूळ विभाग,नियुक्त अधिकारी,गाव,तालुका,प्रकार,दिनांक,स्थिती\n';
             const table = $('#complaintsTable').DataTable();
             const filteredRows = table.rows({ search: 'applied' }).nodes();
 
@@ -1394,15 +1430,16 @@ function formatDate($dateString)
                 const id = row.querySelector('.complaint-id').textContent.trim();
                 const subject = row.querySelector('.complaint-subject strong').textContent.trim();
                 const cells = row.querySelectorAll('td');
-                const department = cells[3].textContent.trim();
-                const deptHead = cells[4].textContent.trim();
-                const village = cells[5].textContent.trim();
-                const taluka = cells[6].textContent.trim();
-                const type = cells[7].textContent.trim();
-                const date = cells[8].textContent.trim();
-                const status = cells[9].textContent.trim();
+                const department = cells[4].textContent.trim();
+                const origDept = cells[5].textContent.trim();
+                const deptHead = cells[6].textContent.trim();
+                const village = cells[7].textContent.trim();
+                const taluka = cells[8].textContent.trim();
+                const type = cells[9].textContent.trim();
+                const date = cells[10].textContent.trim();
+                const status = cells[11].textContent.trim();
 
-                csv += '"' + id + '","' + subject + '","' + department + '","' + deptHead + '","' + village + '","' + taluka + '","' + type + '","' + date + '","' + status + '"\n';
+                csv += '"' + id + '","' + subject + '","' + department + '","' + origDept + '","' + deptHead + '","' + village + '","' + taluka + '","' + type + '","' + date + '","' + status + '"\n';
             });
 
             const link = document.createElement('a');

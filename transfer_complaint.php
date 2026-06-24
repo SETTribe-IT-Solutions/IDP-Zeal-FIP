@@ -67,8 +67,8 @@ try {
         $department_head = 'विभाग प्रमुख'; // Fallback
     }
 
-    // Update the issue department, department head, transfer_to, and reset status to Pending
-    $update_sql = "UPDATE tbl_raiseissue SET department = ?, department_head = ?, transfer_to = ?, status = 'Pending' WHERE issue_number = ?";
+    // Update the issue department, department head, transfer_to, and reset status to Transfer
+    $update_sql = "UPDATE tbl_raiseissue SET department = ?, department_head = ?, transfer_to = ?, status = 'Transfer' WHERE issue_number = ?";
     $update_stmt = $conn->prepare($update_sql);
     if (!$update_stmt) {
         throw new Exception("Update preparation failed: " . $conn->error);

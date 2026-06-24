@@ -79,21 +79,17 @@ include 'include/header.php';
         z-index: 2;
     }
 
-    .landing-hero .hero-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        background: rgba(255, 255, 255, 0.12);
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        padding: 8px 16px;
-        border-radius: var(--radius-full);
-        font-size: 12px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        margin-bottom: 24px;
-        animation: slideDown 0.6s ease-out;
-        color: rgba(255, 255, 255, 0.95);
+    .landing-hero .hero-visual {
+        min-height: 360px;
+        width: 100%;
+        border-radius: 24px;
+        background: radial-gradient(circle at top left, rgba(59, 130, 246, 0.48), rgba(14, 165, 233, 0.16) 36%),
+            radial-gradient(circle at bottom right, rgba(236, 72, 153, 0.24), transparent 30%);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+        position: relative;
+        overflow: hidden;
+        display: grid;
+        place-items: center;
     }
 
     .landing-hero .hero-badge i {
@@ -111,13 +107,8 @@ include 'include/header.php';
         animation: slideUp 0.8s ease-out 0.1s both;
     }
 
-    .landing-hero .hero-title-sub {
-        font-size: 1.1rem;
-        font-weight: 500;
-        color: rgba(255, 255, 255, 0.85);
-        margin-bottom: 24px;
-        letter-spacing: 0.01em;
-        animation: slideUp 0.8s ease-out 0.2s both;
+    .landing-hero .hero-visual .hero-card+.hero-card {
+        margin-top: 14px;
     }
 
     .landing-hero .hero-text {
@@ -153,11 +144,13 @@ include 'include/header.php';
         cursor: pointer;
     }
 
-    .landing-hero .hero-actions .btn-primary {
-        background: #ffffff !important;
-        color: #07215b !important;
-        box-shadow: 0 10px 25px rgba(255, 255, 255, 0.15);
-        border: 2px solid transparent;
+    .landing-hero .hero-visual::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.18), transparent 22%),
+            radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.08), transparent 26%);
+        pointer-events: none;
     }
 
     .landing-hero .hero-actions .btn-primary:hover {
@@ -725,8 +718,9 @@ include 'include/header.php';
         }
     }
 </style>
-
+<?php include('include/header.php'); ?>
 <main class="main-content">
+
     <section class="landing-hero">
         <div class="hero-panel">
             <span class="hero-badge"><i class="fa-solid fa-shield-halved"></i> जिल्हा परिषद हिंगोली पोर्टल | Zilha Parishad Hingoli Portal</span>
@@ -742,7 +736,8 @@ include 'include/header.php';
             <div class="hero-illustration">
                 <img src="assets/zp-logo.png" alt="ZP Hingoli Logo" class="hero-logo">
                 <img src="assets/maharashtra-emblem.png" alt="Maharashtra Emblem" class="hero-emblem">
-                <span class="hero-illustration-text"><i class="fa-solid fa-city"></i> Official District Service Portal</span>
+                <span class="hero-illustration-text"><i class="fa-solid fa-city"></i> Official District Service
+                    Portal</span>
             </div>
         </div>
     </section>
@@ -849,8 +844,13 @@ include 'include/header.php';
         </div>
     </div>
 
-</main>
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function () {
+                const target = this.dataset.target;
 
-<?php include 'include/footer.php'; ?>
-</body>
-</html>
+                tabs.forEach(t => t.classList.toggle('active', t === this));
+                panels.forEach(panel => panel.classList.toggle('active', panel.id === target));
+            });
+        });
+    });
+</script>

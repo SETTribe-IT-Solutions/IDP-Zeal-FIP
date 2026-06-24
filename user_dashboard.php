@@ -22,23 +22,52 @@ try {
     $conn = db_connect();
 
     // Determine query filter based on user role
-    $role = $_SESSION['user_system_role'] ?? '';
+    $role = !empty($_SESSION['user_system_role']) ? $_SESSION['user_system_role'] : ($_SESSION['user_role'] ?? '');
     $where = "1=1";
     $params = [];
     $types = "";
 
-    if ($role === 'CEO') {
+    $normalizedRole = strtolower(trim($role));
+
+    // Fetch logged-in user's village from database
+    $user_village = '';
+    $stmt_user = $conn->prepare("SELECT village FROM users WHERE username = ?");
+    if ($stmt_user) {
+        $stmt_user->bind_param("s", $_SESSION['username']);
+        $stmt_user->execute();
+        $res_user = $stmt_user->get_result();
+        if ($res_user && $row_user = $res_user->fetch_assoc()) {
+            $user_village = trim($row_user['village'] ?? '');
+        }
+        $stmt_user->close();
+    }
+
+    if ($normalizedRole === 'ceo') {
         $where = "1=1";
-    } elseif ($role === 'ग्रामपंचायत अधिकारी' || $role === 'अंगणवाडी सेविका' || $role === 'शिक्षक') {
-        $where = "mobile = ?";
-        $params[] = $_SESSION['user_mobile'] ?? '';
-        $types .= "s";
+    } elseif ($role === 'ग्रामपंचायत अधिकारी' || $role === 'अंगणवाडी सेविका' || $role === 'शिक्षक' || $normalizedRole === 'teacher') {
+        if (!empty($user_village)) {
+            $where = "village = ?";
+            $params[] = $user_village;
+            $types .= "s";
+        } else {
+            $where = "mobile = ?";
+            $params[] = $_SESSION['user_mobile'] ?? '';
+            $types .= "s";
+        }
     } else {
         // BDO, THO, HoD
-        $where = "department = ? AND department_head = ?";
-        $params[] = $_SESSION['user_dept'] ?? '';
-        $params[] = $_SESSION['user_designation'] ?? '';
-        $types .= "ss";
+        $user_desg = $_SESSION['user_designation'] ?? '';
+        $user_taluka = $_SESSION['user_taluka'] ?? '';
+        if (!empty($user_taluka)) {
+            $where = "department_head = ? AND taluka = ?";
+            $params[] = $user_desg;
+            $params[] = $user_taluka;
+            $types .= "ss";
+        } else {
+            $where = "department_head = ?";
+            $params[] = $user_desg;
+            $types .= "s";
+        }
     }
 
     // Query stats
@@ -107,7 +136,7 @@ try {
 
     $recent_issues = [
         [
-            'issue_number' => '0024',
+            'issue_number' => 'ISSUE-0024',
             'description' => 'रस्त्यावरील दिवे बंद आहेत (Street lights are off)',
             'department' => 'पंचायत समिती',
             'village' => 'जवळ बाजार',
@@ -116,7 +145,7 @@ try {
             'status' => 'In Progress'
         ],
         [
-            'issue_number' => '0023',
+            'issue_number' => 'ISSUE-0023',
             'description' => 'पिण्याच्या पाण्याची लाईन दुरुस्त करणे (Repair drinking water pipeline)',
             'department' => 'आरोग्य विभाग',
             'village' => 'गोजेगाव',
@@ -125,7 +154,7 @@ try {
             'status' => 'Open'
         ],
         [
-            'issue_number' => '0022',
+            'issue_number' => 'ISSUE-0022',
             'description' => 'नवीन शाळा वर्गखोल्या बांधकामाची मागणी (Request for new classroom construction)',
             'department' => 'शिक्षण विभाग',
             'village' => 'लोहारा बु.',
@@ -516,14 +545,14 @@ include 'include/sidebar.php';
         }
 
         @media screen and (max-width: 768px) {
-            .main-content {
-                margin-left: 220px;
-            }
-
-            .main-content.collapsed {
-                margin-left: 72px;
-            }
-        }
+    .main-content {
+        margin-left: 0;
+        padding: 20px 16px;
+    }
+    .main-content.collapsed {
+        margin-left: 0;
+    }
+}
 
         /* Welcome Container Styles */
         .welcome-container {

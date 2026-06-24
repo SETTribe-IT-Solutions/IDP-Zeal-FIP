@@ -30,6 +30,83 @@ if (isset($_SESSION['username'])) {
     }
 }
 
+if (isset($_GET['export']) && $_GET['export'] === 'complaints') {
+    $exportSql = "SELECT
+            issue_number,
+            description,
+            department,
+            department_head,
+            village,
+            taluka,
+            registration_type,
+            issue_date,
+            status
+        FROM tbl_raiseissue";
+
+    if (!empty($user_village)) {
+        $exportSql .= " WHERE village = ?";
+    }
+    $exportSql .= " ORDER BY id DESC";
+
+    $stmt = $conn->prepare($exportSql);
+    if (!$stmt) {
+        http_response_code(500);
+        echo 'Export query failed: ' . $conn->error;
+        $conn->close();
+        exit;
+    }
+
+    if (!empty($user_village)) {
+        $stmt->bind_param("s", $user_village);
+    }
+
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $filename = 'complaints_' . date('Y-m-d_H-i-s') . '.csv';
+    header('Content-Type: text/csv; charset=UTF-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+
+    echo "\xEF\xBB\xBF";
+    $output = fopen('php://output', 'w');
+
+    fputcsv($output, [
+        'समस्या क्रमांक (Issue Number)',
+        'विषय (Subject)',
+        'विभाग (Department)',
+        'नियुक्त अधिकारी (Assigned Officer)',
+        'गाव (Village)',
+        'तालुका (Taluka)',
+        'प्रकार (Type)',
+        'दिनांक (Date)',
+        'स्थिती (Status)'
+    ]);
+
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            fputcsv($output, [
+                $row['issue_number'] ?? '',
+                $row['description'] ?? '',
+                $row['department'] ?? '',
+                $row['department_head'] ?? '',
+                $row['village'] ?? '',
+                $row['taluka'] ?? '',
+                $row['registration_type'] ?? '',
+                $row['issue_date'] ?? '',
+                $row['status'] ?? ''
+            ]);
+        }
+        $result->free();
+    }
+
+    fclose($output);
+    $stmt->close();
+    $conn->close();
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     header('Content-Type: application/json');
 
@@ -214,6 +291,8 @@ function isDeleteDisabled($status)
 
 <?php include('include/header.php'); ?>
 <?php include('include/sidebar.php'); ?>
+<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
 
 <main class="main-content">
     <!-- Page Header -->
@@ -262,6 +341,7 @@ function isDeleteDisabled($status)
         <table id="complaintsTable" class="complaints-table">
             <thead>
                 <tr>
+                    <th class="dtr-control-header" aria-label="Details"></th>
                     <th>समस्या क्रमांक</th>
                     <th>फोटो</th>
                     <th>समस्या विषय</th>
@@ -287,8 +367,9 @@ function isDeleteDisabled($status)
                         <tr class="complaint-row" data-status="<?= strtolower(trim($status)); ?>"
                             data-department="<?= htmlspecialchars($complaint['department']); ?>"
                             data-village="<?= htmlspecialchars($complaint['village']); ?>">
-                            <td class="complaint-id"><?= htmlspecialchars($complaint['issue_number']); ?></td>
-                            <td class="photo-cell">
+                            <td class="dtr-control" tabindex="0" data-label=""></td>
+                            <td class="complaint-id" data-label="समस्या क्रमांक"><?= htmlspecialchars($complaint['issue_number']); ?></td>
+                            <td class="photo-cell" data-label="फोटो">
                                 <?php if (!empty($complaint['photo'])): ?>
                                     <img src="<?= htmlspecialchars($complaint['photo']); ?>" alt="तक्रार फोटो"
                                         class="complaint-photo">
@@ -297,18 +378,18 @@ function isDeleteDisabled($status)
                                         File</span>
                                 <?php endif; ?>
                             </td>
-                            <td class="complaint-subject">
+                            <td class="complaint-subject" data-label="समस्या विषय">
                                 <strong><?= htmlspecialchars($complaint['description']); ?></strong>
                                 <p class="complaint-desc"><?= htmlspecialchars($complaint['description']); ?></p>
                             </td>
-                            <td><?= htmlspecialchars($complaint['department']); ?></td>
-                            <td><?= htmlspecialchars($complaint['department_head'] ?? 'विभाग प्रमुख'); ?></td>
-                            <td><?= htmlspecialchars($complaint['village']); ?></td>
-                            <td><?= htmlspecialchars($complaint['taluka'] ?? 'Hingoli'); ?></td>
-                            <td><span class="badge-type"><?= htmlspecialchars($complaint['registration_type']); ?></span></td>
-                            <td><?= formatDate($complaint['issue_date']); ?></td>
-                            <td><span class="badge-status <?= $badgeClass; ?>"><?= htmlspecialchars($status); ?></span></td>
-                            <td>
+                            <td data-label="विभाग"><?= htmlspecialchars($complaint['department']); ?></td>
+                            <td data-label="नियुक्त अधिकारी"><?= htmlspecialchars($complaint['department_head'] ?? 'विभाग प्रमुख'); ?></td>
+                            <td data-label="गाव"><?= htmlspecialchars($complaint['village']); ?></td>
+                            <td data-label="तालुका"><?= htmlspecialchars($complaint['taluka'] ?? 'Hingoli'); ?></td>
+                            <td data-label="प्रकार"><span class="badge-type"><?= htmlspecialchars($complaint['registration_type']); ?></span></td>
+                            <td data-label="दिनांक"><?= formatDate($complaint['issue_date']); ?></td>
+                            <td data-label="स्थिती"><span class="badge-status <?= $badgeClass; ?>"><?= htmlspecialchars($status); ?></span></td>
+                            <td data-label="Action">
                                 <div class="action-cell">
                                     <button type="button" class="btn-icon btn-edit" title="<?= $editDisabled ? 'Edit disabled for resolved or transferred complaints' : 'Edit'; ?>"
                                         data-issue="<?= htmlspecialchars(json_encode($complaint), ENT_QUOTES, 'UTF-8'); ?>"
@@ -1044,36 +1125,156 @@ function isDeleteDisabled($status)
         }
 
         @media (max-width: 768px) {
+            .main-content {
+                padding-left: 14px;
+                padding-right: 14px;
+            }
+
             .page-header-container {
                 flex-direction: column;
                 align-items: stretch;
+                margin-bottom: 20px;
+                gap: 14px;
             }
 
-            .btn-primary {
+            .page-title h1 {
+                font-size: 1.6rem;
+                line-height: 1.25;
+            }
+
+            .page-title p {
+                font-size: 0.9rem;
+            }
+
+            .btn-primary,
+            .btn-secondary,
+            .filter-select {
                 width: 100%;
             }
 
+            .filter-section {
+                padding: 14px;
+                margin-bottom: 16px;
+            }
+
+            .filter-controls {
+                gap: 10px;
+            }
+
+            .search-box input {
+                font-size: 0.9rem;
+                padding-right: 12px;
+            }
+
+            .table-wrapper,
+            .dataTables_wrapper {
+                background: transparent;
+                box-shadow: none;
+                padding: 0;
+                overflow: visible;
+            }
+
             .complaints-table {
-                font-size: 0.85rem;
+                width: 100% !important;
+                border-collapse: collapse;
             }
 
             .complaints-table th,
             .complaints-table td {
-                padding: 12px 8px;
+                padding: 12px 10px;
+                font-size: 0.86rem;
+            }
+
+            .complaints-table td.dtr-control {
+                min-width: 42px;
+                padding-left: 12px;
+            }
+
+            table.dataTable.dtr-inline.collapsed>tbody>tr>td.dtr-control:before,
+            table.dataTable.dtr-inline.collapsed>tbody>tr>th.dtr-control:before {
+                background-color: #2563eb;
+                border: 0;
+                box-shadow: 0 2px 8px rgba(37, 99, 235, 0.28);
+                line-height: 16px;
+                top: 50%;
+                transform: translateY(-50%);
+            }
+
+            table.dataTable>tbody>tr.child ul.dtr-details {
+                display: grid;
+                gap: 8px;
+                width: 100%;
+            }
+
+            table.dataTable>tbody>tr.child ul.dtr-details>li {
+                display: grid;
+                grid-template-columns: minmax(104px, 36%) minmax(0, 1fr);
+                gap: 10px;
+                align-items: start;
+                border-bottom: 1px solid #e2e8f0;
+                padding: 8px 0;
+            }
+
+            table.dataTable>tbody>tr.child span.dtr-title {
+                color: #64748b;
+                font-size: 0.78rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                white-space: normal;
+            }
+
+            table.dataTable>tbody>tr.child span.dtr-data {
+                color: #1e293b;
+                text-align: right;
+                overflow-wrap: anywhere;
             }
 
             .complaint-subject {
-                max-width: 150px;
+                max-width: 260px;
             }
 
             .action-cell {
-                flex-direction: column;
+                justify-content: flex-end;
+                gap: 8px;
             }
 
             .btn-icon {
+                width: 38px;
+                height: 38px;
+                padding: 0;
+            }
+
+            .dataTables_wrapper .dataTables_length,
+            .dataTables_wrapper .dataTables_filter,
+            .dataTables_wrapper .dataTables_info,
+            .dataTables_wrapper .dataTables_paginate {
                 width: 100%;
                 text-align: left;
-                padding: 8px 6px;
+            }
+
+            .dataTables_wrapper .dataTables_paginate {
+                justify-content: center;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .dataTables_wrapper .dataTables_paginate .paginate_button {
+                margin: 0 !important;
+            }
+
+            .modal-content {
+                width: calc(100% - 24px);
+                max-height: 88vh;
+            }
+
+            .modal-header,
+            .modal-body,
+            .modal-footer {
+                padding: 16px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -1082,13 +1283,17 @@ function isDeleteDisabled($status)
                 font-size: 1.5rem;
             }
 
-            .complaints-table {
-                font-size: 0.8rem;
+            .complaints-table td {
+                grid-template-columns: 1fr;
+                gap: 4px;
+                text-align: left;
             }
 
-            .complaints-table th,
-            .complaints-table td {
-                padding: 8px 6px;
+            .complaints-table td::before,
+            .complaint-subject strong,
+            .complaint-desc,
+            .photo-cell {
+                text-align: left;
             }
 
             .complaint-id {
@@ -1146,8 +1351,19 @@ function isDeleteDisabled($status)
                 "lengthMenu": [10, 25, 50, 100],
                 "ordering": true,
                 "order": [],
+                "responsive": {
+                    "details": {
+                        "type": "column",
+                        "target": 0
+                    }
+                },
                 "columnDefs": [
-                    { "targets": 10, "orderable": false, "searchable": false }
+                    { "targets": 0, "className": "dtr-control", "orderable": false, "searchable": false },
+                    { "targets": 1, "responsivePriority": 1 },
+                    { "targets": 3, "responsivePriority": 2 },
+                    { "targets": 10, "responsivePriority": 3 },
+                    { "targets": 11, "orderable": false, "searchable": false, "responsivePriority": 4 },
+                    { "targets": 2, "responsivePriority": 10001 }
                 ],
                 "language": {
                     "lengthMenu": "दाखवा _MENU_ नोंदी",
@@ -1166,13 +1382,13 @@ function isDeleteDisabled($status)
             });
 
             $('#statusFilter').on('change', function() {
-                // Column index 9 is the status column (0-indexed) after adding Assigned Officer column
-                table.column(9).search(this.value).draw();
+                // Column index 10 is the status column after adding the DTR control column.
+                table.column(10).search(this.value).draw();
             });
 
             $('#departmentFilter').on('change', function() {
-                // Column index 3 is the department column
-                table.column(3).search(this.value).draw();
+                // Column index 4 is the department column after adding the DTR control column.
+                table.column(4).search(this.value).draw();
             });
         });
 
@@ -1240,29 +1456,7 @@ function isDeleteDisabled($status)
         }
 
         function exportComplaints() {
-            let csv = 'समस्या क्रमांक,विषय,विभाग,नियुक्त अधिकारी,गाव,तालुका,प्रकार,दिनांक,स्थिती\n';
-            const table = $('#complaintsTable').DataTable();
-            const filteredRows = table.rows({ search: 'applied' }).nodes();
-
-            filteredRows.each(function(row) {
-                const id = row.querySelector('.complaint-id').textContent.trim();
-                const subject = row.querySelector('.complaint-subject strong').textContent.trim();
-                const cells = row.querySelectorAll('td');
-                const department = cells[3].textContent.trim();
-                const deptHead = cells[4].textContent.trim();
-                const village = cells[5].textContent.trim();
-                const taluka = cells[6].textContent.trim();
-                const type = cells[7].textContent.trim();
-                const date = cells[8].textContent.trim();
-                const status = cells[9].textContent.trim();
-
-                csv += '"' + id + '","' + subject + '","' + department + '","' + deptHead + '","' + village + '","' + taluka + '","' + type + '","' + date + '","' + status + '"\n';
-            });
-
-            const link = document.createElement('a');
-            link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-            link.download = 'माझी_तक्रारी.csv';
-            link.click();
+            window.location.href = 'complaint_report.php?export=complaints';
         }
 
         function openTransferModal(complaintId) {

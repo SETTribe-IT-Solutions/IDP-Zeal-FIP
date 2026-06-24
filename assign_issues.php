@@ -111,6 +111,52 @@ if ($users_res) {
     }
 }
 
+if (isset($_GET['export']) && $_GET['export'] === 'complaints') {
+    $filename = 'assigned_complaints_' . date('Y-m-d_H-i-s') . '.csv';
+    header('Content-Type: text/csv; charset=UTF-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+
+    echo "\xEF\xBB\xBF";
+    $output = fopen('php://output', 'w');
+
+    fputcsv($output, [
+        'समस्या क्रमांक (Issue Number)',
+        'विषय (Subject)',
+        'विभाग (Department)',
+        'नियुक्त अधिकारी (Assigned Officer)',
+        'गाव (Village)',
+        'तालुका (Taluka)',
+        'प्रकार (Type)',
+        'दिनांक (Date)',
+        'स्थिती (Status)'
+    ]);
+
+    foreach ($complaints as $complaint) {
+        $status = $complaint['status'] ?? '';
+        if (!empty($complaint['transfer_to']) && strtolower(trim($status)) === 'pending') {
+            $status = 'Transfer';
+        }
+
+        fputcsv($output, [
+            $complaint['issue_number'] ?? '',
+            $complaint['description'] ?? '',
+            $complaint['department'] ?? '',
+            $complaint['department_head'] ?? '',
+            $complaint['village'] ?? '',
+            $complaint['taluka'] ?? '',
+            $complaint['registration_type'] ?? '',
+            $complaint['issue_date'] ?? '',
+            $status
+        ]);
+    }
+
+    fclose($output);
+    $conn->close();
+    exit;
+}
+
 $conn->close();
 
 $can_perform_actions = false;
@@ -1271,29 +1317,9 @@ function formatDate($dateString)
         }
 
         function exportComplaints() {
-            let csv = 'समस्या क्रमांक,विषय,विभाग,नियुक्त अधिकारी,गाव,तालुका,प्रकार,दिनांक,स्थिती\n';
-            const table = $('#complaintsTable').DataTable();
-            const filteredRows = table.rows({ search: 'applied' }).nodes();
-
-            filteredRows.each(function (row) {
-                const id = row.querySelector('.complaint-id').textContent.trim();
-                const subject = row.querySelector('.complaint-subject strong').textContent.trim();
-                const cells = row.querySelectorAll('td');
-                const department = cells[3].textContent.trim();
-                const deptHead = cells[4].textContent.trim();
-                const village = cells[5].textContent.trim();
-                const taluka = cells[6].textContent.trim();
-                const type = cells[7].textContent.trim();
-                const date = cells[8].textContent.trim();
-                const status = cells[9].textContent.trim();
-
-                csv += '"' + id + '","' + subject + '","' + department + '","' + deptHead + '","' + village + '","' + taluka + '","' + type + '","' + date + '","' + status + '"\n';
-            });
-
-            const link = document.createElement('a');
-            link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-            link.download = 'तक्रारी.csv';
-            link.click();
+            const params = new URLSearchParams(window.location.search);
+            params.set('export', 'complaints');
+            window.location.href = 'assign_issues.php?' + params.toString();
         }
 
         function openTransferModal(complaintId, department, taluka) {

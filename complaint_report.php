@@ -31,13 +31,13 @@ if (isset($_SESSION['username'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
-    header('Content-Type: application/json');
+    header('Content-Type: application/json; charset=utf-8');
 
     $action = $_POST['action'];
     $issue_number = trim($_POST['issue_number'] ?? '');
 
     if ($issue_number === '') {
-        echo json_encode(['success' => false, 'message' => 'Issue number is required.']);
+        echo json_encode(['success' => false, 'message' => 'समस्या क्रमांक आवश्यक आहे.'], JSON_UNESCAPED_UNICODE);
         $conn->close();
         exit;
     }
@@ -60,10 +60,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $stmt->close();
             echo json_encode([
                 'success' => $success && $affected > 0,
-                'message' => ($success && $affected > 0) ? 'Complaint deleted successfully.' : 'Complaint not found or could not be deleted.'
-            ]);
+                'message' => ($success && $affected > 0) ? 'तक्रार यशस्वीरित्या हटवली.' : 'तक्रार सापडली नाही किंवा हटवता आली नाही.'
+            ], JSON_UNESCAPED_UNICODE);
         } else {
-            echo json_encode(['success' => false, 'message' => $conn->error]);
+            echo json_encode(['success' => false, 'message' => 'डेटाबेस त्रुटी: ' . $conn->error], JSON_UNESCAPED_UNICODE);
         }
         $conn->close();
         exit;
@@ -80,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $status = trim($_POST['status'] ?? '');
 
         if ($description === '' || $department === '' || $village === '' || $taluka === '' || $registration_type === '' || $issue_date === '' || $status === '') {
-            echo json_encode(['success' => false, 'message' => 'Please fill all required fields.']);
+            echo json_encode(['success' => false, 'message' => 'कृपया सर्व आवश्यक फील्ड भरा.'], JSON_UNESCAPED_UNICODE);
             $conn->close();
             exit;
         }
@@ -96,16 +96,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $stmt->close();
             echo json_encode([
                 'success' => $success,
-                'message' => $success ? 'Complaint updated successfully.' : 'Complaint could not be updated.'
-            ]);
+                'message' => $success ? 'तक्रार यशस्वीरित्या अद्यतनित केली.' : 'तक्रार अद्यतनित करता आली नाही.'
+            ], JSON_UNESCAPED_UNICODE);
         } else {
-            echo json_encode(['success' => false, 'message' => $conn->error]);
+            echo json_encode(['success' => false, 'message' => 'डेटाबेस त्रुटी: ' . $conn->error], JSON_UNESCAPED_UNICODE);
         }
         $conn->close();
         exit;
     }
 
-    echo json_encode(['success' => false, 'message' => 'Invalid action.']);
+    echo json_encode(['success' => false, 'message' => 'अवैध कृती.'], JSON_UNESCAPED_UNICODE);
     $conn->close();
     exit;
 }
@@ -1112,7 +1112,8 @@ function isDeleteDisabled($status)
 
     <!-- JavaScript Functions -->
     <script>
-        const deptDesignations = <?php echo json_encode($dept_designations); ?>;
+        const deptDesignations = <?php echo json_encode($dept_designations, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+        const complaintsExportData = <?php echo json_encode($complaints, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 
         const departmentSelect = document.getElementById('transferDepartment');
         const deptHeadSelect = document.getElementById('transferDeptHead');
@@ -1196,12 +1197,12 @@ function isDeleteDisabled($status)
 
         function deleteComplaint(id) {
             Swal.fire({
-                title: 'Delete complaint?',
-                text: 'This action cannot be undone.',
+                title: 'तक्रार हटवायची का?',
+                text: 'ही कृती परत करता येणार नाही.',
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonText: 'Delete',
-                cancelButtonText: 'Cancel',
+                confirmButtonText: 'हटवा',
+                cancelButtonText: 'रद्द करा',
                 confirmButtonColor: '#dc2626',
                 cancelButtonColor: '#64748b'
             }).then((result) => {
@@ -1215,9 +1216,11 @@ function isDeleteDisabled($status)
                     .then(response => response.json())
                     .then(data => {
                         Swal.fire({
-                            title: data.success ? 'Deleted' : 'Not deleted',
+                            title: data.success ? 'हटवले' : 'हटवले नाही',
                             text: data.message,
-                            icon: data.success ? 'success' : 'error'
+                            icon: data.success ? 'success' : 'error',
+                            confirmButtonText: 'ठीक आहे',
+                            confirmButtonColor: data.success ? '#0284c7' : '#dc2626'
                         }).then(() => {
                             if (data.success) {
                                 location.reload();
@@ -1227,9 +1230,11 @@ function isDeleteDisabled($status)
                     .catch(err => {
                         console.error(err);
                         Swal.fire({
-                            title: 'Delete failed',
-                            text: 'Please try again.',
-                            icon: 'error'
+                            title: 'त्रुटी',
+                            text: 'तक्रार हटवता आली नाही. कृपया पुन्हा प्रयत्न करा.',
+                            icon: 'error',
+                            confirmButtonText: 'ठीक आहे',
+                            confirmButtonColor: '#dc2626'
                         });
                     });
             });
@@ -1240,29 +1245,70 @@ function isDeleteDisabled($status)
         }
 
         function exportComplaints() {
-            let csv = 'समस्या क्रमांक,विषय,विभाग,नियुक्त अधिकारी,गाव,तालुका,प्रकार,दिनांक,स्थिती\n';
+            const columns = [
+                { key: 'issue_number', label: 'Issue Number' },
+                { key: 'photo', label: 'Photo' },
+                { key: 'description', label: 'Description' },
+                { key: 'department', label: 'Department' },
+                { key: 'department_head', label: 'Assigned Officer' },
+                { key: 'village', label: 'Village' },
+                { key: 'taluka', label: 'Taluka' },
+                { key: 'registration_type', label: 'Type' },
+                { key: 'issue_date', label: 'Date' },
+                { key: 'status', label: 'Status' }
+            ];
             const table = $('#complaintsTable').DataTable();
-            const filteredRows = table.rows({ search: 'applied' }).nodes();
+            const filteredIssueNumbers = new Set();
 
-            filteredRows.each(function(row) {
-                const id = row.querySelector('.complaint-id').textContent.trim();
-                const subject = row.querySelector('.complaint-subject strong').textContent.trim();
-                const cells = row.querySelectorAll('td');
-                const department = cells[3].textContent.trim();
-                const deptHead = cells[4].textContent.trim();
-                const village = cells[5].textContent.trim();
-                const taluka = cells[6].textContent.trim();
-                const type = cells[7].textContent.trim();
-                const date = cells[8].textContent.trim();
-                const status = cells[9].textContent.trim();
-
-                csv += '"' + id + '","' + subject + '","' + department + '","' + deptHead + '","' + village + '","' + taluka + '","' + type + '","' + date + '","' + status + '"\n';
+            table.rows({ search: 'applied' }).nodes().each(function(row) {
+                const issueCell = row.querySelector('.complaint-id');
+                if (issueCell) {
+                    filteredIssueNumbers.add(issueCell.textContent.trim());
+                }
             });
 
+            const rowsToExport = complaintsExportData.filter(function(complaint) {
+                return filteredIssueNumbers.has(String(complaint.issue_number || '').trim());
+            });
+
+            const escapeHtml = function(value) {
+                const text = value === null || value === undefined ? '' : String(value);
+                return text
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            };
+
+            const headerCells = columns.map(function(column) {
+                return '<th>' + escapeHtml(column.label) + '</th>';
+            }).join('');
+
+            const bodyRows = rowsToExport.map(function(complaint) {
+                const cells = columns.map(function(column) {
+                    return '<td>' + escapeHtml(complaint[column.key]) + '</td>';
+                }).join('');
+                return '<tr>' + cells + '</tr>';
+            }).join('');
+
+            const excelContent =
+                '<html xmlns:o="urn:schemas-microsoft-com:office:office" ' +
+                'xmlns:x="urn:schemas-microsoft-com:office:excel" ' +
+                'xmlns="http://www.w3.org/TR/REC-html40">' +
+                '<head><meta charset="UTF-8"></head>' +
+                '<body><table border="1"><thead><tr>' + headerCells +
+                '</tr></thead><tbody>' + bodyRows + '</tbody></table></body></html>';
+
+            const blob = new Blob(['\uFEFF' + excelContent], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
-            link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-            link.download = 'माझी_तक्रारी.csv';
+            link.href = url;
+            link.download = 'complaints_report.xls';
+            document.body.appendChild(link);
             link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         }
 
         function openTransferModal(complaintId) {
@@ -1319,14 +1365,26 @@ function isDeleteDisabled($status)
             })
                 .then(response => response.json())
                 .then(data => {
-                    alert(data.message);
+                    Swal.fire({
+                        title: data.success ? 'यशस्वी!' : 'त्रुटी',
+                        text: data.message,
+                        icon: data.success ? 'success' : 'error',
+                        confirmButtonText: 'ठीक आहे',
+                        confirmButtonColor: data.success ? '#0284c7' : '#dc2626'
+                    });
                     if (data.success) {
-                        location.reload();
+                        setTimeout(() => location.reload(), 900);
                     }
                 })
                 .catch(err => {
                     console.error(err);
-                    alert('Update failed. Please try again.');
+                    Swal.fire({
+                        title: 'त्रुटी',
+                        text: 'अद्यतन करता आले नाही. कृपया पुन्हा प्रयत्न करा.',
+                        icon: 'error',
+                        confirmButtonText: 'ठीक आहे',
+                        confirmButtonColor: '#dc2626'
+                    });
                 });
         });
 
@@ -1339,7 +1397,13 @@ function isDeleteDisabled($status)
             const notes = document.getElementById('transferNotes').value;
 
             if (!department || !deptHead) {
-                alert('कृपया विभाग आणि संबंधित विभाग प्रमुख निवडा');
+                Swal.fire({
+                    title: 'त्रुटी',
+                    text: 'कृपया विभाग आणि संबंधित विभाग प्रमुख निवडा.',
+                    icon: 'error',
+                    confirmButtonText: 'ठीक आहे',
+                    confirmButtonColor: '#dc2626'
+                });
                 return;
             }
 
@@ -1354,15 +1418,32 @@ function isDeleteDisabled($status)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        alert('तक्रार यशस्वीरित्या हस्तांतरित केली गेली!');
-                        location.reload();
+                        Swal.fire({
+                            title: 'यशस्वी!',
+                            text: 'तक्रार यशस्वीरित्या हस्तांतरित केली गेली!',
+                            icon: 'success',
+                            confirmButtonText: 'ठीक आहे',
+                            confirmButtonColor: '#0284c7'
+                        }).then(() => location.reload());
                     } else {
-                        alert('त्रुटी: ' + data.message);
+                        Swal.fire({
+                            title: 'त्रुटी',
+                            text: data.message,
+                            icon: 'error',
+                            confirmButtonText: 'ठीक आहे',
+                            confirmButtonColor: '#dc2626'
+                        });
                     }
                 })
                 .catch(err => {
                     console.error(err);
-                    alert('हस्तांतरण प्रक्रिया दरम्यान त्रुटी आली.');
+                    Swal.fire({
+                        title: 'त्रुटी',
+                        text: 'हस्तांतरण प्रक्रिया दरम्यान त्रुटी आली.',
+                        icon: 'error',
+                        confirmButtonText: 'ठीक आहे',
+                        confirmButtonColor: '#dc2626'
+                    });
                 });
         });
 

@@ -876,6 +876,7 @@ include 'include/header.php';
                     } else {
                         Swal.fire({
                             title: 'यशस्वी!',
+                            text: result.message,
                             icon: 'success',
                             confirmButtonColor: '#0284c7',
                             confirmButtonText: 'बंद करा'

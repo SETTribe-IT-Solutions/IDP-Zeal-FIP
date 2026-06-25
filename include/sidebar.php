@@ -252,23 +252,13 @@ $dashboard_url = getDashboardUrl($role);
                     class="sidebar-item <?php echo in_array(basename($_SERVER['PHP_SELF']), ['ceo_dashbord.php', 'CEO.php']) ? 'active' : ''; ?>">
                     <a href="ceo_dashbord.php"><i class="fa-solid fa-chart-line"></i> डॅशबोर्ड(Dashboard)</a>
                 </li>
-                <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'issueform.php') ? 'active' : ''; ?>">
-                    <a href="issueform.php"><i class="fa-solid fa-plus-circle"></i> समस्या नोंदवा (Raise Issue)</a>
-                </li>
+                
                 <li
                     class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'ceo_report.php') ? 'active' : ''; ?>">
                     <a href="ceo_report.php"><i class="fa-solid fa-file-invoice"></i> तक्रार अहवाल (Issue Report)</a>
                 </li>
-                <li
-                    class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'assign_issues.php' && ($_GET['view'] ?? '') !== 'transfer') ? 'active' : ''; ?>">
-                    <a href="assign_issues.php?view=assigned"><i class="fa-solid fa-list-check"></i> नियुक्त तक्रारी
-                        (Assigned Issues)</a>
-                </li>
-                <li
-                    class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'assign_issues.php' && ($_GET['view'] ?? '') === 'transfer') ? 'active' : ''; ?>">
-                    <a href="assign_issues.php?view=transfer"><i class="fa-solid fa-right-left"></i> तक्रार हस्तांतरण
-                        (Transfer Issues)</a>
-                </li>
+               
+               
             <?php else: ?>
                 <!-- Default / Admin fallback view -->
                 <li

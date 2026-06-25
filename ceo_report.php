@@ -163,23 +163,25 @@ if ($transferResult) {
 }
 
 // Main issues – ordered by date (most recent first)
+// LEFT JOIN with users table to resolve correct department/designation for transferred issues
 $issueSql = "
     SELECT
-        issue_number,
-        issue_date,
-        taluka,
-        village,
-        department,
-        department_head,
-        registration_type,
-        position,
-        mobile,
-        description,
-        photo,
-        status,
-        resolved_remark
-    FROM tbl_raiseissue
-    ORDER BY issue_date DESC, issue_number DESC
+        r.issue_number,
+        r.issue_date,
+        r.taluka,
+        r.village,
+        COALESCE(u.department, r.department) AS department,
+        COALESCE(u.designation, r.department_head) AS department_head,
+        r.registration_type,
+        r.position,
+        r.mobile,
+        r.description,
+        r.photo,
+        r.status,
+        r.resolved_remark
+    FROM tbl_raiseissue r
+    LEFT JOIN users u ON r.transfer_to IS NOT NULL AND r.transfer_to != '' AND BINARY r.transfer_to = BINARY u.username
+    ORDER BY r.issue_date DESC, r.issue_number DESC
 ";
 
 $issueResult = $conn->query($issueSql);

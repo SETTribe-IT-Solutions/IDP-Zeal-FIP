@@ -1,8 +1,7 @@
-
 <?php
 session_start();
 
-include("/include/config.php");
+include("include/config.php");
 
 $conn = getDBConnection();
 
@@ -96,28 +95,20 @@ SELECT *
 FROM tbl_raiseissue
 ORDER BY id DESC
 ");
-?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CEO Dashboard | Issue Monitoring</title>
-    
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- FontAwesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <!-- Bootstrap 5 -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-    
-    <!-- DataTables Bootstrap 5 Integration -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+// Page title for header include
+$page_title = 'CEO Dashboard';
+$active_page = 'ceo_dashbord';
+?>
+<?php include __DIR__ . '/include/header.php'; ?>
+<?php include __DIR__ . '/include/sidebar.php'; ?>
+
+<!-- Bootstrap 5 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+<!-- DataTables Bootstrap 5 Integration -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
 
     <style>
         :root {
@@ -145,44 +136,32 @@ ORDER BY id DESC
 
         /* Header Styling */
         .dashboard-header {
-            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-            color: white;
-            padding: 2.5rem 2rem;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow-md);
-            margin-bottom: 2rem;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .dashboard-header::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -10%;
-            width: 300px;
-            height: 300px;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
-            border-radius: 50%;
+            background: transparent;
+            padding: 1.25rem 0.5rem 1rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid var(--border-color);
         }
 
         .dashboard-header h2 {
             font-weight: 700;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.3rem;
             letter-spacing: -0.5px;
-            font-size: 2rem;
-            color: #ffffff;
-            background: transparent !important;
-            padding: 0;
+            font-size: 1.75rem;
+            color: var(--text-main);
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
+        .dashboard-header h2 i {
+            color: #3a7bd5;
+        }
+
         .dashboard-header p {
             margin: 0;
-            opacity: 0.8;
-            font-weight: 300;
+            color: var(--text-muted);
+            font-weight: 400;
+            font-size: 0.9rem;
         }
 
         /* Stat Cards */
@@ -480,14 +459,23 @@ ORDER BY id DESC
 
         .dataTables_wrapper .dataTables_info,
         .dataTables_wrapper .dataTables_paginate {
-            padding: 1rem;
+            padding: 0.75rem 1rem;
+        }
+
+        .dataTables_wrapper .dataTables_paginate {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
         }
 
         .dataTables_wrapper .dataTables_paginate .paginate_button {
             padding: 0.3rem 0.8rem;
-            margin: 0 0.2rem;
+            margin: 0 0.1rem;
             border-radius: 6px;
             border: 1px solid var(--border-color);
+            display: inline-block;
         }
 
         .dataTables_wrapper .dataTables_paginate .paginate_button.current {
@@ -496,28 +484,157 @@ ORDER BY id DESC
             color: #3a7bd5 !important;
         }
 
+        /* Bottom info+paginate row layout */
+        .dataTables_wrapper .row:last-child {
+            border-top: 1px solid var(--border-color);
+            margin: 0;
+        }
+
         /* Mobile specific adjustments */
         @media (max-width: 768px) {
             .dashboard-header {
-                padding: 1.5rem 1rem;
+                padding: 1rem 0.25rem 0.75rem;
             }
             .dashboard-header h2 {
-                font-size: 1.5rem;
+                font-size: 1.2rem;
+            }
+            .dashboard-header p {
+                font-size: 0.8rem;
             }
             .stat-card {
-                margin-bottom: 1rem;
+                margin-bottom: 0.5rem;
+                min-height: 100px;
+            }
+            .stat-card h1 {
+                font-size: 2rem;
             }
             .chart-container {
-                height: 300px;
+                height: 260px;
             }
             .card-box {
                 padding: 1rem;
             }
+            .card-box-title {
+                font-size: 1.05rem;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+            /* Department tracking cards: 2 per row on mobile */
+            .dept-track-card {
+                padding: 1rem;
+            }
+            .dept-stats-grid {
+                gap: 0.4rem;
+            }
+            .dept-stat-value {
+                font-size: 1rem;
+            }
+            /* DataTable controls stack vertically */
+            .dataTables_wrapper .dataTables_filter,
+            .dataTables_wrapper .dataTables_length {
+                text-align: left !important;
+            }
+            .dataTables_wrapper .dataTables_filter input {
+                width: 100%;
+            }
+            /* Pagination: center on mobile, prevent cutoff */
+            .dataTables_wrapper .dataTables_paginate {
+                justify-content: center !important;
+                padding: 0.75rem 0.5rem !important;
+                overflow-x: auto;
+            }
+            .dataTables_wrapper .dataTables_info {
+                text-align: center !important;
+                padding: 0.5rem 0.5rem 0 !important;
+                font-size: 0.82rem;
+            }
+            .dataTables_wrapper .dataTables_paginate .paginate_button {
+                padding: 0.25rem 0.6rem !important;
+                margin: 0 0.1rem !important;
+                font-size: 0.82rem;
+            }
+            /* Info + paginate stack vertically */
+            .dataTables_wrapper .row:last-child > [class*="col-"] {
+                text-align: center !important;
+            }
+            .dataTables_wrapper .d-flex.justify-content-end {
+                justify-content: center !important;
+            }
+            /* Trend chart select on mobile */
+            #trendDeptSelect {
+                width: 100% !important;
+                min-width: unset !important;
+                margin-top: 0.5rem;
+            }
+            .card-box-title.d-flex {
+                flex-direction: column;
+                align-items: flex-start !important;
+            }
+            /* DT Buttons wrap nicely */
+            .dt-buttons {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px;
+            }
+            .dt-buttons .dt-button {
+                padding: 0.35rem 0.7rem !important;
+                font-size: 0.78rem !important;
+                margin-bottom: 0 !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .dashboard-header h2 {
+                font-size: 1.15rem;
+            }
+            .stat-card h1 {
+                font-size: 1.7rem;
+            }
+            .stat-card .icon-box {
+                font-size: 1.8rem;
+            }
+            .chart-container {
+                height: 220px;
+            }
+        }
+
+        /* DataTables Responsive child row styling */
+        table.dataTable.dtr-inline.collapsed > tbody > tr > td.dtr-control:before,
+        table.dataTable.dtr-inline.collapsed > tbody > tr > th.dtr-control:before {
+            background-color: #3a7bd5;
+            border-color: #3a7bd5;
+            box-shadow: 0 0 3px rgba(58,123,213,0.4);
+        }
+
+        table.dataTable.dtr-inline.collapsed > tbody > tr.parent > td.dtr-control:before,
+        table.dataTable.dtr-inline.collapsed > tbody > tr.parent > th.dtr-control:before {
+            background-color: #11998e;
+            border-color: #11998e;
+        }
+
+        /* Child row expanded content styling */
+        table.dataTable > tbody > tr.child ul.dtr-details {
+            width: 100%;
+        }
+
+        table.dataTable > tbody > tr.child ul.dtr-details > li {
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.5rem 0;
+            font-size: 0.88rem;
+        }
+
+        table.dataTable > tbody > tr.child ul.dtr-details > li:last-child {
+            border-bottom: none;
+        }
+
+        table.dataTable > tbody > tr.child ul.dtr-details .dtr-title {
+            font-weight: 600;
+            color: var(--text-muted);
+            min-width: 110px;
         }
     </style>
-</head>
-<body>
 
+<main class="main-content">
 <div class="container-fluid p-3 p-md-4">
 
     <!-- Header Section -->
@@ -728,9 +845,12 @@ ORDER BY id DESC
         </div>
     </div>
 
-</div>
+</div><!-- /container-fluid -->
 
-<!-- Scripts -->
+<?php include __DIR__ . '/include/footer.php'; ?>
+
+</main><!-- /main-content -->
+
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
@@ -740,6 +860,8 @@ ORDER BY id DESC
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
@@ -755,7 +877,48 @@ $(document).ready(function(){
             { extend: 'print', className: 'dt-button', text: '<i class="fa-solid fa-print text-secondary me-1"></i> Print' }
         ],
         pageLength: 10,
-        responsive: true,
+        responsive: {
+            details: {
+                type: 'column',
+                target: 'tr'
+            }
+        },
+        columnDefs: [
+            { className: 'dtr-control', orderable: false, targets: 0 }
+        ],
+        language: {
+            search: "_INPUT_",
+            searchPlaceholder: "Search records..."
+        }
+    };
+
+    // Issue table needs its own config (more columns to hide on mobile)
+    const issueTableConfig = {
+        dom: '<"row align-items-center p-3 border-bottom mb-3"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6 text-md-end"f>>' +
+             '<"row"<"col-sm-12"tr>>' +
+             '<"row align-items-center p-3 mt-1"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7 d-flex justify-content-end"p>>',
+        buttons: [
+            { extend: 'excelHtml5', className: 'dt-button', text: '<i class="fa-solid fa-file-excel text-success me-1"></i> Excel' },
+            { extend: 'csvHtml5', className: 'dt-button', text: '<i class="fa-solid fa-file-csv text-info me-1"></i> CSV' },
+            { extend: 'print', className: 'dt-button', text: '<i class="fa-solid fa-print text-secondary me-1"></i> Print' }
+        ],
+        pageLength: 10,
+        responsive: {
+            details: {
+                type: 'column',
+                target: 'tr'
+            }
+        },
+        columnDefs: [
+            { className: 'dtr-control', orderable: false, targets: 0 },
+            // On mobile: hide Head & Description columns first to save space
+            { responsivePriority: 1, targets: 0 },  // No
+            { responsivePriority: 2, targets: 5 },  // Status
+            { responsivePriority: 3, targets: 2 },  // Department
+            { responsivePriority: 4, targets: 1 },  // Date
+            { responsivePriority: 5, targets: 4 },  // Description
+            { responsivePriority: 6, targets: 3 }   // Head (hide first)
+        ],
         language: {
             search: "_INPUT_",
             searchPlaceholder: "Search records..."
@@ -763,7 +926,7 @@ $(document).ready(function(){
     };
 
     $('#deptTable').DataTable(dtConfig);
-    const issueTable = $('#issueTable').DataTable(dtConfig);
+    const issueTable = $('#issueTable').DataTable(issueTableConfig);
 
     // Filter issues table when clicking department stats
     $(document).on('click', '.dept-filter-btn', function() {

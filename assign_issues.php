@@ -27,12 +27,16 @@ if ($view === 'transfer') {
     $where = "transfer_to = ?";
     $params[] = $_SESSION['username'] ?? '';
     $types .= "s";
+} elseif ($view === 'transferred_by_me') {
+    $where = "issue_number COLLATE utf8mb4_unicode_ci IN (SELECT issue_no COLLATE utf8mb4_unicode_ci FROM transfer WHERE transfer_by = ?)";
+    $params[] = $_SESSION['username'] ?? '';
+    $types .= "s";
 } else {
     // view === 'assigned'
     if ($normalizedRole === 'ceo') {
-        $where = "(transfer_to IS NULL OR transfer_to = '')";
+        $where = "(transfer_to IS NULL OR transfer_to = '' OR status = 'Transfer')";
     } elseif ($role === 'ग्रामपंचायत अधिकारी' || $role === 'अंगणवाडी सेविका' || $role === 'शिक्षक' || $normalizedRole === 'teacher') {
-        $where = "mobile = ? AND (transfer_to IS NULL OR transfer_to = '')";
+        $where = "mobile = ? AND (transfer_to IS NULL OR transfer_to = '' OR status = 'Transfer')";
         $params[] = $_SESSION['user_mobile'] ?? '';
         $types .= "s";
     } else {
@@ -40,12 +44,12 @@ if ($view === 'transfer') {
         $user_desg = $_SESSION['user_designation'] ?? '';
         $user_taluka = $_SESSION['user_taluka'] ?? '';
         if (!empty($user_taluka)) {
-            $where = "department_head = ? AND taluka = ? AND (transfer_to IS NULL OR transfer_to = '')";
+            $where = "department_head = ? AND taluka = ? AND (transfer_to IS NULL OR transfer_to = '' OR status = 'Transfer')";
             $params[] = $user_desg;
             $params[] = $user_taluka;
             $types .= "ss";
         } else {
-            $where = "department_head = ? AND (transfer_to IS NULL OR transfer_to = '')";
+            $where = "department_head = ? AND (transfer_to IS NULL OR transfer_to = '' OR status = 'Transfer')";
             $params[] = $user_desg;
             $types .= "s";
         }
@@ -73,14 +77,15 @@ if ($stmt) {
 }
 
 $transfers = [];
-if ($view === 'transfer' && !empty($complaints)) {
+if (!empty($complaints)) {
     $issue_numbers = array_column($complaints, 'issue_number');
     if (!empty($issue_numbers)) {
         $placeholders = implode(',', array_fill(0, count($issue_numbers), '?'));
-        $trans_sql = "SELECT t.issue_no, u.department 
+        $trans_sql = "SELECT t.issue_no, t.reason, t.transfer_by, u.department 
                       FROM transfer t 
                       JOIN users u ON BINARY t.transfer_by = BINARY u.username 
-                      WHERE t.issue_no IN ($placeholders)";
+                      WHERE t.issue_no IN ($placeholders)
+                      ORDER BY t.transfer_id ASC";
         $trans_stmt = $conn->prepare($trans_sql);
         if ($trans_stmt) {
             $types = str_repeat('s', count($issue_numbers));
@@ -89,7 +94,11 @@ if ($view === 'transfer' && !empty($complaints)) {
             $trans_res = $trans_stmt->get_result();
             if ($trans_res) {
                 while ($row = $trans_res->fetch_assoc()) {
-                    $transfers[$row['issue_no']] = $row['department'];
+                    $transfers[$row['issue_no']] = [
+                        'department' => $row['department'],
+                        'reason' => $row['reason'],
+                        'transfer_by' => $row['transfer_by']
+                    ];
                 }
                 $trans_res->free();
             }
@@ -146,12 +155,17 @@ if (in_array(strtolower($role), ['bdo', 'tho', 'hod'])) {
 
 function badgeClass($status, $transfer_to = '')
 {
+    if (strtolower(trim($status)) === 'transfer') {
+        return 'transfer';
+    }
     if (!empty($transfer_to) && strtolower(trim($status)) === 'pending') {
         return 'transfer';
     }
     switch (strtolower(trim($status))) {
         case 'pending':
             return 'pending';
+        case 'transfer':
+            return 'transfer';
         case 'in progress':
             return 'in-progress';
         case 'resolved':
@@ -180,8 +194,11 @@ function formatDate($dateString)
     <?php
     $view = $_GET['view'] ?? 'assigned';
     if ($view === 'transfer') {
-        $page_header_title = '📋 तक्रार हस्तांतरण (Transfer Issues)';
-        $page_header_desc = 'इतर विभागांकडे वर्ग करावयाच्या तक्रारींचे हस्तांतरण करा';
+        $page_header_title = '📋 माझे हस्तांतरण (My Transfers)';
+        $page_header_desc = 'माझ्याकडे वर्ग केलेल्या किंवा हस्तांतरित केलेल्या तक्रारी';
+    } elseif ($view === 'transferred_by_me') {
+        $page_header_title = '📋 माझ्याकडून हस्तांतरित (Transferred By Me)';
+        $page_header_desc = 'मी इतर अधिकाऱ्यांकडे हस्तांतरित केलेल्या तक्रारींची यादी';
     } else {
         $page_header_title = '📋 नियुक्त तक्रारी (Assigned Issues)';
         $page_header_desc = 'आपल्या विभागातील नियुक्त तक्रारींचे निवारण व योग्य ती क्रिया करा';
@@ -239,6 +256,7 @@ function formatDate($dateString)
                     <th>विभाग</th>
                     <th>मूळ विभाग</th>
                     <th>नियुक्त अधिकारी</th>
+                    <th>हस्तांतरित अधिकारी (Transferred To)</th>
                     <th>गाव</th>
                     <th>तालुका</th>
                     <th>प्रकार</th>
@@ -279,11 +297,25 @@ function formatDate($dateString)
                             </td>
                             <td class="complaint-subject">
                                 <strong><?= htmlspecialchars($complaint['description']); ?></strong>
-                                <p class="complaint-desc"><?= htmlspecialchars($complaint['description']); ?></p>
+                                <?php if ($view !== 'transferred_by_me' && !empty($transfers[$complaint['issue_number']]['reason'])): ?>
+                                    <div class="transfer-info-box" style="margin-top: 8px; font-size: 0.825rem; color: #1e40af; background-color: #eff6ff; padding: 6px 10px; border-radius: 6px; border-left: 3px solid #3b82f6; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 1px 2px rgba(59, 130, 246, 0.05);">
+                                        <span style="font-weight: 700; color: #1e3a8a;"><i class="fa-solid fa-right-left" style="margin-right: 4px;"></i> हस्तांतरण तपशील (Transfer Details):</span>
+                                        <span style="color: #1e40af;"><strong style="color: #475569;">कोणाकडून (By):</strong> <?= htmlspecialchars($transfers[$complaint['issue_number']]['department']); ?> (<?= htmlspecialchars($transfers[$complaint['issue_number']]['transfer_by']); ?>)</span>
+                                        <span><strong style="color: #475569;">कारण (Reason):</strong> <?= htmlspecialchars($transfers[$complaint['issue_number']]['reason']); ?></span>
+                                    </div>
+                                <?php endif; ?>
                             </td>
                             <td><?= htmlspecialchars($dept_display); ?></td>
-                            <td><?= htmlspecialchars($transfers[$complaint['issue_number']] ?? $dept_display); ?></td>
+                            <td><?= htmlspecialchars($transfers[$complaint['issue_number']]['department'] ?? $dept_display); ?></td>
                             <td><?= htmlspecialchars($complaint['department_head'] ?? 'विभाग प्रमुख'); ?></td>
+                            <td>
+                                <?php if (!empty($complaint['transfer_to'])): ?>
+                                    <strong><?= htmlspecialchars($username_to_name[$complaint['transfer_to']] ?? $complaint['transfer_to']); ?></strong>
+                                    <small style="display: block; color: #64748b; font-size: 0.75rem;"><?= htmlspecialchars($complaint['department_head'] ?? '-'); ?></small>
+                                <?php else: ?>
+                                    -
+                                <?php endif; ?>
+                            </td>
                             <td><?= htmlspecialchars($complaint['village']); ?></td>
                             <td><?= htmlspecialchars($complaint['taluka'] ?? 'Hingoli'); ?></td>
                             <td><span class="badge-type"><?= htmlspecialchars($complaint['registration_type']); ?></span></td>
@@ -292,7 +324,13 @@ function formatDate($dateString)
                             </td>
                             <td>
                                 <div class="action-cell">
-                                    <?php if (in_array(strtolower($status), ['resolved', 'closed'])): ?>
+                                    <?php if ($view === 'transferred_by_me'): ?>
+                                        <button class="btn-icon btn-action" disabled
+                                            style="background-color: #cbd5e1; border-color: #cbd5e1; color: #94a3b8; cursor: not-allowed;"
+                                            title="हस्तांतरित केलेले">
+                                            <i class="fa-solid fa-right-left"></i> Transferred
+                                        </button>
+                                    <?php elseif (in_array(strtolower($status), ['resolved', 'closed'])): ?>
                                         <button class="btn-icon btn-action" disabled
                                             style="background-color: #cbd5e1; border-color: #cbd5e1; color: #94a3b8; cursor: not-allowed;"
                                             title="<?= htmlspecialchars($status); ?>">
@@ -308,12 +346,12 @@ function formatDate($dateString)
                                             data-status="<?= strtolower($status); ?>" data-issue='<?= json_encode($complaint); ?>'>
                                             <i class="fa-solid fa-check"></i> Resolve
                                         </button>
-                                        <button class="btn-icon btn-transfer" title="हस्तांतरण" onclick="openTransferModal('<?= htmlspecialchars($complaint['issue_number']); ?>', '<?= htmlspecialchars($transfers[$complaint['issue_number']] ?? $complaint['department']); ?>', '<?= htmlspecialchars($complaint['taluka']); ?>')">
-                                                        <i class="fa-solid fa-right-left"></i> Transfer
-                                                    </button>
-                                            <?php endif; ?>
-                                        </div>
-                                    </td>
+                                        <button class="btn-icon btn-transfer" title="हस्तांतरण" onclick="openTransferModal('<?= htmlspecialchars($complaint['issue_number']); ?>', '<?= htmlspecialchars($transfers[$complaint['issue_number']]['department'] ?? $complaint['department']); ?>', '<?= htmlspecialchars($complaint['taluka']); ?>')">
+                                            <i class="fa-solid fa-right-left"></i> Transfer
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
                                 </tr>
                         <?php endforeach; ?>
                 <?php endif; ?>
@@ -1354,8 +1392,8 @@ function formatDate($dateString)
                     { "className": 'dtr-control', "orderable": false, "targets": 0 },
                     { "responsivePriority": 1, "targets": 1 }, // समस्या क्रमांक
                     { "responsivePriority": 1, "targets": 3 }, // समस्या विषय (description)
-                    { "responsivePriority": 2, "targets": 12 }, // क्रिया (buttons) - collapses on smaller screens
-                    { "responsivePriority": 3, "targets": 11 }  // स्थिती
+                    { "responsivePriority": 2, "targets": 13 }, // क्रिया (buttons) - collapses on smaller screens
+                    { "responsivePriority": 3, "targets": 12 }  // स्थिती
                 ],
                 "language": {
                     "lengthMenu": "दाखवा _MENU_ नोंदी",
@@ -1374,9 +1412,9 @@ function formatDate($dateString)
             });
 
             $('#statusFilter').on('change', function () {
-                // Exact matching for status column (Index 11) ignoring surrounding whitespace
+                // Exact matching for status column (Index 12) ignoring surrounding whitespace
                 const val = this.value;
-                table.column(11).search(val ? '^\\s*' + val + '\\s*$' : '', true, false).draw();
+                table.column(12).search(val ? '^\\s*' + val + '\\s*$' : '', true, false).draw();
             });
 
             $('#departmentFilter').on('change', function () {
@@ -1422,7 +1460,7 @@ function formatDate($dateString)
         }
 
         function exportComplaints() {
-            let csv = 'समस्या क्रमांक,विषय,विभाग,मूळ विभाग,नियुक्त अधिकारी,गाव,तालुका,प्रकार,दिनांक,स्थिती\n';
+            let csv = 'समस्या क्रमांक,विषय,विभाग,मूळ विभाग,नियुक्त अधिकारी,हस्तांतरित अधिकारी,गाव,तालुका,प्रकार,दिनांक,स्थिती\n';
             const table = $('#complaintsTable').DataTable();
             const filteredRows = table.rows({ search: 'applied' }).nodes();
 
@@ -1433,13 +1471,14 @@ function formatDate($dateString)
                 const department = cells[4].textContent.trim();
                 const origDept = cells[5].textContent.trim();
                 const deptHead = cells[6].textContent.trim();
-                const village = cells[7].textContent.trim();
-                const taluka = cells[8].textContent.trim();
-                const type = cells[9].textContent.trim();
-                const date = cells[10].textContent.trim();
-                const status = cells[11].textContent.trim();
+                const transTo = cells[7].textContent.trim();
+                const village = cells[8].textContent.trim();
+                const taluka = cells[9].textContent.trim();
+                const type = cells[10].textContent.trim();
+                const date = cells[11].textContent.trim();
+                const status = cells[12].textContent.trim();
 
-                csv += '"' + id + '","' + subject + '","' + department + '","' + origDept + '","' + deptHead + '","' + village + '","' + taluka + '","' + type + '","' + date + '","' + status + '"\n';
+                csv += '"' + id + '","' + subject + '","' + department + '","' + origDept + '","' + deptHead + '","' + transTo + '","' + village + '","' + taluka + '","' + type + '","' + date + '","' + status + '"\n';
             });
 
             const link = document.createElement('a');

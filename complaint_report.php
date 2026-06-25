@@ -299,7 +299,6 @@ function isDeleteDisabled($status)
                             </td>
                             <td class="complaint-subject">
                                 <strong><?= htmlspecialchars($complaint['description']); ?></strong>
-                                <p class="complaint-desc"><?= htmlspecialchars($complaint['description']); ?></p>
                             </td>
                             <td><?= htmlspecialchars($complaint['department']); ?></td>
                             <td><?= htmlspecialchars($complaint['department_head'] ?? 'विभाग प्रमुख'); ?></td>

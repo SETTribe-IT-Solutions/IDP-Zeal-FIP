@@ -244,8 +244,13 @@ $dashboard_url = getDashboardUrl($role);
                 </li>
                 <li
                     class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'assign_issues.php' && ($_GET['view'] ?? '') === 'transfer') ? 'active' : ''; ?>">
-                    <a href="assign_issues.php?view=transfer"><i class="fa-solid fa-right-left"></i> तक्रार हस्तांतरण
-                        (Transfer Issues)</a>
+                    <a href="assign_issues.php?view=transfer"><i class="fa-solid fa-right-left"></i> माझे हस्तांतरण
+                        (My Transfers)</a>
+                </li>
+                <li
+                    class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'assign_issues.php' && ($_GET['view'] ?? '') === 'transferred_by_me') ? 'active' : ''; ?>">
+                    <a href="assign_issues.php?view=transferred_by_me"><i class="fa-solid fa-right-left"></i> माझ्याकडून हस्तांतरित
+                        (Transfer By Me)</a>
                 </li>
             <?php else: ?>
                 <!-- Default / CEO / Admin fallback view -->
@@ -267,8 +272,13 @@ $dashboard_url = getDashboardUrl($role);
                 </li>
                 <li
                     class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'assign_issues.php' && ($_GET['view'] ?? '') === 'transfer') ? 'active' : ''; ?>">
-                    <a href="assign_issues.php?view=transfer"><i class="fa-solid fa-right-left"></i> तक्रार हस्तांतरण
-                        (Transfer Issues)</a>
+                    <a href="assign_issues.php?view=transfer"><i class="fa-solid fa-right-left"></i> माझे हस्तांतरण
+                        (My Transfers)</a>
+                </li>
+                <li
+                    class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'assign_issues.php' && ($_GET['view'] ?? '') === 'transferred_by_me') ? 'active' : ''; ?>">
+                    <a href="assign_issues.php?view=transferred_by_me"><i class="fa-solid fa-right-left"></i> माझ्याकडून हस्तांतरित
+                        (Transfer By Me)</a>
                 </li>
             <?php endif; ?>
 

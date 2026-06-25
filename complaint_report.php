@@ -182,6 +182,21 @@ if (in_array(strtolower($role), ['ceo', 'bdo', 'tho', 'hod'])) {
     $can_perform_actions = true;
 }
 
+$total_complaints = count($complaints);
+$pending_count = 0;
+$resolved_count = 0;
+$transferred_count = 0;
+foreach ($complaints as $complaint) {
+    $normalizedStatus = strtolower(trim((string) ($complaint['status'] ?? '')));
+    if ($normalizedStatus === 'pending') {
+        $pending_count++;
+    } elseif ($normalizedStatus === 'resolved') {
+        $resolved_count++;
+    } elseif (in_array($normalizedStatus, ['transfer', 'transferred', 'transfered'], true)) {
+        $transferred_count++;
+    }
+}
+
 function badgeClass($status)
 {
     switch (strtolower(trim($status))) {
@@ -213,6 +228,8 @@ function isDeleteDisabled($status)
 ?>
 
 <?php include('include/header.php'); ?>
+<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
 <?php include('include/sidebar.php'); ?>
 
 <main class="main-content">
@@ -240,6 +257,7 @@ function isDeleteDisabled($status)
                     <option value="">🟢 एकूण</option>
                     <option value="Pending">🟡 प्रलंबित</option>
                     <option value="Resolved">🟣 निराकृत</option>
+                    <option value="Transfer">🔵 हस्तांतरित</option>
                 </select>
 
                 <select id="departmentFilter" class="filter-select">
@@ -262,6 +280,7 @@ function isDeleteDisabled($status)
         <table id="complaintsTable" class="complaints-table">
             <thead>
                 <tr>
+                    <th aria-label="Details"></th>
                     <th>समस्या क्रमांक</th>
                     <th>फोटो</th>
                     <th>समस्या विषय</th>
@@ -287,6 +306,7 @@ function isDeleteDisabled($status)
                         <tr class="complaint-row" data-status="<?= strtolower(trim($status)); ?>"
                             data-department="<?= htmlspecialchars($complaint['department']); ?>"
                             data-village="<?= htmlspecialchars($complaint['village']); ?>">
+                            <td class="dtr-control" tabindex="0"></td>
                             <td class="complaint-id"><?= htmlspecialchars($complaint['issue_number']); ?></td>
                             <td class="photo-cell">
                                 <?php if (!empty($complaint['photo'])): ?>
@@ -474,75 +494,117 @@ function isDeleteDisabled($status)
 
     <!-- Styles -->
     <style>
+        .main-content {
+            background:
+                radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 34%),
+                linear-gradient(180deg, #f8fbff 0%, #f3f6fb 48%, #eef3f9 100%);
+            min-height: calc(100vh - 76px);
+            padding-bottom: 36px;
+        }
+
         .page-header-container {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 32px;
+            margin-bottom: 28px;
             flex-wrap: wrap;
             gap: 20px;
+            padding: 8px 2px 2px;
+            position: relative;
+        }
+
+        .page-title {
+            position: relative;
+            padding-left: 16px;
+        }
+
+        .page-title::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 8px;
+            width: 4px;
+            height: calc(100% - 12px);
+            border-radius: 999px;
+            background: linear-gradient(180deg, #2563eb, #f59e0b);
         }
 
         .page-title h1 {
-            font-size: 2rem;
-            font-weight: 700;
+            font-size: clamp(1.8rem, 2.4vw, 2.35rem);
+            font-weight: 800;
             color: #0f172a;
-            margin-bottom: 5px;
+            margin-bottom: 6px;
+            letter-spacing: 0;
+            line-height: 1.15;
         }
 
         .page-title p {
             color: #64748b;
-            font-size: 0.95rem;
+            font-size: 0.98rem;
+            line-height: 1.5;
         }
 
         .btn-primary {
             background: linear-gradient(135deg, #3b82f6, #2563eb);
             color: white;
             border: none;
-            padding: 12px 24px;
+            padding: 13px 24px;
             border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
+            font-size: 0.98rem;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+            box-shadow: 0 12px 24px rgba(37, 99, 235, 0.24);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
         .btn-primary:hover {
             background: linear-gradient(135deg, #2563eb, #1d4ed8);
-            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
-            transform: translateY(-2px);
+            box-shadow: 0 16px 30px rgba(37, 99, 235, 0.3);
+            transform: translateY(-1px);
         }
 
         .btn-secondary {
-            background: #e2e8f0;
-            color: #1e293b;
-            border: 1px solid #cbd5e1;
-            padding: 10px 18px;
-            border-radius: 6px;
+            background: #f8fafc;
+            color: #1f365c;
+            border: 1px solid #cbd8e8;
+            padding: 11px 18px;
+            border-radius: 8px;
             font-size: 0.9rem;
-            font-weight: 500;
+            font-weight: 650;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
         .btn-secondary:hover {
-            background: #cbd5e1;
+            background: #ffffff;
+            border-color: #94a3b8;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+            transform: translateY(-1px);
         }
 
         /* Filter Section */
         .filter-section {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 24px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid rgba(203, 213, 225, 0.75);
+            border-radius: 12px;
+            padding: 22px;
+            margin-bottom: 26px;
+            box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+            backdrop-filter: blur(8px);
         }
 
         .filter-group {
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 18px;
         }
 
         .search-box {
@@ -552,22 +614,24 @@ function isDeleteDisabled($status)
 
         .search-box input {
             width: 100%;
-            padding: 12px 16px 12px 40px;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
+            padding: 14px 16px 14px 44px;
+            border: 1px solid #cbd8e8;
+            border-radius: 10px;
             font-size: 0.95rem;
-            transition: all 0.3s ease;
+            background: #ffffff;
+            color: #0f172a;
+            transition: border-color 0.18s ease, box-shadow 0.18s ease;
         }
 
         .search-box input:focus {
             outline: none;
             border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.11);
         }
 
         .search-icon {
             position: absolute;
-            left: 12px;
+            left: 14px;
             top: 50%;
             transform: translateY(-50%);
             font-size: 1.1rem;
@@ -577,70 +641,123 @@ function isDeleteDisabled($status)
             display: flex;
             gap: 12px;
             flex-wrap: wrap;
+            align-items: center;
         }
 
         .filter-select {
-            padding: 10px 14px;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
+            min-width: 170px;
+            padding: 11px 38px 11px 14px;
+            border: 1px solid #cbd8e8;
+            border-radius: 8px;
             font-size: 0.9rem;
             background: white;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: border-color 0.18s ease, box-shadow 0.18s ease;
         }
 
         .filter-select:focus {
             outline: none;
             border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.11);
         }
 
         /* Table Wrapper */
         .table-wrapper {
-            background: white;
-            border-radius: 10px;
+            background: transparent;
+            border: 0;
+            border-radius: 0;
             overflow-x: auto;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-            margin-bottom: 24px;
+            box-shadow: none;
+            margin-bottom: 26px;
         }
 
         /* Table Styles */
         .complaints-table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
             font-size: 0.95rem;
         }
 
         .complaints-table thead {
-            background: linear-gradient(90deg, #f8fafc, #f1f5f9);
-            border-bottom: 2px solid #e2e8f0;
+            background: linear-gradient(90deg, #f8fafc, #eef4fb);
         }
 
         .complaints-table th {
-            padding: 16px 12px;
+            padding: 15px 12px;
             text-align: left;
-            font-weight: 700;
-            color: #334155;
+            font-weight: 800;
+            color: #1e3a5f;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-size: 0.85rem;
+            letter-spacing: 0;
+            font-size: 0.78rem;
+            border-bottom: 1px solid #d7e0ea;
+            white-space: nowrap;
         }
 
         .complaints-table td {
-            padding: 16px 12px;
-            border-bottom: 1px solid #e2e8f0;
+            padding: 15px 12px;
+            border-bottom: 1px solid #e8eef5;
             color: #1e293b;
+            vertical-align: middle;
+        }
+
+        .complaints-table td.dtr-control,
+        .complaints-table th:first-child {
+            width: 42px;
+            min-width: 42px;
+            text-align: center;
+        }
+
+        table.dataTable.dtr-inline.collapsed>tbody>tr>td.dtr-control:before,
+        table.dataTable.dtr-inline.collapsed>tbody>tr>th.dtr-control:before {
+            background-color: #2563eb;
+            border: 0;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.28);
+            line-height: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        table.dataTable>tbody>tr.child ul.dtr-details {
+            display: grid;
+            gap: 8px;
+            width: 100%;
+        }
+
+        table.dataTable>tbody>tr.child ul.dtr-details>li {
+            display: grid;
+            grid-template-columns: minmax(112px, 34%) minmax(0, 1fr);
+            gap: 10px;
+            align-items: start;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 8px 0;
+        }
+
+        table.dataTable>tbody>tr.child span.dtr-title {
+            color: #64748b;
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            white-space: normal;
+        }
+
+        table.dataTable>tbody>tr.child span.dtr-data {
+            color: #1e293b;
+            text-align: right;
+            overflow-wrap: anywhere;
         }
 
         .complaints-table tbody tr:hover {
-            background-color: #f8fafc;
+            background-color: #f8fbff;
             transition: background 0.2s ease;
         }
 
         .complaint-id {
             font-weight: 700;
-            color: #3b82f6;
+            color: #123766;
             font-family: 'Courier New', monospace;
+            letter-spacing: 0;
         }
 
         /* Photo Cell */
@@ -649,13 +766,13 @@ function isDeleteDisabled($status)
         }
 
         .complaint-photo {
-            width: 50px;
-            height: 50px;
-            border-radius: 6px;
+            width: 46px;
+            height: 46px;
+            border-radius: 9px;
             object-fit: cover;
-            border: 1px solid #cbd5e1;
+            border: 1px solid #d6e0ea;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
         }
 
         .complaint-photo:hover {
@@ -670,9 +787,10 @@ function isDeleteDisabled($status)
 
         .complaint-subject strong {
             display: block;
-            color: #1e293b;
+            color: #0f172a;
             margin-bottom: 4px;
             word-break: break-word;
+            font-weight: 750;
         }
 
         .complaint-desc {
@@ -690,15 +808,17 @@ function isDeleteDisabled($status)
         .badge-type,
         .badge-status {
             display: inline-block;
-            padding: 6px 12px;
+            padding: 7px 13px;
             border-radius: 50px;
-            font-size: 0.85rem;
-            font-weight: 600;
+            font-size: 0.82rem;
+            font-weight: 800;
+            line-height: 1;
+            white-space: nowrap;
         }
 
         .badge-type {
-            background: #f3f4f6;
-            color: #374151;
+            background: #eef2f7;
+            color: #1f365c;
         }
 
         .badge-status {
@@ -734,21 +854,22 @@ function isDeleteDisabled($status)
         /* Action Cell */
         .action-cell {
             display: flex;
-            gap: 6px;
+            gap: 8px;
+            align-items: center;
         }
 
         .btn-icon {
-            background: none;
-            border: none;
+            background: #f8fafc;
+            border: 1px solid transparent;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             cursor: pointer;
             padding: 0;
             border-radius: 8px;
-            transition: background 0.15s ease, transform 0.12s ease;
+            transition: background 0.15s ease, transform 0.12s ease, border-color 0.15s ease, box-shadow 0.15s ease;
         }
 
         .btn-icon svg {
@@ -763,7 +884,9 @@ function isDeleteDisabled($status)
         }
 
         .btn-edit:hover {
-            background: rgba(59, 130, 246, 0.1);
+            background: #eff6ff;
+            border-color: #bfdbfe;
+            box-shadow: 0 6px 14px rgba(37, 99, 235, 0.12);
         }
 
         .btn-icon:disabled,
@@ -787,7 +910,9 @@ function isDeleteDisabled($status)
         }
 
         .btn-delete:hover {
-            background: rgba(239, 68, 68, 0.1);
+            background: #fef2f2;
+            border-color: #fecaca;
+            box-shadow: 0 6px 14px rgba(239, 68, 68, 0.1);
         }
 
         .btn-transfer {
@@ -952,36 +1077,37 @@ function isDeleteDisabled($status)
 
         /* --- DataTables Custom Styling --- */
         .dataTables_wrapper {
-            padding: 20px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-            margin-bottom: 24px;
+            padding: 22px;
+            background: rgba(255, 255, 255, 0.94);
+            border: 1px solid rgba(203, 213, 225, 0.75);
+            border-radius: 12px;
+            box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
+            margin-bottom: 28px;
         }
         .dataTables_wrapper .dataTables_length,
         .dataTables_wrapper .dataTables_filter {
             margin-bottom: 20px;
             color: #475569;
-            font-weight: 500;
+            font-weight: 650;
         }
         .dataTables_wrapper .dataTables_filter input {
-            padding: 8px 12px;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
+            padding: 9px 12px;
+            border: 1px solid #cbd8e8;
+            border-radius: 8px;
             background-color: white;
             color: #1e293b;
             outline: none;
-            transition: all 0.3s ease;
+            transition: border-color 0.18s ease, box-shadow 0.18s ease;
             margin-left: 8px;
         }
         .dataTables_wrapper .dataTables_filter input:focus {
             border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.11);
         }
         .dataTables_wrapper .dataTables_length select {
-            padding: 6px 10px;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
+            padding: 8px 30px 8px 12px;
+            border: 1px solid #cbd8e8;
+            border-radius: 8px;
             background-color: white;
             color: #1e293b;
             outline: none;
@@ -991,27 +1117,28 @@ function isDeleteDisabled($status)
             padding-top: 20px;
             color: #64748b;
             font-size: 13px;
+            font-weight: 600;
         }
         .dataTables_wrapper .dataTables_paginate {
             padding-top: 16px;
             display: flex;
             justify-content: flex-end;
-            gap: 6px;
+            gap: 8px;
         }
         .dataTables_wrapper .dataTables_paginate .paginate_button {
-            padding: 6px 12px !important;
-            border: 1px solid #cbd5e1 !important;
-            border-radius: 6px !important;
+            padding: 8px 13px !important;
+            border: 1px solid #cbd8e8 !important;
+            border-radius: 8px !important;
             background: white !important;
-            color: #475569 !important;
+            color: #1f365c !important;
             cursor: pointer;
             transition: all 0.2s ease !important;
-            font-weight: 500;
+            font-weight: 700;
         }
         .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-            background: #3b82f6 !important;
+            background: #2563eb !important;
             color: white !important;
-            border-color: #3b82f6 !important;
+            border-color: #2563eb !important;
         }
         .dataTables_wrapper .dataTables_paginate .paginate_button.current,
         .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
@@ -1044,13 +1171,24 @@ function isDeleteDisabled($status)
         }
 
         @media (max-width: 768px) {
+            .main-content {
+                padding-left: 14px;
+                padding-right: 14px;
+            }
+
             .page-header-container {
                 flex-direction: column;
                 align-items: stretch;
+                gap: 16px;
             }
 
             .btn-primary {
                 width: 100%;
+            }
+
+            .filter-section,
+            .dataTables_wrapper {
+                padding: 16px;
             }
 
             .complaints-table {
@@ -1067,19 +1205,29 @@ function isDeleteDisabled($status)
             }
 
             .action-cell {
-                flex-direction: column;
+                flex-direction: row;
+                justify-content: flex-end;
             }
 
             .btn-icon {
-                width: 100%;
-                text-align: left;
-                padding: 8px 6px;
+                width: 38px;
+                height: 38px;
             }
         }
 
         @media (max-width: 480px) {
+            .page-title {
+                padding-left: 12px;
+            }
+
             .page-title h1 {
                 font-size: 1.5rem;
+            }
+
+            .filter-section,
+            .dataTables_wrapper {
+                border-radius: 10px;
+                padding: 14px;
             }
 
             .complaints-table {
@@ -1147,8 +1295,19 @@ function isDeleteDisabled($status)
                 "lengthMenu": [10, 25, 50, 100],
                 "ordering": true,
                 "order": [],
+                "responsive": {
+                    "details": {
+                        "type": "column",
+                        "target": 0
+                    }
+                },
                 "columnDefs": [
-                    { "targets": 10, "orderable": false, "searchable": false }
+                    { "targets": 0, "className": "dtr-control", "orderable": false, "searchable": false },
+                    { "targets": 1, "responsivePriority": 1 },
+                    { "targets": 3, "responsivePriority": 2 },
+                    { "targets": 10, "responsivePriority": 3 },
+                    { "targets": 11, "orderable": false, "searchable": false, "responsivePriority": 4 },
+                    { "targets": 2, "responsivePriority": 10001 }
                 ],
                 "language": {
                     "lengthMenu": "दाखवा _MENU_ नोंदी",
@@ -1167,13 +1326,13 @@ function isDeleteDisabled($status)
             });
 
             $('#statusFilter').on('change', function() {
-                // Column index 9 is the status column (0-indexed) after adding Assigned Officer column
-                table.column(9).search(this.value).draw();
+                // Column index 10 is the status column after adding the DTR control column.
+                table.column(10).search(this.value).draw();
             });
 
             $('#departmentFilter').on('change', function() {
-                // Column index 3 is the department column
-                table.column(3).search(this.value).draw();
+                // Column index 4 is the department column after adding the DTR control column.
+                table.column(4).search(this.value).draw();
             });
         });
 

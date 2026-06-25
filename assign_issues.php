@@ -79,7 +79,7 @@ if ($view === 'transfer' && !empty($complaints)) {
         $placeholders = implode(',', array_fill(0, count($issue_numbers), '?'));
         $trans_sql = "SELECT t.issue_no, u.department 
                       FROM transfer t 
-                      JOIN users u ON BINARY t.transfer_by = BINARY u.username 
+                      LEFT JOIN users u ON BINARY t.transfer_by = BINARY u.name 
                       WHERE t.issue_no IN ($placeholders)";
         $trans_stmt = $conn->prepare($trans_sql);
         if ($trans_stmt) {

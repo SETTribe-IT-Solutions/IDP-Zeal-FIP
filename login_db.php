@@ -12,54 +12,89 @@ $password = trim($_POST['password'] ?? '');
 
 // Check empty fields
 if (empty($username) || empty($password)) {
-    echo "<script>
-            alert('Please enter username and password');
-            window.location.href='login.php';
-          </script>";
+    header('Location: login.php?error=required');
     exit;
 }
 
 // Prepared Statement
-$sql = "SELECT Username AS username, Password AS password FROM users WHERE Username = ?";
+$sql = "SELECT name, designation, department, mobile_no, username, password, role, system_role, taluka FROM users WHERE username = ?";
 $stmt = mysqli_prepare($conn, $sql);
+if (!$stmt) {
+    header('Location: login.php?error=invalid');
+    exit;
+}
 
-if ($stmt) {
+mysqli_stmt_bind_param($stmt, 's', $username);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
 
-    mysqli_stmt_bind_param($stmt, "s", $username);
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
+if ($result && mysqli_num_rows($result) === 1) {
+    $user = mysqli_fetch_assoc($result);
 
-    if ($result && mysqli_num_rows($result) == 1) {
-
-        $user = mysqli_fetch_assoc($result);
-
-        // Verify Password
-        if (password_verify($password, $user['password']) || $password === $user['password']) {
-
-            // Store session
-            $_SESSION['username'] = $user['username'];
-
-            // Redirect
-            header("Location: issueform.php");
-            exit;
-
-        } else {
-            echo "<script>
-                    alert('Wrong Username or Password');
-                    window.location.href='login.php';
-                  </script>";
-        }
-
-    } else {
-        echo "<script>
-                alert('User Not Found');
-                window.location.href='login.php';
-              </script>";
+    $isPasswordValid = false;
+    if (password_verify($password, $user['password'])) {
+        $isPasswordValid = true;
+    } elseif ($password === $user['password']) {
+        // Plain-text password fallback for older records.
+        $isPasswordValid = true;
     }
 
-} else {
-    echo "Query Error";
+    if ($isPasswordValid) {
+        $storedRole = !empty($user['role']) ? $user['role'] : ($user['system_role'] ?? '');
+        $normalizedRole = strtolower(trim($storedRole));
+
+        // Canonicalize the session role so role page guards match.
+        switch ($normalizedRole) {
+            case 'bdo':
+                $canonicalRole = 'BDO';
+                $redirect = 'BDO.php';
+                break;
+            case 'tho':
+                $canonicalRole = 'THO';
+                $redirect = 'THO.php';
+                break;
+            case 'ceo':
+                $canonicalRole = 'CEO';
+                $redirect = 'CEO.php';
+                break;
+            case 'hod':
+                $canonicalRole = 'Hod';
+                $redirect = 'Hod.php';
+                break;
+            case 'ग्रामपंचायत अधिकारी':
+                $canonicalRole = 'ग्रामपंचायत अधिकारी';
+                $redirect = 'gram_panchayat.php';
+                break;
+            case 'अंगणवाडी सेविका':
+                $canonicalRole = 'अंगणवाडी सेविका';
+                $redirect = 'anganwadi.php';
+                break;
+            case 'admin':
+                $canonicalRole = 'admin';
+                $redirect = 'admin.php';
+                break;
+            default:
+                $canonicalRole = $storedRole;
+                $redirect = 'user_dashboard.php';
+                break;
+        }
+
+        // Store session
+        $_SESSION['username'] = $user['username'];
+        $_SESSION['user_name'] = $user['name'];
+        $_SESSION['user_role'] = $canonicalRole;
+        $_SESSION['user_system_role'] = $user['system_role'] ?? '';
+        $_SESSION['user_dept'] = $user['department'];
+        $_SESSION['user_designation'] = $user['designation'];
+        $_SESSION['user_mobile'] = $user['mobile_no'];
+        $_SESSION['user_taluka'] = $user['taluka'] ?? '';
+
+        header('Location: ' . $redirect);
+        exit;
+    }
 }
 
 mysqli_close($conn);
+header('Location: login.php?error=invalid');
+exit;
 ?>

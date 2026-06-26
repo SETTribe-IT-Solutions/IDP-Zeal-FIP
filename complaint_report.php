@@ -204,8 +204,13 @@ function badgeClass($status)
             return 'pending';
         case 'resolved':
             return 'resolved';
+        case 'transfer':
+        case 'transferred':
+            return 'transferred';
+        case 'rejected':
+            return 'rejected';
         default:
-            return 'Total';
+            return 'default';
     }
 }
 
@@ -233,26 +238,62 @@ function isDeleteDisabled($status)
 <?php include('include/sidebar.php'); ?>
 
 <main class="main-content">
+    
     <!-- Page Header -->
     <div class="page-header-container">
         <div class="page-title">
-            <h1>📋 माझी तक्रारी</h1>
-            <p>आपल्या सर्व तक्रारीचे रेकॉर्ड पहा आणि व्यवस्थापित करा</p>
+            <div class="title-icon-wrapper">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+            </div>
+            <div class="title-text">
+                <h1>माझी तक्रारी</h1>
+                <p>आपल्या सर्व तक्रारीचे रेकॉर्ड पहा आणि व्यवस्थापित करा</p>
+            </div>
         </div>
         <button class="btn-primary" onclick="openNewComplaintForm()">
-            ➕ नवीन तक्रार दाखल करा
+            <span class="plus-icon">+</span> नवीन तक्रार दाखल करा
         </button>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">एकूण</div>
+            <div class="stat-value"><?php echo $total_complaints; ?></div>
+            <div class="stat-bg stat-bg-blue"></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">PENDING</div>
+            <div class="stat-value"><?php echo $pending_count; ?></div>
+            <div class="stat-bg stat-bg-orange"></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">TRANSFER</div>
+            <div class="stat-value"><?php echo $transferred_count; ?></div>
+            <div class="stat-bg stat-bg-cyan"></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">RESOLVED</div>
+            <div class="stat-value"><?php echo $resolved_count; ?></div>
+            <div class="stat-bg stat-bg-green"></div>
+        </div>
     </div>
 
     <!-- Filters & Search Section -->
     <div class="filter-section">
-        <div class="filter-group">
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="समस्या क्रमांक, विषय किंवा गाव वारून शोधा...">
-                <span class="search-icon">🔍</span>
-            </div>
+        <div class="search-box-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" placeholder="समस्या क्रमांक, विषय किंवा गाव वारून शोधा...">
+        </div>
 
-            <div class="filter-controls">
+        <div class="filter-controls-wrapper">
+            <div class="filter-select-group">
                 <select id="statusFilter" class="filter-select">
                     <option value="">🟢 एकूण</option>
                     <option value="Pending">🟡 प्रलंबित</option>
@@ -268,9 +309,15 @@ function isDeleteDisabled($status)
                         </option>
                     <?php endforeach; ?>
                 </select>
+            </div>
 
-                <button class="btn-secondary" onclick="resetFilters()">🔄 रीसेट</button>
-                <button class="btn-secondary" onclick="exportComplaints()">📥 निर्यात</button>
+            <div class="action-buttons">
+                <button class="btn-reset" onclick="resetFilters()">
+                    <span class="reset-icon">↺</span> रीसेट
+                </button>
+                <button class="btn-export" onclick="exportComplaints()">
+                    <span class="export-icon">⬇</span> निर्यात
+                </button>
             </div>
         </div>
     </div>
@@ -291,7 +338,7 @@ function isDeleteDisabled($status)
                     <th>प्रकार</th>
                     <th>दिनांक</th>
                     <th>स्थिती</th>
-                    <th>Action</th>
+                    <th>ACTION</th>
                 </tr>
             </thead>
             <tbody id="complaintTableBody">
@@ -313,13 +360,11 @@ function isDeleteDisabled($status)
                                     <img src="<?= htmlspecialchars($complaint['photo']); ?>" alt="तक्रार फोटो"
                                         class="complaint-photo">
                                 <?php else: ?>
-                                    <span class="no-file-text" style="color: #64748b; font-size: 0.85rem; font-style: italic;">No
-                                        File</span>
+                                    <span class="no-file-text">No File</span>
                                 <?php endif; ?>
                             </td>
                             <td class="complaint-subject">
                                 <strong><?= htmlspecialchars($complaint['description']); ?></strong>
-                                <p class="complaint-desc"><?= htmlspecialchars($complaint['description']); ?></p>
                             </td>
                             <td><?= htmlspecialchars($complaint['department']); ?></td>
                             <td><?= htmlspecialchars($complaint['department_head'] ?? 'विभाग प्रमुख'); ?></td>
@@ -327,20 +372,32 @@ function isDeleteDisabled($status)
                             <td><?= htmlspecialchars($complaint['taluka'] ?? 'Hingoli'); ?></td>
                             <td><span class="badge-type"><?= htmlspecialchars($complaint['registration_type']); ?></span></td>
                             <td><?= formatDate($complaint['issue_date']); ?></td>
-                            <td><span class="badge-status <?= $badgeClass; ?>"><?= htmlspecialchars($status); ?></span></td>
+                            <td>
+                                <span class="badge-status <?= $badgeClass; ?>">
+                                    <?php if(strtolower($status) == 'transfer' || strtolower($status) == 'transferred'): ?>
+                                        Transfer
+                                    <?php else: ?>
+                                        <?= htmlspecialchars($status); ?>
+                                    <?php endif; ?>
+                                </span>
+                            </td>
                             <td>
                                 <div class="action-cell">
-                                    <button type="button" class="btn-icon btn-edit" title="<?= $editDisabled ? 'Edit disabled for resolved or transferred complaints' : 'Edit'; ?>"
+                                    <button type="button" class="btn-icon btn-edit" title="<?= $editDisabled ? 'Edit disabled' : 'Edit'; ?>"
                                         data-issue="<?= htmlspecialchars(json_encode($complaint), ENT_QUOTES, 'UTF-8'); ?>"
                                         <?= $editDisabled ? 'disabled aria-disabled="true"' : 'onclick="openEditModalFromButton(this)"'; ?>>
-                                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25Zm17.71-10.04a1 1 0 0 0 0-1.41L18.2 3.29a1 1 0 0 0-1.41 0l-1.96 1.96 3.75 3.75 2.13-1.79Z" />
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                                         </svg>
                                     </button>
-                                    <button type="button" class="btn-icon btn-delete" title="<?= $deleteDisabled ? 'Delete disabled for resolved or transferred complaints' : 'Delete'; ?>"
+                                    <button type="button" class="btn-icon btn-delete" title="<?= $deleteDisabled ? 'Delete disabled' : 'Delete'; ?>"
                                         <?= $deleteDisabled ? 'disabled aria-disabled="true"' : 'onclick="deleteComplaint(' . htmlspecialchars(json_encode($complaint['issue_number']), ENT_QUOTES, 'UTF-8') . ')"'; ?>>
-                                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12ZM8 9h8v10H8V9Zm7.5-5-1-1h-5l-1 1H5v2h14V4h-3.5Z" />
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                                            <line x1="14" y1="11" x2="14" y2="17"></line>
                                         </svg>
                                     </button>
                                 </div>
@@ -360,8 +417,7 @@ function isDeleteDisabled($status)
         <button class="btn-primary" onclick="openNewComplaintForm()">नवीन तक्रार दाखल करा</button>
     </div>
 
-
-
+    <!-- Edit Modal -->
     <div id="editModal" class="modal" style="display: none;">
         <div class="modal-overlay" onclick="closeEditModal()"></div>
         <div class="modal-content">
@@ -494,765 +550,426 @@ function isDeleteDisabled($status)
 
     <!-- Styles -->
     <style>
+        /* Main Layout */
         .main-content {
-            background:
-                radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 34%),
-                linear-gradient(180deg, #f8fbff 0%, #f3f6fb 48%, #eef3f9 100%);
+            background: #ffffff;
             min-height: calc(100vh - 76px);
-            padding-bottom: 36px;
+            padding: 30px 40px 40px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
 
+        /* Page Header */
         .page-header-container {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 28px;
+            margin-bottom: 24px;
             flex-wrap: wrap;
-            gap: 20px;
-            padding: 8px 2px 2px;
-            position: relative;
+            gap: 15px;
         }
 
         .page-title {
-            position: relative;
-            padding-left: 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
         }
 
-        .page-title::before {
-            content: "";
-            position: absolute;
-            left: 0;
-            top: 8px;
-            width: 4px;
-            height: calc(100% - 12px);
-            border-radius: 999px;
-            background: linear-gradient(180deg, #2563eb, #f59e0b);
+        .title-icon-wrapper {
+            width: 48px;
+            height: 48px;
+            background: #2563eb;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            flex-shrink: 0;
         }
 
-        .page-title h1 {
-            font-size: clamp(1.8rem, 2.4vw, 2.35rem);
-            font-weight: 800;
+        .title-text h1 {
+            font-size: 24px;
+            font-weight: 700;
             color: #0f172a;
-            margin-bottom: 6px;
-            letter-spacing: 0;
-            line-height: 1.15;
+            margin: 0 0 2px 0;
         }
 
-        .page-title p {
+        .title-text p {
             color: #64748b;
-            font-size: 0.98rem;
-            line-height: 1.5;
+            font-size: 14px;
+            margin: 0;
         }
 
+        /* Buttons */
         .btn-primary {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            background: #4f46e5;
             color: white;
             border: none;
-            padding: 13px 24px;
+            padding: 10px 20px;
             border-radius: 8px;
-            font-size: 0.98rem;
-            font-weight: 700;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
-            transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
-            box-shadow: 0 12px 24px rgba(37, 99, 235, 0.24);
+            transition: background 0.2s;
             display: inline-flex;
             align-items: center;
-            justify-content: center;
             gap: 8px;
         }
+        .btn-primary:hover { background: #4338ca; }
+        .plus-icon { font-size: 18px; line-height: 1; }
 
-        .btn-primary:hover {
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-            box-shadow: 0 16px 30px rgba(37, 99, 235, 0.3);
-            transform: translateY(-1px);
+        /* Stats Grid (4 Cards) */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
         }
 
-        .btn-secondary {
-            background: #f8fafc;
-            color: #1f365c;
-            border: 1px solid #cbd8e8;
-            padding: 11px 18px;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            font-weight: 650;
-            cursor: pointer;
-            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .btn-secondary:hover {
-            background: #ffffff;
-            border-color: #94a3b8;
-            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
-            transform: translateY(-1px);
-        }
-
-        /* Filter Section */
-        .filter-section {
-            background: rgba(255, 255, 255, 0.92);
-            border: 1px solid rgba(203, 213, 225, 0.75);
+        .stat-card {
+            background: white;
+            border: 1px solid #e2e8f0;
             border-radius: 12px;
-            padding: 22px;
-            margin-bottom: 26px;
-            box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
-            backdrop-filter: blur(8px);
+            padding: 16px 20px;
+            position: relative;
+            overflow: hidden;
         }
 
-        .filter-group {
+        .stat-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-top: 4px;
+        }
+
+        .stat-bg {
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .stat-bg-blue { background: #dbeafe; }
+        .stat-bg-orange { background: #ffedd5; }
+        .stat-bg-cyan { background: #cffafe; }
+        .stat-bg-green { background: #dcfce7; }
+
+        @media (max-width: 768px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 480px) {
+            .stats-grid { grid-template-columns: 1fr; }
+        }
+
+        /* Filter Section (Single line design) */
+        .filter-section {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 24px;
             display: flex;
-            flex-direction: column;
-            gap: 18px;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
         }
 
-        .search-box {
+        .search-box-wrapper {
             position: relative;
             flex: 1;
+            min-width: 250px;
         }
 
-        .search-box input {
+        .search-box-wrapper input {
             width: 100%;
-            padding: 14px 16px 14px 44px;
-            border: 1px solid #cbd8e8;
-            border-radius: 10px;
-            font-size: 0.95rem;
-            background: #ffffff;
-            color: #0f172a;
-            transition: border-color 0.18s ease, box-shadow 0.18s ease;
+            padding: 10px 16px 10px 42px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            background: #f8fafc;
+            transition: all 0.2s;
         }
-
-        .search-box input:focus {
+        .search-box-wrapper input:focus {
+            background: white;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
             outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.11);
         }
-
         .search-icon {
             position: absolute;
             left: 14px;
             top: 50%;
             transform: translateY(-50%);
-            font-size: 1.1rem;
+            color: #94a3b8;
+            font-size: 16px;
         }
 
-        .filter-controls {
+        .filter-controls-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .filter-select-group {
             display: flex;
             gap: 12px;
-            flex-wrap: wrap;
-            align-items: center;
         }
 
         .filter-select {
-            min-width: 170px;
-            padding: 11px 38px 11px 14px;
-            border: 1px solid #cbd8e8;
+            padding: 9px 32px 9px 14px;
+            border: 1px solid #e2e8f0;
             border-radius: 8px;
-            font-size: 0.9rem;
+            font-size: 13px;
             background: white;
             cursor: pointer;
-            transition: border-color 0.18s ease, box-shadow 0.18s ease;
+            min-width: 140px;
+            color: #334155;
+        }
+        .filter-select:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            outline: none;
         }
 
-        .filter-select:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.11);
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-reset {
+            background: transparent;
+            border: 1px solid #e2e8f0;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            color: #64748b;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .btn-reset:hover { background: #f1f5f9; border-color: #cbd5e1; }
+
+        .btn-export {
+            background: #10b981; /* Green to match image */
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.2s;
+        }
+        .btn-export:hover { background: #059669; }
+
+        @media (max-width: 992px) {
+            .filter-section { flex-direction: column; align-items: stretch; }
+            .filter-controls-wrapper { flex-direction: column; align-items: stretch; }
+            .filter-select-group { flex-direction: column; }
+            .filter-select { width: 100%; }
+            .action-buttons { flex-direction: row; }
+            .btn-export { flex: 1; justify-content: center; }
         }
 
         /* Table Wrapper */
         .table-wrapper {
-            background: transparent;
-            border: 0;
-            border-radius: 0;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px 0 0 0;
             overflow-x: auto;
-            box-shadow: none;
-            margin-bottom: 26px;
         }
 
-        /* Table Styles */
+        /* DataTables Override */
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter,
+        .dataTables_wrapper .dataTables_info,
+        .dataTables_wrapper .dataTables_paginate {
+            padding: 0 20px;
+        }
+
+        .dataTables_wrapper .dataTables_length { float: left; margin-bottom: 16px; }
+        .dataTables_wrapper .dataTables_filter { float: right; margin-bottom: 16px; }
+        .dataTables_wrapper .dataTables_info { float: left; padding-top: 14px; color: #64748b; font-size: 13px; }
+        .dataTables_wrapper .dataTables_paginate { float: right; padding-top: 8px; }
+
+        .dataTables_wrapper .dataTables_filter input {
+            padding: 6px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-left: 8px;
+        }
+        .dataTables_wrapper .dataTables_filter input:focus {
+            border-color: #2563eb; outline: none;
+        }
+        .dataTables_wrapper .dataTables_length select {
+            padding: 5px 24px 5px 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 13px;
+            margin: 0 4px;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            padding: 6px 12px !important;
+            border: 1px solid transparent !important;
+            border-radius: 6px !important;
+            background: transparent !important;
+            color: #64748b !important;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            background: #f1f5f9 !important;
+            color: #0f172a !important;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+            background: #2563eb !important;
+            color: white !important;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+            background: #1d4ed8 !important;
+            color: white !important;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
+            opacity: 0.5; cursor: default;
+        }
+
+        /* Complaints Table */
         .complaints-table {
             width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            font-size: 0.95rem;
+            border-collapse: collapse;
+            font-size: 14px;
         }
 
-        .complaints-table thead {
-            background: linear-gradient(90deg, #f8fafc, #eef4fb);
+        .complaints-table thead tr {
+            border-bottom: 1px solid #e2e8f0;
         }
 
         .complaints-table th {
-            padding: 15px 12px;
+            padding: 14px 20px;
             text-align: left;
-            font-weight: 800;
-            color: #1e3a5f;
+            font-weight: 600;
+            color: #64748b;
+            font-size: 12px;
             text-transform: uppercase;
-            letter-spacing: 0;
-            font-size: 0.78rem;
-            border-bottom: 1px solid #d7e0ea;
-            white-space: nowrap;
+            letter-spacing: 0.5px;
+            background: transparent;
         }
 
         .complaints-table td {
-            padding: 15px 12px;
-            border-bottom: 1px solid #e8eef5;
-            color: #1e293b;
+            padding: 16px 20px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #334155;
             vertical-align: middle;
         }
+        .complaints-table tbody tr:last-child td { border-bottom: none; }
+        .complaints-table tbody tr:hover { background-color: #f8fafc; }
 
-        .complaints-table td.dtr-control,
-        .complaints-table th:first-child {
-            width: 42px;
-            min-width: 42px;
-            text-align: center;
-        }
-
-        table.dataTable.dtr-inline.collapsed>tbody>tr>td.dtr-control:before,
-        table.dataTable.dtr-inline.collapsed>tbody>tr>th.dtr-control:before {
-            background-color: #2563eb;
-            border: 0;
-            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.28);
+        .complaints-table td.dtr-control { width: 30px; text-align: center; }
+        table.dataTable.dtr-inline.collapsed>tbody>tr>td.dtr-control:before {
+            background-color: #e2e8f0;
+            color: #475569;
+            border: none;
             line-height: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-
-        table.dataTable>tbody>tr.child ul.dtr-details {
-            display: grid;
-            gap: 8px;
-            width: 100%;
-        }
-
-        table.dataTable>tbody>tr.child ul.dtr-details>li {
-            display: grid;
-            grid-template-columns: minmax(112px, 34%) minmax(0, 1fr);
-            gap: 10px;
-            align-items: start;
-            border-bottom: 1px solid #e2e8f0;
-            padding: 8px 0;
-        }
-
-        table.dataTable>tbody>tr.child span.dtr-title {
-            color: #64748b;
-            font-size: 0.78rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            white-space: normal;
-        }
-
-        table.dataTable>tbody>tr.child span.dtr-data {
-            color: #1e293b;
-            text-align: right;
-            overflow-wrap: anywhere;
-        }
-
-        .complaints-table tbody tr:hover {
-            background-color: #f8fbff;
-            transition: background 0.2s ease;
+            width: 16px; height: 16px;
+            top: 50%; transform: translateY(-50%);
         }
 
         .complaint-id {
+            color: #1e40af;
             font-weight: 700;
-            color: #123766;
-            font-family: 'Courier New', monospace;
-            letter-spacing: 0;
-        }
-
-        /* Photo Cell */
-        .photo-cell {
-            text-align: center;
+            font-size: 13px;
         }
 
         .complaint-photo {
-            width: 46px;
-            height: 46px;
-            border-radius: 9px;
+            width: 36px; height: 36px;
+            border-radius: 4px;
             object-fit: cover;
-            border: 1px solid #d6e0ea;
-            cursor: pointer;
-            transition: transform 0.18s ease, box-shadow 0.18s ease;
+            border: 1px solid #e2e8f0;
         }
-
-        .complaint-photo:hover {
-            transform: scale(1.1);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        /* Complaint Subject */
-        .complaint-subject {
-            max-width: 280px;
-        }
+        .no-file-text { color: #94a3b8; font-size: 12px; font-style: italic; }
 
         .complaint-subject strong {
             display: block;
             color: #0f172a;
-            margin-bottom: 4px;
-            word-break: break-word;
-            font-weight: 750;
-        }
-
-        .complaint-desc {
-            color: #64748b;
-            font-size: 0.85rem;
-            margin: 0;
-            line-height: 1.4;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        /* Badge Styles */
-        .badge-type,
-        .badge-status {
-            display: inline-block;
-            padding: 7px 13px;
-            border-radius: 50px;
-            font-size: 0.82rem;
-            font-weight: 800;
-            line-height: 1;
-            white-space: nowrap;
+            font-weight: 600;
+            font-size: 14px;
         }
 
         .badge-type {
-            background: #eef2f7;
-            color: #1f365c;
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            background: #f1f5f9;
+            color: #475569;
         }
 
         .badge-status {
-            background: #f3f4f6;
-            color: #374151;
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            line-height: 1.2;
+            white-space: nowrap;
         }
+        .badge-status.pending { background: #ffedd5; color: #c2410c; }
+        .badge-status.resolved { background: #e0e7ff; color: #4338ca; }
+        .badge-status.transferred { background: #e0f2fe; color: #0369a1; }
+        .badge-status.rejected { background: #fee2e2; color: #b91c1c; }
+        .badge-status.default { background: #f1f5f9; color: #475569; }
 
-        .badge-status.pending {
-            background: #ffedd5;
-            color: #ea580c;
-        }
-
-        .badge-status.open {
-            background: #dcfce7;
-            color: #166534;
-        }
-
-        .badge-status.in-progress {
-            background: #fef3c7;
-            color: #854d0e;
-        }
-
-        .badge-status.resolved {
-            background: #ddd6fe;
-            color: #5b21b6;
-        }
-
-        .badge-status.closed {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        /* Action Cell */
-        .action-cell {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
+        .action-cell { display: flex; gap: 8px; align-items: center; }
 
         .btn-icon {
-            background: #f8fafc;
-            border: 1px solid transparent;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 36px;
-            height: 36px;
-            cursor: pointer;
-            padding: 0;
-            border-radius: 8px;
-            transition: background 0.15s ease, transform 0.12s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+            background: transparent; border: 1px solid transparent;
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 32px; height: 32px; cursor: pointer; border-radius: 6px;
+            transition: all 0.2s;
         }
+        .btn-icon svg { width: 18px; height: 18px; }
+        .btn-edit { color: #2563eb; }
+        .btn-edit:hover:not(:disabled) { background: #eff6ff; border-color: #bfdbfe; }
+        .btn-delete { color: #dc2626; }
+        .btn-delete:hover:not(:disabled) { background: #fef2f2; border-color: #fecaca; }
+        .btn-icon:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
 
-        .btn-icon svg {
-            width: 20px;
-            height: 20px;
-            display: block;
-            fill: currentColor;
-        }
-
-        .btn-edit {
-            color: #3b82f6;
-        }
-
-        .btn-edit:hover {
-            background: #eff6ff;
-            border-color: #bfdbfe;
-            box-shadow: 0 6px 14px rgba(37, 99, 235, 0.12);
-        }
-
-        .btn-icon:disabled,
-        .btn-icon[aria-disabled="true"] {
-            opacity: 0.45;
-            cursor: not-allowed;
-            pointer-events: none;
-            background: transparent;
-        }
-
-        .btn-view {
-            color: #8b5cf6;
-        }
-
-        .btn-view:hover {
-            background: rgba(139, 92, 246, 0.1);
-        }
-
-        .btn-delete {
-            color: #ef4444;
-        }
-
-        .btn-delete:hover {
-            background: #fef2f2;
-            border-color: #fecaca;
-            box-shadow: 0 6px 14px rgba(239, 68, 68, 0.1);
-        }
-
-        .btn-transfer {
-            color: #f59e0b;
-        }
-
-        .btn-transfer:hover {
-            background: rgba(245, 158, 11, 0.1);
-        }
-
-        /* Modal Styles */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 2000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            cursor: pointer;
-        }
-
-        .modal-content {
-            position: relative;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 500px;
-            width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
-            z-index: 2001;
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 24px;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .modal-header h2 {
-            margin: 0;
-            color: #1e293b;
-            font-size: 1.5rem;
-        }
-
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 1.8rem;
-            cursor: pointer;
-            color: #64748b;
-            padding: 0;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 6px;
-            transition: all 0.3s ease;
-        }
-
-        .modal-close:hover {
-            background: #f1f5f9;
-            color: #1e293b;
-        }
-
-        .modal-body {
-            padding: 24px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #1e293b;
-            font-weight: 600;
-            font-size: 0.95rem;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 10px 14px;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            font-size: 0.95rem;
-            font-family: inherit;
-            transition: all 0.3s ease;
-        }
-
-        .form-control:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-
-        .form-control[readonly] {
-            background: #f8fafc;
-            color: #64748b;
-            cursor: not-allowed;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-        }
-
-        .modal-footer {
-            display: flex;
-            gap: 12px;
-            padding: 20px 24px;
-            border-top: 1px solid #e2e8f0;
-            justify-content: flex-end;
-        }
-
-        .modal-footer .btn-primary,
-        .modal-footer .btn-secondary {
-            margin: 0;
-        }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        }
-
-        .empty-icon {
-            font-size: 4rem;
-            margin-bottom: 16px;
-        }
-
-        .empty-state h3 {
-            color: #1e293b;
-            font-size: 1.5rem;
-            margin-bottom: 8px;
-        }
-
-        .empty-state p {
-            color: #64748b;
-            margin-bottom: 24px;
-        }
-
-        /* --- DataTables Custom Styling --- */
-        .dataTables_wrapper {
-            padding: 22px;
-            background: rgba(255, 255, 255, 0.94);
-            border: 1px solid rgba(203, 213, 225, 0.75);
-            border-radius: 12px;
-            box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
-            margin-bottom: 28px;
-        }
-        .dataTables_wrapper .dataTables_length,
-        .dataTables_wrapper .dataTables_filter {
-            margin-bottom: 20px;
-            color: #475569;
-            font-weight: 650;
-        }
-        .dataTables_wrapper .dataTables_filter input {
-            padding: 9px 12px;
-            border: 1px solid #cbd8e8;
-            border-radius: 8px;
-            background-color: white;
-            color: #1e293b;
-            outline: none;
-            transition: border-color 0.18s ease, box-shadow 0.18s ease;
-            margin-left: 8px;
-        }
-        .dataTables_wrapper .dataTables_filter input:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.11);
-        }
-        .dataTables_wrapper .dataTables_length select {
-            padding: 8px 30px 8px 12px;
-            border: 1px solid #cbd8e8;
-            border-radius: 8px;
-            background-color: white;
-            color: #1e293b;
-            outline: none;
-            margin: 0 4px;
-        }
-        .dataTables_wrapper .dataTables_info {
-            padding-top: 20px;
-            color: #64748b;
-            font-size: 13px;
-            font-weight: 600;
-        }
-        .dataTables_wrapper .dataTables_paginate {
-            padding-top: 16px;
-            display: flex;
-            justify-content: flex-end;
-            gap: 8px;
-        }
-        .dataTables_wrapper .dataTables_paginate .paginate_button {
-            padding: 8px 13px !important;
-            border: 1px solid #cbd8e8 !important;
-            border-radius: 8px !important;
-            background: white !important;
-            color: #1f365c !important;
-            cursor: pointer;
-            transition: all 0.2s ease !important;
-            font-weight: 700;
-        }
-        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-            background: #2563eb !important;
-            color: white !important;
-            border-color: #2563eb !important;
-        }
-        .dataTables_wrapper .dataTables_paginate .paginate_button.current,
-        .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
-            background: #2563eb !important;
-            color: white !important;
-            border-color: #2563eb !important;
-            font-weight: 700;
-        }
-        .dataTables_wrapper .dataTables_paginate .paginate_button.disabled,
-        .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
-            background: #f1f5f9 !important;
-            color: #94a3b8 !important;
-            border-color: #cbd5e1 !important;
-            cursor: not-allowed;
-        }
-
-        /* Responsive Design */
-        @media (max-width: 1024px) {
-            .complaint-subject {
-                max-width: 200px;
-            }
-
-            .filter-controls {
-                flex-direction: column;
-            }
-
-            .filter-select {
-                width: 100%;
-            }
-        }
-
+        /* Responsive adjustments */
         @media (max-width: 768px) {
-            .main-content {
-                padding-left: 14px;
-                padding-right: 14px;
+            .main-content { padding: 16px; }
+            .page-header-container { flex-direction: column; align-items: stretch; }
+            .btn-primary { width: 100%; justify-content: center; }
+            .dataTables_wrapper .dataTables_length,
+            .dataTables_wrapper .dataTables_filter {
+                float: none; text-align: left; width: 100%;
             }
-
-            .page-header-container {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 16px;
-            }
-
-            .btn-primary {
-                width: 100%;
-            }
-
-            .filter-section,
-            .dataTables_wrapper {
-                padding: 16px;
-            }
-
-            .complaints-table {
-                font-size: 0.85rem;
-            }
-
-            .complaints-table th,
-            .complaints-table td {
-                padding: 12px 8px;
-            }
-
-            .complaint-subject {
-                max-width: 150px;
-            }
-
-            .action-cell {
-                flex-direction: row;
-                justify-content: flex-end;
-            }
-
-            .btn-icon {
-                width: 38px;
-                height: 38px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .page-title {
-                padding-left: 12px;
-            }
-
-            .page-title h1 {
-                font-size: 1.5rem;
-            }
-
-            .filter-section,
-            .dataTables_wrapper {
-                border-radius: 10px;
-                padding: 14px;
-            }
-
-            .complaints-table {
-                font-size: 0.8rem;
-            }
-
-            .complaints-table th,
-            .complaints-table td {
-                padding: 8px 6px;
-            }
-
-            .complaint-id {
-                font-size: 0.85rem;
-            }
-
-            .complaint-photo {
-                width: 40px;
-                height: 40px;
-            }
-
-            .badge-type,
-            .badge-status {
-                font-size: 0.75rem;
-                padding: 4px 8px;
-            }
+            .dataTables_wrapper .dataTables_filter input { width: calc(100% - 80px); }
+            .dataTables_wrapper .dataTables_info { float: none; text-align: left; }
+            .dataTables_wrapper .dataTables_paginate { float: none; text-align: left; }
         }
     </style>
 
@@ -1312,8 +1029,8 @@ function isDeleteDisabled($status)
                 "language": {
                     "lengthMenu": "दाखवा _MENU_ नोंदी",
                     "paginate": {
-                        "previous": "← मागे",
-                        "next": "पुढे →"
+                        "previous": "< मागे",
+                        "next": "पुढे >"
                     },
                     "info": "एकूण _TOTAL_ पैकी _START_ ते _END_ दाखवत आहे",
                     "infoEmpty": "माहिती उपलब्ध नाही",
@@ -1326,12 +1043,10 @@ function isDeleteDisabled($status)
             });
 
             $('#statusFilter').on('change', function() {
-                // Column index 10 is the status column after adding the DTR control column.
                 table.column(10).search(this.value).draw();
             });
 
             $('#departmentFilter').on('change', function() {
-                // Column index 4 is the department column after adding the DTR control column.
                 table.column(4).search(this.value).draw();
             });
         });
@@ -1403,6 +1118,7 @@ function isDeleteDisabled($status)
             window.location.href = 'issueform.php';
         }
 
+        // This function is triggered by the green "निर्यात" button
         function exportComplaints() {
             const columns = [
                 { key: 'issue_number', label: 'Issue Number' },
@@ -1488,15 +1204,7 @@ function isDeleteDisabled($status)
 
         function setCurrentDateTime() {
             const now = new Date();
-            const options = {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
-            };
+            const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
             const dateTimeString = now.toLocaleDateString('en-GB', options).replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$2-$1') + ' ' +
                 now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
             document.getElementById('transferDate').value = dateTimeString;
@@ -1547,7 +1255,6 @@ function isDeleteDisabled($status)
                 });
         });
 
-        // Handle transfer form submission via AJAX
         document.getElementById('transferForm').addEventListener('submit', function (e) {
             e.preventDefault();
             const complaintId = document.getElementById('complaintIdTransfer').value;
@@ -1606,17 +1313,11 @@ function isDeleteDisabled($status)
                 });
         });
 
-        // Close modal when clicking overlay
         document.addEventListener('click', function (e) {
             const modal = document.getElementById('transferModal');
             if (e.target === document.querySelector('.modal-overlay')) {
                 closeTransferModal();
             }
-        });
-
-        // Initialize on page load
-        window.addEventListener('load', function () {
-            // Already initialized via jQuery document ready
         });
     </script>
 

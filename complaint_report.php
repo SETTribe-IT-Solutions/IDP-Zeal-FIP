@@ -31,13 +31,13 @@ if (isset($_SESSION['username'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
-    header('Content-Type: application/json');
+    header('Content-Type: application/json; charset=utf-8');
 
     $action = $_POST['action'];
     $issue_number = trim($_POST['issue_number'] ?? '');
 
     if ($issue_number === '') {
-        echo json_encode(['success' => false, 'message' => 'Issue number is required.']);
+        echo json_encode(['success' => false, 'message' => 'समस्या क्रमांक आवश्यक आहे.'], JSON_UNESCAPED_UNICODE);
         $conn->close();
         exit;
     }
@@ -60,10 +60,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $stmt->close();
             echo json_encode([
                 'success' => $success && $affected > 0,
-                'message' => ($success && $affected > 0) ? 'Complaint deleted successfully.' : 'Complaint not found or could not be deleted.'
-            ]);
+                'message' => ($success && $affected > 0) ? 'तक्रार यशस्वीरित्या हटवली.' : 'तक्रार सापडली नाही किंवा हटवता आली नाही.'
+            ], JSON_UNESCAPED_UNICODE);
         } else {
-            echo json_encode(['success' => false, 'message' => $conn->error]);
+            echo json_encode(['success' => false, 'message' => 'डेटाबेस त्रुटी: ' . $conn->error], JSON_UNESCAPED_UNICODE);
         }
         $conn->close();
         exit;
@@ -80,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $status = trim($_POST['status'] ?? '');
 
         if ($description === '' || $department === '' || $village === '' || $taluka === '' || $registration_type === '' || $issue_date === '' || $status === '') {
-            echo json_encode(['success' => false, 'message' => 'Please fill all required fields.']);
+            echo json_encode(['success' => false, 'message' => 'कृपया सर्व आवश्यक फील्ड भरा.'], JSON_UNESCAPED_UNICODE);
             $conn->close();
             exit;
         }
@@ -96,16 +96,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $stmt->close();
             echo json_encode([
                 'success' => $success,
-                'message' => $success ? 'Complaint updated successfully.' : 'Complaint could not be updated.'
-            ]);
+                'message' => $success ? 'तक्रार यशस्वीरित्या अद्यतनित केली.' : 'तक्रार अद्यतनित करता आली नाही.'
+            ], JSON_UNESCAPED_UNICODE);
         } else {
-            echo json_encode(['success' => false, 'message' => $conn->error]);
+            echo json_encode(['success' => false, 'message' => 'डेटाबेस त्रुटी: ' . $conn->error], JSON_UNESCAPED_UNICODE);
         }
         $conn->close();
         exit;
     }
 
-    echo json_encode(['success' => false, 'message' => 'Invalid action.']);
+    echo json_encode(['success' => false, 'message' => 'अवैध कृती.'], JSON_UNESCAPED_UNICODE);
     $conn->close();
     exit;
 }
@@ -182,6 +182,21 @@ if (in_array(strtolower($role), ['ceo', 'bdo', 'tho', 'hod'])) {
     $can_perform_actions = true;
 }
 
+$total_complaints = count($complaints);
+$pending_count = 0;
+$resolved_count = 0;
+$transferred_count = 0;
+foreach ($complaints as $complaint) {
+    $normalizedStatus = strtolower(trim((string) ($complaint['status'] ?? '')));
+    if ($normalizedStatus === 'pending') {
+        $pending_count++;
+    } elseif ($normalizedStatus === 'resolved') {
+        $resolved_count++;
+    } elseif (in_array($normalizedStatus, ['transfer', 'transferred', 'transfered'], true)) {
+        $transferred_count++;
+    }
+}
+
 function badgeClass($status)
 {
     switch (strtolower(trim($status))) {
@@ -189,8 +204,13 @@ function badgeClass($status)
             return 'pending';
         case 'resolved':
             return 'resolved';
+        case 'transfer':
+        case 'transferred':
+            return 'transferred';
+        case 'rejected':
+            return 'rejected';
         default:
-            return 'Total';
+            return 'default';
     }
 }
 
@@ -213,33 +233,72 @@ function isDeleteDisabled($status)
 ?>
 
 <?php include('include/header.php'); ?>
+<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
 <?php include('include/sidebar.php'); ?>
 
 <main class="main-content">
+    
     <!-- Page Header -->
     <div class="page-header-container">
         <div class="page-title">
-            <h1>📋 माझी तक्रारी</h1>
-            <p>आपल्या सर्व तक्रारीचे रेकॉर्ड पहा आणि व्यवस्थापित करा</p>
+            <div class="title-icon-wrapper">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+            </div>
+            <div class="title-text">
+                <h1>माझी तक्रारी</h1>
+                <p>आपल्या सर्व तक्रारीचे रेकॉर्ड पहा आणि व्यवस्थापित करा</p>
+            </div>
         </div>
         <button class="btn-primary" onclick="openNewComplaintForm()">
-            ➕ नवीन तक्रार दाखल करा
+            <span class="plus-icon">+</span> नवीन तक्रार दाखल करा
         </button>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">एकूण</div>
+            <div class="stat-value"><?php echo $total_complaints; ?></div>
+            <div class="stat-bg stat-bg-blue"></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">PENDING</div>
+            <div class="stat-value"><?php echo $pending_count; ?></div>
+            <div class="stat-bg stat-bg-orange"></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">TRANSFER</div>
+            <div class="stat-value"><?php echo $transferred_count; ?></div>
+            <div class="stat-bg stat-bg-cyan"></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">RESOLVED</div>
+            <div class="stat-value"><?php echo $resolved_count; ?></div>
+            <div class="stat-bg stat-bg-green"></div>
+        </div>
     </div>
 
     <!-- Filters & Search Section -->
     <div class="filter-section">
-        <div class="filter-group">
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="समस्या क्रमांक, विषय किंवा गाव वारून शोधा...">
-                <span class="search-icon">🔍</span>
-            </div>
+        <div class="search-box-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" placeholder="समस्या क्रमांक, विषय किंवा गाव वारून शोधा...">
+        </div>
 
-            <div class="filter-controls">
+        <div class="filter-controls-wrapper">
+            <div class="filter-select-group">
                 <select id="statusFilter" class="filter-select">
                     <option value="">🟢 एकूण</option>
                     <option value="Pending">🟡 प्रलंबित</option>
                     <option value="Resolved">🟣 निराकृत</option>
+                    <option value="Transfer">🔵 हस्तांतरित</option>
                 </select>
 
                 <select id="departmentFilter" class="filter-select">
@@ -250,9 +309,15 @@ function isDeleteDisabled($status)
                         </option>
                     <?php endforeach; ?>
                 </select>
+            </div>
 
-                <button class="btn-secondary" onclick="resetFilters()">🔄 रीसेट</button>
-                <button class="btn-secondary" onclick="exportComplaints()">📥 निर्यात</button>
+            <div class="action-buttons">
+                <button class="btn-reset" onclick="resetFilters()">
+                    <span class="reset-icon">↺</span> रीसेट
+                </button>
+                <button class="btn-export" onclick="exportComplaints()">
+                    <span class="export-icon">⬇</span> निर्यात
+                </button>
             </div>
         </div>
     </div>
@@ -262,6 +327,7 @@ function isDeleteDisabled($status)
         <table id="complaintsTable" class="complaints-table">
             <thead>
                 <tr>
+                    <th aria-label="Details"></th>
                     <th>समस्या क्रमांक</th>
                     <th>फोटो</th>
                     <th>समस्या विषय</th>
@@ -272,7 +338,7 @@ function isDeleteDisabled($status)
                     <th>प्रकार</th>
                     <th>दिनांक</th>
                     <th>स्थिती</th>
-                    <th>Action</th>
+                    <th>ACTION</th>
                 </tr>
             </thead>
             <tbody id="complaintTableBody">
@@ -287,19 +353,18 @@ function isDeleteDisabled($status)
                         <tr class="complaint-row" data-status="<?= strtolower(trim($status)); ?>"
                             data-department="<?= htmlspecialchars($complaint['department']); ?>"
                             data-village="<?= htmlspecialchars($complaint['village']); ?>">
+                            <td class="dtr-control" tabindex="0"></td>
                             <td class="complaint-id"><?= htmlspecialchars($complaint['issue_number']); ?></td>
                             <td class="photo-cell">
                                 <?php if (!empty($complaint['photo'])): ?>
                                     <img src="<?= htmlspecialchars($complaint['photo']); ?>" alt="तक्रार फोटो"
                                         class="complaint-photo">
                                 <?php else: ?>
-                                    <span class="no-file-text" style="color: #64748b; font-size: 0.85rem; font-style: italic;">No
-                                        File</span>
+                                    <span class="no-file-text">No File</span>
                                 <?php endif; ?>
                             </td>
                             <td class="complaint-subject">
                                 <strong><?= htmlspecialchars($complaint['description']); ?></strong>
-                                <p class="complaint-desc"><?= htmlspecialchars($complaint['description']); ?></p>
                             </td>
                             <td><?= htmlspecialchars($complaint['department']); ?></td>
                             <td><?= htmlspecialchars($complaint['department_head'] ?? 'विभाग प्रमुख'); ?></td>
@@ -307,20 +372,32 @@ function isDeleteDisabled($status)
                             <td><?= htmlspecialchars($complaint['taluka'] ?? 'Hingoli'); ?></td>
                             <td><span class="badge-type"><?= htmlspecialchars($complaint['registration_type']); ?></span></td>
                             <td><?= formatDate($complaint['issue_date']); ?></td>
-                            <td><span class="badge-status <?= $badgeClass; ?>"><?= htmlspecialchars($status); ?></span></td>
+                            <td>
+                                <span class="badge-status <?= $badgeClass; ?>">
+                                    <?php if(strtolower($status) == 'transfer' || strtolower($status) == 'transferred'): ?>
+                                        Transfer
+                                    <?php else: ?>
+                                        <?= htmlspecialchars($status); ?>
+                                    <?php endif; ?>
+                                </span>
+                            </td>
                             <td>
                                 <div class="action-cell">
-                                    <button type="button" class="btn-icon btn-edit" title="<?= $editDisabled ? 'Edit disabled for resolved or transferred complaints' : 'Edit'; ?>"
+                                    <button type="button" class="btn-icon btn-edit" title="<?= $editDisabled ? 'Edit disabled' : 'Edit'; ?>"
                                         data-issue="<?= htmlspecialchars(json_encode($complaint), ENT_QUOTES, 'UTF-8'); ?>"
                                         <?= $editDisabled ? 'disabled aria-disabled="true"' : 'onclick="openEditModalFromButton(this)"'; ?>>
-                                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25Zm17.71-10.04a1 1 0 0 0 0-1.41L18.2 3.29a1 1 0 0 0-1.41 0l-1.96 1.96 3.75 3.75 2.13-1.79Z" />
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                                         </svg>
                                     </button>
-                                    <button type="button" class="btn-icon btn-delete" title="<?= $deleteDisabled ? 'Delete disabled for resolved or transferred complaints' : 'Delete'; ?>"
+                                    <button type="button" class="btn-icon btn-delete" title="<?= $deleteDisabled ? 'Delete disabled' : 'Delete'; ?>"
                                         <?= $deleteDisabled ? 'disabled aria-disabled="true"' : 'onclick="deleteComplaint(' . htmlspecialchars(json_encode($complaint['issue_number']), ENT_QUOTES, 'UTF-8') . ')"'; ?>>
-                                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12ZM8 9h8v10H8V9Zm7.5-5-1-1h-5l-1 1H5v2h14V4h-3.5Z" />
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                                            <line x1="14" y1="11" x2="14" y2="17"></line>
                                         </svg>
                                     </button>
                                 </div>
@@ -340,8 +417,7 @@ function isDeleteDisabled($status)
         <button class="btn-primary" onclick="openNewComplaintForm()">नवीन तक्रार दाखल करा</button>
     </div>
 
-
-
+    <!-- Edit Modal -->
     <div id="editModal" class="modal" style="display: none;">
         <div class="modal-overlay" onclick="closeEditModal()"></div>
         <div class="modal-content">
@@ -474,637 +550,426 @@ function isDeleteDisabled($status)
 
     <!-- Styles -->
     <style>
+        /* Main Layout */
+        .main-content {
+            background: #ffffff;
+            min-height: calc(100vh - 76px);
+            padding: 30px 40px 40px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        /* Page Header */
         .page-header-container {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 32px;
+            margin-bottom: 24px;
             flex-wrap: wrap;
-            gap: 20px;
+            gap: 15px;
         }
 
-        .page-title h1 {
-            font-size: 2rem;
+        .page-title {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .title-icon-wrapper {
+            width: 48px;
+            height: 48px;
+            background: #2563eb;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .title-text h1 {
+            font-size: 24px;
             font-weight: 700;
             color: #0f172a;
-            margin-bottom: 5px;
+            margin: 0 0 2px 0;
         }
 
-        .page-title p {
+        .title-text p {
             color: #64748b;
-            font-size: 0.95rem;
+            font-size: 14px;
+            margin: 0;
         }
 
+        /* Buttons */
         .btn-primary {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            background: #4f46e5;
             color: white;
             border: none;
-            padding: 12px 24px;
+            padding: 10px 20px;
             border-radius: 8px;
-            font-size: 1rem;
+            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            transition: background 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary:hover { background: #4338ca; }
+        .plus-icon { font-size: 18px; line-height: 1; }
+
+        /* Stats Grid (4 Cards) */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
         }
 
-        .btn-primary:hover {
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
-            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
-            transform: translateY(-2px);
+        .stat-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px 20px;
+            position: relative;
+            overflow: hidden;
         }
 
-        .btn-secondary {
-            background: #e2e8f0;
-            color: #1e293b;
-            border: 1px solid #cbd5e1;
-            padding: 10px 18px;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
+        .stat-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .btn-secondary:hover {
-            background: #cbd5e1;
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-top: 4px;
         }
 
-        /* Filter Section */
+        .stat-bg {
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .stat-bg-blue { background: #dbeafe; }
+        .stat-bg-orange { background: #ffedd5; }
+        .stat-bg-cyan { background: #cffafe; }
+        .stat-bg-green { background: #dcfce7; }
+
+        @media (max-width: 768px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 480px) {
+            .stats-grid { grid-template-columns: 1fr; }
+        }
+
+        /* Filter Section (Single line design) */
         .filter-section {
             background: white;
-            border-radius: 10px;
-            padding: 20px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 12px 16px;
             margin-bottom: 24px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        }
-
-        .filter-group {
             display: flex;
-            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
             gap: 16px;
+            flex-wrap: wrap;
         }
 
-        .search-box {
+        .search-box-wrapper {
             position: relative;
             flex: 1;
+            min-width: 250px;
         }
 
-        .search-box input {
+        .search-box-wrapper input {
             width: 100%;
-            padding: 12px 16px 12px 40px;
-            border: 1px solid #cbd5e1;
+            padding: 10px 16px 10px 42px;
+            border: 1px solid #e2e8f0;
             border-radius: 8px;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
+            font-size: 14px;
+            background: #f8fafc;
+            transition: all 0.2s;
         }
-
-        .search-box input:focus {
+        .search-box-wrapper input:focus {
+            background: white;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
             outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
-
         .search-icon {
             position: absolute;
-            left: 12px;
+            left: 14px;
             top: 50%;
             transform: translateY(-50%);
-            font-size: 1.1rem;
+            color: #94a3b8;
+            font-size: 16px;
         }
 
-        .filter-controls {
+        .filter-controls-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .filter-select-group {
             display: flex;
             gap: 12px;
-            flex-wrap: wrap;
         }
 
         .filter-select {
-            padding: 10px 14px;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            font-size: 0.9rem;
+            padding: 9px 32px 9px 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 13px;
             background: white;
             cursor: pointer;
-            transition: all 0.3s ease;
+            min-width: 140px;
+            color: #334155;
+        }
+        .filter-select:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            outline: none;
         }
 
-        .filter-select:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-reset {
+            background: transparent;
+            border: 1px solid #e2e8f0;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            color: #64748b;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .btn-reset:hover { background: #f1f5f9; border-color: #cbd5e1; }
+
+        .btn-export {
+            background: #10b981; /* Green to match image */
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.2s;
+        }
+        .btn-export:hover { background: #059669; }
+
+        @media (max-width: 992px) {
+            .filter-section { flex-direction: column; align-items: stretch; }
+            .filter-controls-wrapper { flex-direction: column; align-items: stretch; }
+            .filter-select-group { flex-direction: column; }
+            .filter-select { width: 100%; }
+            .action-buttons { flex-direction: row; }
+            .btn-export { flex: 1; justify-content: center; }
         }
 
         /* Table Wrapper */
         .table-wrapper {
             background: white;
-            border-radius: 10px;
-            overflow-x: auto;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-            margin-bottom: 24px;
-        }
-
-        /* Table Styles */
-        .complaints-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.95rem;
-        }
-
-        .complaints-table thead {
-            background: linear-gradient(90deg, #f8fafc, #f1f5f9);
-            border-bottom: 2px solid #e2e8f0;
-        }
-
-        .complaints-table th {
-            padding: 16px 12px;
-            text-align: left;
-            font-weight: 700;
-            color: #334155;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-size: 0.85rem;
-        }
-
-        .complaints-table td {
-            padding: 16px 12px;
-            border-bottom: 1px solid #e2e8f0;
-            color: #1e293b;
-        }
-
-        .complaints-table tbody tr:hover {
-            background-color: #f8fafc;
-            transition: background 0.2s ease;
-        }
-
-        .complaint-id {
-            font-weight: 700;
-            color: #3b82f6;
-            font-family: 'Courier New', monospace;
-        }
-
-        /* Photo Cell */
-        .photo-cell {
-            text-align: center;
-        }
-
-        .complaint-photo {
-            width: 50px;
-            height: 50px;
-            border-radius: 6px;
-            object-fit: cover;
-            border: 1px solid #cbd5e1;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .complaint-photo:hover {
-            transform: scale(1.1);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        /* Complaint Subject */
-        .complaint-subject {
-            max-width: 280px;
-        }
-
-        .complaint-subject strong {
-            display: block;
-            color: #1e293b;
-            margin-bottom: 4px;
-            word-break: break-word;
-        }
-
-        .complaint-desc {
-            color: #64748b;
-            font-size: 0.85rem;
-            margin: 0;
-            line-height: 1.4;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        /* Badge Styles */
-        .badge-type,
-        .badge-status {
-            display: inline-block;
-            padding: 6px 12px;
-            border-radius: 50px;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-
-        .badge-type {
-            background: #f3f4f6;
-            color: #374151;
-        }
-
-        .badge-status {
-            background: #f3f4f6;
-            color: #374151;
-        }
-
-        .badge-status.pending {
-            background: #ffedd5;
-            color: #ea580c;
-        }
-
-        .badge-status.open {
-            background: #dcfce7;
-            color: #166534;
-        }
-
-        .badge-status.in-progress {
-            background: #fef3c7;
-            color: #854d0e;
-        }
-
-        .badge-status.resolved {
-            background: #ddd6fe;
-            color: #5b21b6;
-        }
-
-        .badge-status.closed {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        /* Action Cell */
-        .action-cell {
-            display: flex;
-            gap: 6px;
-        }
-
-        .btn-icon {
-            background: none;
-            border: none;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 40px;
-            height: 40px;
-            cursor: pointer;
-            padding: 0;
-            border-radius: 8px;
-            transition: background 0.15s ease, transform 0.12s ease;
-        }
-
-        .btn-icon svg {
-            width: 20px;
-            height: 20px;
-            display: block;
-            fill: currentColor;
-        }
-
-        .btn-edit {
-            color: #3b82f6;
-        }
-
-        .btn-edit:hover {
-            background: rgba(59, 130, 246, 0.1);
-        }
-
-        .btn-icon:disabled,
-        .btn-icon[aria-disabled="true"] {
-            opacity: 0.45;
-            cursor: not-allowed;
-            pointer-events: none;
-            background: transparent;
-        }
-
-        .btn-view {
-            color: #8b5cf6;
-        }
-
-        .btn-view:hover {
-            background: rgba(139, 92, 246, 0.1);
-        }
-
-        .btn-delete {
-            color: #ef4444;
-        }
-
-        .btn-delete:hover {
-            background: rgba(239, 68, 68, 0.1);
-        }
-
-        .btn-transfer {
-            color: #f59e0b;
-        }
-
-        .btn-transfer:hover {
-            background: rgba(245, 158, 11, 0.1);
-        }
-
-        /* Modal Styles */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 2000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            cursor: pointer;
-        }
-
-        .modal-content {
-            position: relative;
-            background: white;
+            border: 1px solid #e2e8f0;
             border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 500px;
-            width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
-            z-index: 2001;
+            padding: 20px 0 0 0;
+            overflow-x: auto;
         }
 
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 24px;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .modal-header h2 {
-            margin: 0;
-            color: #1e293b;
-            font-size: 1.5rem;
-        }
-
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 1.8rem;
-            cursor: pointer;
-            color: #64748b;
-            padding: 0;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 6px;
-            transition: all 0.3s ease;
-        }
-
-        .modal-close:hover {
-            background: #f1f5f9;
-            color: #1e293b;
-        }
-
-        .modal-body {
-            padding: 24px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #1e293b;
-            font-weight: 600;
-            font-size: 0.95rem;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 10px 14px;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            font-size: 0.95rem;
-            font-family: inherit;
-            transition: all 0.3s ease;
-        }
-
-        .form-control:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-
-        .form-control[readonly] {
-            background: #f8fafc;
-            color: #64748b;
-            cursor: not-allowed;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-        }
-
-        .modal-footer {
-            display: flex;
-            gap: 12px;
-            padding: 20px 24px;
-            border-top: 1px solid #e2e8f0;
-            justify-content: flex-end;
-        }
-
-        .modal-footer .btn-primary,
-        .modal-footer .btn-secondary {
-            margin: 0;
-        }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        }
-
-        .empty-icon {
-            font-size: 4rem;
-            margin-bottom: 16px;
-        }
-
-        .empty-state h3 {
-            color: #1e293b;
-            font-size: 1.5rem;
-            margin-bottom: 8px;
-        }
-
-        .empty-state p {
-            color: #64748b;
-            margin-bottom: 24px;
-        }
-
-        /* --- DataTables Custom Styling --- */
-        .dataTables_wrapper {
-            padding: 20px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-            margin-bottom: 24px;
-        }
+        /* DataTables Override */
         .dataTables_wrapper .dataTables_length,
-        .dataTables_wrapper .dataTables_filter {
-            margin-bottom: 20px;
-            color: #475569;
-            font-weight: 500;
+        .dataTables_wrapper .dataTables_filter,
+        .dataTables_wrapper .dataTables_info,
+        .dataTables_wrapper .dataTables_paginate {
+            padding: 0 20px;
         }
+
+        .dataTables_wrapper .dataTables_length { float: left; margin-bottom: 16px; }
+        .dataTables_wrapper .dataTables_filter { float: right; margin-bottom: 16px; }
+        .dataTables_wrapper .dataTables_info { float: left; padding-top: 14px; color: #64748b; font-size: 13px; }
+        .dataTables_wrapper .dataTables_paginate { float: right; padding-top: 8px; }
+
         .dataTables_wrapper .dataTables_filter input {
-            padding: 8px 12px;
-            border: 1px solid #cbd5e1;
+            padding: 6px 12px;
+            border: 1px solid #e2e8f0;
             border-radius: 6px;
-            background-color: white;
-            color: #1e293b;
-            outline: none;
-            transition: all 0.3s ease;
+            font-size: 13px;
             margin-left: 8px;
         }
         .dataTables_wrapper .dataTables_filter input:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            border-color: #2563eb; outline: none;
         }
         .dataTables_wrapper .dataTables_length select {
-            padding: 6px 10px;
-            border: 1px solid #cbd5e1;
+            padding: 5px 24px 5px 8px;
+            border: 1px solid #e2e8f0;
             border-radius: 6px;
-            background-color: white;
-            color: #1e293b;
-            outline: none;
+            font-size: 13px;
             margin: 0 4px;
         }
-        .dataTables_wrapper .dataTables_info {
-            padding-top: 20px;
-            color: #64748b;
-            font-size: 13px;
-        }
-        .dataTables_wrapper .dataTables_paginate {
-            padding-top: 16px;
-            display: flex;
-            justify-content: flex-end;
-            gap: 6px;
-        }
+
         .dataTables_wrapper .dataTables_paginate .paginate_button {
             padding: 6px 12px !important;
-            border: 1px solid #cbd5e1 !important;
+            border: 1px solid transparent !important;
             border-radius: 6px !important;
-            background: white !important;
-            color: #475569 !important;
+            background: transparent !important;
+            color: #64748b !important;
             cursor: pointer;
-            transition: all 0.2s ease !important;
             font-weight: 500;
+            font-size: 13px;
+            transition: all 0.2s;
         }
         .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-            background: #3b82f6 !important;
-            color: white !important;
-            border-color: #3b82f6 !important;
+            background: #f1f5f9 !important;
+            color: #0f172a !important;
         }
-        .dataTables_wrapper .dataTables_paginate .paginate_button.current,
-        .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
             background: #2563eb !important;
             color: white !important;
-            border-color: #2563eb !important;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+            background: #1d4ed8 !important;
+            color: white !important;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
+            opacity: 0.5; cursor: default;
+        }
+
+        /* Complaints Table */
+        .complaints-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .complaints-table thead tr {
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .complaints-table th {
+            padding: 14px 20px;
+            text-align: left;
+            font-weight: 600;
+            color: #64748b;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: transparent;
+        }
+
+        .complaints-table td {
+            padding: 16px 20px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #334155;
+            vertical-align: middle;
+        }
+        .complaints-table tbody tr:last-child td { border-bottom: none; }
+        .complaints-table tbody tr:hover { background-color: #f8fafc; }
+
+        .complaints-table td.dtr-control { width: 30px; text-align: center; }
+        table.dataTable.dtr-inline.collapsed>tbody>tr>td.dtr-control:before {
+            background-color: #e2e8f0;
+            color: #475569;
+            border: none;
+            line-height: 16px;
+            width: 16px; height: 16px;
+            top: 50%; transform: translateY(-50%);
+        }
+
+        .complaint-id {
+            color: #1e40af;
             font-weight: 700;
-        }
-        .dataTables_wrapper .dataTables_paginate .paginate_button.disabled,
-        .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
-            background: #f1f5f9 !important;
-            color: #94a3b8 !important;
-            border-color: #cbd5e1 !important;
-            cursor: not-allowed;
+            font-size: 13px;
         }
 
-        /* Responsive Design */
-        @media (max-width: 1024px) {
-            .complaint-subject {
-                max-width: 200px;
-            }
+        .complaint-photo {
+            width: 36px; height: 36px;
+            border-radius: 4px;
+            object-fit: cover;
+            border: 1px solid #e2e8f0;
+        }
+        .no-file-text { color: #94a3b8; font-size: 12px; font-style: italic; }
 
-            .filter-controls {
-                flex-direction: column;
-            }
-
-            .filter-select {
-                width: 100%;
-            }
+        .complaint-subject strong {
+            display: block;
+            color: #0f172a;
+            font-weight: 600;
+            font-size: 14px;
         }
 
+        .badge-type {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .badge-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+        .badge-status.pending { background: #ffedd5; color: #c2410c; }
+        .badge-status.resolved { background: #e0e7ff; color: #4338ca; }
+        .badge-status.transferred { background: #e0f2fe; color: #0369a1; }
+        .badge-status.rejected { background: #fee2e2; color: #b91c1c; }
+        .badge-status.default { background: #f1f5f9; color: #475569; }
+
+        .action-cell { display: flex; gap: 8px; align-items: center; }
+
+        .btn-icon {
+            background: transparent; border: 1px solid transparent;
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 32px; height: 32px; cursor: pointer; border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .btn-icon svg { width: 18px; height: 18px; }
+        .btn-edit { color: #2563eb; }
+        .btn-edit:hover:not(:disabled) { background: #eff6ff; border-color: #bfdbfe; }
+        .btn-delete { color: #dc2626; }
+        .btn-delete:hover:not(:disabled) { background: #fef2f2; border-color: #fecaca; }
+        .btn-icon:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+
+        /* Responsive adjustments */
         @media (max-width: 768px) {
-            .page-header-container {
-                flex-direction: column;
-                align-items: stretch;
+            .main-content { padding: 16px; }
+            .page-header-container { flex-direction: column; align-items: stretch; }
+            .btn-primary { width: 100%; justify-content: center; }
+            .dataTables_wrapper .dataTables_length,
+            .dataTables_wrapper .dataTables_filter {
+                float: none; text-align: left; width: 100%;
             }
-
-            .btn-primary {
-                width: 100%;
-            }
-
-            .complaints-table {
-                font-size: 0.85rem;
-            }
-
-            .complaints-table th,
-            .complaints-table td {
-                padding: 12px 8px;
-            }
-
-            .complaint-subject {
-                max-width: 150px;
-            }
-
-            .action-cell {
-                flex-direction: column;
-            }
-
-            .btn-icon {
-                width: 100%;
-                text-align: left;
-                padding: 8px 6px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .page-title h1 {
-                font-size: 1.5rem;
-            }
-
-            .complaints-table {
-                font-size: 0.8rem;
-            }
-
-            .complaints-table th,
-            .complaints-table td {
-                padding: 8px 6px;
-            }
-
-            .complaint-id {
-                font-size: 0.85rem;
-            }
-
-            .complaint-photo {
-                width: 40px;
-                height: 40px;
-            }
-
-            .badge-type,
-            .badge-status {
-                font-size: 0.75rem;
-                padding: 4px 8px;
-            }
+            .dataTables_wrapper .dataTables_filter input { width: calc(100% - 80px); }
+            .dataTables_wrapper .dataTables_info { float: none; text-align: left; }
+            .dataTables_wrapper .dataTables_paginate { float: none; text-align: left; }
         }
     </style>
 
@@ -1112,7 +977,8 @@ function isDeleteDisabled($status)
 
     <!-- JavaScript Functions -->
     <script>
-        const deptDesignations = <?php echo json_encode($dept_designations); ?>;
+        const deptDesignations = <?php echo json_encode($dept_designations, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+        const complaintsExportData = <?php echo json_encode($complaints, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 
         const departmentSelect = document.getElementById('transferDepartment');
         const deptHeadSelect = document.getElementById('transferDeptHead');
@@ -1146,14 +1012,25 @@ function isDeleteDisabled($status)
                 "lengthMenu": [10, 25, 50, 100],
                 "ordering": true,
                 "order": [],
+                "responsive": {
+                    "details": {
+                        "type": "column",
+                        "target": 0
+                    }
+                },
                 "columnDefs": [
-                    { "targets": 10, "orderable": false, "searchable": false }
+                    { "targets": 0, "className": "dtr-control", "orderable": false, "searchable": false },
+                    { "targets": 1, "responsivePriority": 1 },
+                    { "targets": 3, "responsivePriority": 2 },
+                    { "targets": 10, "responsivePriority": 3 },
+                    { "targets": 11, "orderable": false, "searchable": false, "responsivePriority": 4 },
+                    { "targets": 2, "responsivePriority": 10001 }
                 ],
                 "language": {
                     "lengthMenu": "दाखवा _MENU_ नोंदी",
                     "paginate": {
-                        "previous": "← मागे",
-                        "next": "पुढे →"
+                        "previous": "< मागे",
+                        "next": "पुढे >"
                     },
                     "info": "एकूण _TOTAL_ पैकी _START_ ते _END_ दाखवत आहे",
                     "infoEmpty": "माहिती उपलब्ध नाही",
@@ -1166,13 +1043,11 @@ function isDeleteDisabled($status)
             });
 
             $('#statusFilter').on('change', function() {
-                // Column index 9 is the status column (0-indexed) after adding Assigned Officer column
-                table.column(9).search(this.value).draw();
+                table.column(10).search(this.value).draw();
             });
 
             $('#departmentFilter').on('change', function() {
-                // Column index 3 is the department column
-                table.column(3).search(this.value).draw();
+                table.column(4).search(this.value).draw();
             });
         });
 
@@ -1196,12 +1071,12 @@ function isDeleteDisabled($status)
 
         function deleteComplaint(id) {
             Swal.fire({
-                title: 'Delete complaint?',
-                text: 'This action cannot be undone.',
+                title: 'तक्रार हटवायची का?',
+                text: 'ही कृती परत करता येणार नाही.',
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonText: 'Delete',
-                cancelButtonText: 'Cancel',
+                confirmButtonText: 'हटवा',
+                cancelButtonText: 'रद्द करा',
                 confirmButtonColor: '#dc2626',
                 cancelButtonColor: '#64748b'
             }).then((result) => {
@@ -1215,9 +1090,11 @@ function isDeleteDisabled($status)
                     .then(response => response.json())
                     .then(data => {
                         Swal.fire({
-                            title: data.success ? 'Deleted' : 'Not deleted',
+                            title: data.success ? 'हटवले' : 'हटवले नाही',
                             text: data.message,
-                            icon: data.success ? 'success' : 'error'
+                            icon: data.success ? 'success' : 'error',
+                            confirmButtonText: 'ठीक आहे',
+                            confirmButtonColor: data.success ? '#0284c7' : '#dc2626'
                         }).then(() => {
                             if (data.success) {
                                 location.reload();
@@ -1227,9 +1104,11 @@ function isDeleteDisabled($status)
                     .catch(err => {
                         console.error(err);
                         Swal.fire({
-                            title: 'Delete failed',
-                            text: 'Please try again.',
-                            icon: 'error'
+                            title: 'त्रुटी',
+                            text: 'तक्रार हटवता आली नाही. कृपया पुन्हा प्रयत्न करा.',
+                            icon: 'error',
+                            confirmButtonText: 'ठीक आहे',
+                            confirmButtonColor: '#dc2626'
                         });
                     });
             });
@@ -1239,30 +1118,72 @@ function isDeleteDisabled($status)
             window.location.href = 'issueform.php';
         }
 
+        // This function is triggered by the green "निर्यात" button
         function exportComplaints() {
-            let csv = 'समस्या क्रमांक,विषय,विभाग,नियुक्त अधिकारी,गाव,तालुका,प्रकार,दिनांक,स्थिती\n';
+            const columns = [
+                { key: 'issue_number', label: 'Issue Number' },
+                { key: 'photo', label: 'Photo' },
+                { key: 'description', label: 'Description' },
+                { key: 'department', label: 'Department' },
+                { key: 'department_head', label: 'Assigned Officer' },
+                { key: 'village', label: 'Village' },
+                { key: 'taluka', label: 'Taluka' },
+                { key: 'registration_type', label: 'Type' },
+                { key: 'issue_date', label: 'Date' },
+                { key: 'status', label: 'Status' }
+            ];
             const table = $('#complaintsTable').DataTable();
-            const filteredRows = table.rows({ search: 'applied' }).nodes();
+            const filteredIssueNumbers = new Set();
 
-            filteredRows.each(function(row) {
-                const id = row.querySelector('.complaint-id').textContent.trim();
-                const subject = row.querySelector('.complaint-subject strong').textContent.trim();
-                const cells = row.querySelectorAll('td');
-                const department = cells[3].textContent.trim();
-                const deptHead = cells[4].textContent.trim();
-                const village = cells[5].textContent.trim();
-                const taluka = cells[6].textContent.trim();
-                const type = cells[7].textContent.trim();
-                const date = cells[8].textContent.trim();
-                const status = cells[9].textContent.trim();
-
-                csv += '"' + id + '","' + subject + '","' + department + '","' + deptHead + '","' + village + '","' + taluka + '","' + type + '","' + date + '","' + status + '"\n';
+            table.rows({ search: 'applied' }).nodes().each(function(row) {
+                const issueCell = row.querySelector('.complaint-id');
+                if (issueCell) {
+                    filteredIssueNumbers.add(issueCell.textContent.trim());
+                }
             });
 
+            const rowsToExport = complaintsExportData.filter(function(complaint) {
+                return filteredIssueNumbers.has(String(complaint.issue_number || '').trim());
+            });
+
+            const escapeHtml = function(value) {
+                const text = value === null || value === undefined ? '' : String(value);
+                return text
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            };
+
+            const headerCells = columns.map(function(column) {
+                return '<th>' + escapeHtml(column.label) + '</th>';
+            }).join('');
+
+            const bodyRows = rowsToExport.map(function(complaint) {
+                const cells = columns.map(function(column) {
+                    return '<td>' + escapeHtml(complaint[column.key]) + '</td>';
+                }).join('');
+                return '<tr>' + cells + '</tr>';
+            }).join('');
+
+            const excelContent =
+                '<html xmlns:o="urn:schemas-microsoft-com:office:office" ' +
+                'xmlns:x="urn:schemas-microsoft-com:office:excel" ' +
+                'xmlns="http://www.w3.org/TR/REC-html40">' +
+                '<head><meta charset="UTF-8"></head>' +
+                '<body><table border="1"><thead><tr>' + headerCells +
+                '</tr></thead><tbody>' + bodyRows + '</tbody></table></body></html>';
+
+            const blob = new Blob(['\uFEFF' + excelContent], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
-            link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-            link.download = 'माझी_तक्रारी.csv';
+            link.href = url;
+            link.download = 'complaints_report.xls';
+            document.body.appendChild(link);
             link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         }
 
         function openTransferModal(complaintId) {
@@ -1283,15 +1204,7 @@ function isDeleteDisabled($status)
 
         function setCurrentDateTime() {
             const now = new Date();
-            const options = {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
-            };
+            const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
             const dateTimeString = now.toLocaleDateString('en-GB', options).replace(/(\d+)\/(\d+)\/(\d+)/, '$3-$2-$1') + ' ' +
                 now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
             document.getElementById('transferDate').value = dateTimeString;
@@ -1319,18 +1232,29 @@ function isDeleteDisabled($status)
             })
                 .then(response => response.json())
                 .then(data => {
-                    alert(data.message);
+                    Swal.fire({
+                        title: data.success ? 'यशस्वी!' : 'त्रुटी',
+                        text: data.message,
+                        icon: data.success ? 'success' : 'error',
+                        confirmButtonText: 'ठीक आहे',
+                        confirmButtonColor: data.success ? '#0284c7' : '#dc2626'
+                    });
                     if (data.success) {
-                        location.reload();
+                        setTimeout(() => location.reload(), 900);
                     }
                 })
                 .catch(err => {
                     console.error(err);
-                    alert('Update failed. Please try again.');
+                    Swal.fire({
+                        title: 'त्रुटी',
+                        text: 'अद्यतन करता आले नाही. कृपया पुन्हा प्रयत्न करा.',
+                        icon: 'error',
+                        confirmButtonText: 'ठीक आहे',
+                        confirmButtonColor: '#dc2626'
+                    });
                 });
         });
 
-        // Handle transfer form submission via AJAX
         document.getElementById('transferForm').addEventListener('submit', function (e) {
             e.preventDefault();
             const complaintId = document.getElementById('complaintIdTransfer').value;
@@ -1339,7 +1263,13 @@ function isDeleteDisabled($status)
             const notes = document.getElementById('transferNotes').value;
 
             if (!department || !deptHead) {
-                alert('कृपया विभाग आणि संबंधित विभाग प्रमुख निवडा');
+                Swal.fire({
+                    title: 'त्रुटी',
+                    text: 'कृपया विभाग आणि संबंधित विभाग प्रमुख निवडा.',
+                    icon: 'error',
+                    confirmButtonText: 'ठीक आहे',
+                    confirmButtonColor: '#dc2626'
+                });
                 return;
             }
 
@@ -1354,29 +1284,40 @@ function isDeleteDisabled($status)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        alert('तक्रार यशस्वीरित्या हस्तांतरित केली गेली!');
-                        location.reload();
+                        Swal.fire({
+                            title: 'यशस्वी!',
+                            text: 'तक्रार यशस्वीरित्या हस्तांतरित केली गेली!',
+                            icon: 'success',
+                            confirmButtonText: 'ठीक आहे',
+                            confirmButtonColor: '#0284c7'
+                        }).then(() => location.reload());
                     } else {
-                        alert('त्रुटी: ' + data.message);
+                        Swal.fire({
+                            title: 'त्रुटी',
+                            text: data.message,
+                            icon: 'error',
+                            confirmButtonText: 'ठीक आहे',
+                            confirmButtonColor: '#dc2626'
+                        });
                     }
                 })
                 .catch(err => {
                     console.error(err);
-                    alert('हस्तांतरण प्रक्रिया दरम्यान त्रुटी आली.');
+                    Swal.fire({
+                        title: 'त्रुटी',
+                        text: 'हस्तांतरण प्रक्रिया दरम्यान त्रुटी आली.',
+                        icon: 'error',
+                        confirmButtonText: 'ठीक आहे',
+                        confirmButtonColor: '#dc2626'
+                    });
                 });
         });
 
-        // Close modal when clicking overlay
         document.addEventListener('click', function (e) {
             const modal = document.getElementById('transferModal');
             if (e.target === document.querySelector('.modal-overlay')) {
                 closeTransferModal();
             }
-        });
-
-        // Initialize on page load
-        window.addEventListener('load', function () {
-            // Already initialized via jQuery document ready
         });
     </script>
 

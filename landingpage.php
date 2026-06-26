@@ -100,7 +100,7 @@ $page_description = 'Official Zilla Parishad Hingoli portal for inter-department
         font-family: var(--font-heading);
         font-size: clamp(2.2rem, 3.2vw, 3.2rem);
         font-weight: 800;
-        line-height: 1.15;
+        line-height: 1.45;
         max-width: 700px;
         margin-bottom: 12px;
         letter-spacing: -0.02em;
@@ -175,81 +175,148 @@ $page_description = 'Official Zilla Parishad Hingoli portal for inter-department
 
     /* --- Hero Visual Illustration --- */
     .landing-hero .hero-visual {
-        min-height: 380px;
+        min-height: 400px;
         width: 100%;
         border-radius: 28px;
-        background: radial-gradient(circle at top left, rgba(59, 130, 246, 0.32), rgba(14, 165, 233, 0.08) 45%),
-                    radial-gradient(circle at bottom right, rgba(236, 72, 153, 0.18), transparent 40%);
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+        background: radial-gradient(circle at top left, rgba(59, 130, 246, 0.25), rgba(14, 165, 233, 0.05) 45%),
+                    radial-gradient(circle at bottom right, rgba(236, 72, 153, 0.15), transparent 40%);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
         position: relative;
         overflow: hidden;
-        display: grid;
-        place-items: center;
-        z-index: 1;
-        animation: slideUp 1s ease-out;
-    }
-
-    .landing-hero .hero-visual::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.12), transparent 25%);
-        pointer-events: none;
-    }
-
-    .landing-hero .hero-visual .hero-illustration {
-        width: 100%;
-        max-width: 380px;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        align-items: center;
-        justify-items: center;
-        gap: 20px;
-        padding: 30px;
-        background: rgba(255, 255, 255, 0.08);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 24px;
-        box-shadow: 0 20px 45px rgba(0, 0, 0, 0.2);
-        backdrop-filter: blur(12px);
-    }
-
-    .landing-hero .hero-visual .hero-logo,
-    .landing-hero .hero-visual .hero-emblem {
-        width: 100px;
-        height: 100px;
-        object-fit: contain;
-        border-radius: 16px;
-        background: rgba(255, 255, 255, 0.15);
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        padding: 10px;
-        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .landing-hero .hero-visual .hero-logo:hover,
-    .landing-hero .hero-visual .hero-emblem:hover {
-        transform: scale(1.1) rotate(4deg);
-        background: rgba(255, 255, 255, 0.22);
-        border-color: rgba(255, 255, 255, 0.3);
-    }
-
-    .landing-hero .hero-visual .hero-illustration-text {
-        grid-column: span 2;
-        display: inline-flex;
+        display: flex;
         align-items: center;
         justify-content: center;
-        gap: 8px;
+        z-index: 1;
+        animation: slideUp 1s ease-out;
+        padding: 24px;
+    }
+
+    .hero-img-wrapper {
+        position: relative;
         width: 100%;
-        padding: 12px 18px;
-        border-radius: var(--radius-full);
-        background: rgba(0, 0, 0, 0.3);
-        color: #ffffff;
+        max-height: 350px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 20px 45px rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        animation: heroFloat 6s ease-in-out infinite;
+    }
+
+    .landing-hero .hero-visual .hero-main-img {
+        width: 100%;
+        height: auto;
+        max-height: 350px;
+        object-fit: contain;
+        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .hero-img-wrapper:hover .hero-main-img {
+        transform: scale(1.05);
+    }
+
+    /* Scanline scanner beam animation */
+    .scanline {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 6px;
+        background: linear-gradient(to bottom, rgba(56, 189, 248, 0) 0%, rgba(56, 189, 248, 0.8) 50%, rgba(56, 189, 248, 0) 100%);
+        opacity: 0.8;
+        pointer-events: none;
+        animation: scanSweep 4s linear infinite;
+        box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
+    }
+
+    /* Ambient breathing glow overlay */
+    .glow-overlay {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.15), transparent 60%);
+        pointer-events: none;
+        mix-blend-mode: screen;
+        animation: glowPulse 3s ease-in-out infinite alternate;
+    }
+
+    /* Keyframes */
+    @keyframes heroFloat {
+        0%, 100% {
+            transform: translateY(0) rotate(0deg);
+        }
+        50% {
+            transform: translateY(-10px) rotate(0.5deg);
+        }
+    }
+
+    @keyframes scanSweep {
+        0% {
+            top: 0%;
+        }
+        100% {
+            top: 100%;
+        }
+    }
+
+    @keyframes glowPulse {
+        0% {
+            opacity: 0.3;
+        }
+        100% {
+            opacity: 0.8;
+        }
+    }
+
+    /* --- Stats Section --- */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 24px;
+        margin-bottom: 40px;
+    }
+
+    .stat-card {
+        background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-body) 100%);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+        text-align: center;
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-sm);
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        border-color: #0ea5e9;
+        box-shadow: var(--shadow-md);
+    }
+
+    .stat-number {
+        font-family: var(--font-heading);
+        font-size: 2.2rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #0ea5e9, #2563eb);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 6px;
+        display: inline-block;
+    }
+
+    .stat-label {
+        font-size: 0.95rem;
+        color: var(--text-primary);
         font-weight: 700;
-        font-size: 0.85rem;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        margin-top: 10px;
+        display: block;
+    }
+
+    .stat-sub {
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+        display: block;
     }
 
     /* --- Landing Notes --- */
@@ -642,7 +709,8 @@ $page_description = 'Official Zilla Parishad Hingoli portal for inter-department
     @media (max-width: 1200px) {
         .feature-grid,
         .quick-list,
-        .info-banner {
+        .info-banner,
+        .stats-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 20px;
         }
@@ -699,20 +767,24 @@ $page_description = 'Official Zilla Parishad Hingoli portal for inter-department
             min-width: unset;
         }
         .landing-hero .hero-visual {
-            min-height: 280px;
+            min-height: 250px;
+            padding: 12px;
         }
-        .landing-hero .hero-visual .hero-illustration {
-            padding: 20px;
-            max-width: 320px;
+        .landing-hero .hero-visual .hero-main-img {
+            max-height: 220px;
         }
-        .landing-hero .hero-visual .hero-logo,
-        .landing-hero .hero-visual .hero-emblem {
-            width: 80px;
-            height: 80px;
+        .visual-emblems {
+            top: 10px;
+            right: 10px;
+            padding: 4px 8px;
+        }
+        .mini-emblem {
+            height: 24px;
         }
         .feature-grid,
         .quick-list,
-        .info-banner {
+        .info-banner,
+        .stats-grid {
             grid-template-columns: 1fr;
             gap: 16px;
         }
@@ -733,11 +805,10 @@ $page_description = 'Official Zilla Parishad Hingoli portal for inter-department
             </div>
         </div>
         <div class="hero-visual">
-            <div class="hero-illustration">
-                <img src="assets/zp-logo.png" alt="ZP Hingoli Logo" class="hero-logo">
-                <img src="assets/maharashtra-emblem.png" alt="Maharashtra Emblem" class="hero-emblem">
-                <span class="hero-illustration-text"><i class="fa-solid fa-city"></i> Official District Service
-                    Portal</span>
+            <div class="hero-img-wrapper">
+                <img src="assets/digital_governance.png" alt="Digital Governance Illustration" class="hero-main-img">
+                <div class="scanline"></div>
+                <div class="glow-overlay"></div>
             </div>
         </div>
     </section>
@@ -760,6 +831,29 @@ $page_description = 'Official Zilla Parishad Hingoli portal for inter-department
         </div>
     </div>
 
+    <div class="stats-grid">
+        <div class="stat-card">
+            <span class="stat-number">५०+</span>
+            <span class="stat-label">विभाग जोडलेले</span>
+            <span class="stat-sub">Departments Connected</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">१०,०००+</span>
+            <span class="stat-label">तक्रारींचे निवारण</span>
+            <span class="stat-sub">Complaints Resolved</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">९२%</span>
+            <span class="stat-label">निवारण दर</span>
+            <span class="stat-sub">Resolution Rate</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">२४/७</span>
+            <span class="stat-label">सक्रिय नियंत्रण</span>
+            <span class="stat-sub">Active Monitoring</span>
+        </div>
+    </div>
+
     <div class="section-container">
         <h2 class="section-title"><i class="fa-solid fa-map-location-dot"></i> हिंगोली जिल्हा माहिती / Hingoli District Overview</h2>
         <div class="info-banner">
@@ -778,6 +872,71 @@ $page_description = 'Official Zilla Parishad Hingoli portal for inter-department
             <div class="info-card">
                 <h4>अधिकृत संकेतस्थळ</h4>
                 <p>या पोर्टलद्वारे स्थानिक प्रशासनातील सेवा आणि अधिकृत माहिती सुलभरित्या उपलब्ध होते.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-container notice-board-section">
+        <h2 class="section-title"><i class="fa-solid fa-bullhorn"></i> सूचना फलक / Notice Board</h2>
+        <div class="notice-tabs">
+            <button class="notice-tab active" data-tab="circulars">
+                <i class="fa-solid fa-file-pdf"></i> परिपत्रक व आदेश / Circulars
+            </button>
+            <button class="notice-tab" data-tab="announcements">
+                <i class="fa-solid fa-scroll"></i> घोषणा / Announcements
+            </button>
+            <button class="notice-tab" data-tab="press">
+                <i class="fa-solid fa-newspaper"></i> प्रसिद्धी पत्रके / Press Releases
+            </button>
+        </div>
+
+        <div id="circulars" class="notice-panel active">
+            <div class="notice-list">
+                <div class="notice-item">
+                    <a href="#"><i class="fa-solid fa-file-lines me-2 text-primary"></i> आंतर-विभागीय समन्वय समितीची मासिक बैठक - जुलै २०२६</a>
+                    <span>Monthly Zilla Parishad Inter-Departmental Coordination Committee meeting circular. <strong class="badge bg-primary text-white ms-2" style="font-size: 10px; padding: 3px 8px; border-radius: 4px;">New</strong></span>
+                    <span class="notice-date text-muted"><i class="fa-regular fa-clock me-1"></i> २५ जून २०२६</span>
+                </div>
+                <div class="notice-item">
+                    <a href="#"><i class="fa-solid fa-file-pdf me-2 text-danger"></i> नवीन समस्या निवारण प्रणालीचे वापरकर्ता मार्गदर्शक सूचना</a>
+                    <span>User guide and manual for the newly launched issue management system.</span>
+                    <span class="notice-date text-muted"><i class="fa-regular fa-clock me-1"></i> २० जून २०२६</span>
+                </div>
+                <div class="notice-item">
+                    <a href="#"><i class="fa-solid fa-file-lines me-2 text-primary"></i> तांत्रिक अडचणी व संपर्क तपशील अपडेट</a>
+                    <span>Updated helpdesk contacts and support numbers for department users.</span>
+                    <span class="notice-date text-muted"><i class="fa-regular fa-clock me-1"></i> १५ जून २०२६</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="announcements" class="notice-panel">
+            <div class="notice-list">
+                <div class="notice-item">
+                    <a href="#"><i class="fa-solid fa-circle-exclamation me-2 text-warning"></i> स्वच्छ भारत अभियान अंतर्गत सर्व विभागांचा आढावा</a>
+                    <span>Performance audit and clean office space review scheduled for next week.</span>
+                    <span class="notice-date text-muted"><i class="fa-regular fa-clock me-1"></i> २४ जून २०२६</span>
+                </div>
+                <div class="notice-item">
+                    <a href="#"><i class="fa-solid fa-circle-check me-2 text-success"></i> पावसाळी कालावधीत आपत्ती व्यवस्थापन नियंत्रण कक्ष कार्यरत</a>
+                    <span>Monsoon preparedness control room numbers and roster for nodal officers.</span>
+                    <span class="notice-date text-muted"><i class="fa-regular fa-clock me-1"></i> १८ जून २०२६</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="press" class="notice-panel">
+            <div class="notice-list">
+                <div class="notice-item">
+                    <a href="#"><i class="fa-solid fa-award me-2 text-success"></i> हिंगोली जिल्हा परिषदेचा डिजिटल प्रशासनात प्रथम क्रमांक</a>
+                    <span>ZP Hingoli recognized at state level for excellent performance in e-Governance.</span>
+                    <span class="notice-date text-muted"><i class="fa-regular fa-clock me-1"></i> २२ जून २०२६</span>
+                </div>
+                <div class="notice-item">
+                    <a href="#"><i class="fa-solid fa-chart-line me-2 text-primary"></i> समस्या निवारण दरामध्ये ९२% सुधारणा</a>
+                    <span>Monthly analysis shows complaint resolution time reduced by half this quarter.</span>
+                    <span class="notice-date text-muted"><i class="fa-regular fa-clock me-1"></i> १० जून २०२६</span>
+                </div>
             </div>
         </div>
     </div>
@@ -844,5 +1003,30 @@ $page_description = 'Official Zilla Parishad Hingoli portal for inter-department
         </div>
     </div>
 
-       
-</script>
+    <!-- Interactive Notice Board Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const tabs = document.querySelectorAll('.notice-tab');
+            const panels = document.querySelectorAll('.notice-panel');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function () {
+                    const targetTab = this.getAttribute('data-tab');
+
+                    // Remove active class from all tabs & panels
+                    tabs.forEach(t => t.classList.remove('active'));
+                    panels.forEach(p => p.classList.remove('active'));
+
+                    // Add active class to current tab & target panel
+                    this.classList.add('active');
+                    const targetPanel = document.getElementById(targetTab);
+                    if (targetPanel) {
+                        targetPanel.classList.add('active');
+                    }
+                });
+            });
+        });
+    </script>
+
+    <?php include('include/footer.php'); ?>
+</main>

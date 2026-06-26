@@ -1538,12 +1538,14 @@ $user_initials = isset($_SESSION['user_initials']) ? $_SESSION['user_initials'] 
     <header class="idp-header">
         <div class="header-container">
 
-            <!-- Desktop Sidebar Toggle -->
-            <button id="desktopSidebarToggle" title="Toggle Sidebar" aria-label="Toggle Sidebar">&#9776;</button>
+            <?php if (isset($_SESSION['username'])): ?>
+                <!-- Desktop Sidebar Toggle -->
+                <button id="desktopSidebarToggle" title="Toggle Sidebar" aria-label="Toggle Sidebar">&#9776;</button>
 
-            <!-- Mobile Sidebar Toggle -->
-            <button id="mobileSidebarToggle" class="mobile-sidebar-toggle" title="Open Menu"
-                aria-label="Open Menu">&#9776;</button>
+                <!-- Mobile Sidebar Toggle -->
+                <button id="mobileSidebarToggle" class="mobile-sidebar-toggle" title="Open Menu"
+                    aria-label="Open Menu">&#9776;</button>
+            <?php endif; ?>
 
             <!-- Left: Maharashtra Emblem -->
             <div class="header-left">

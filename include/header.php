@@ -1549,14 +1549,14 @@ $user_initials = isset($_SESSION['user_initials']) ? $_SESSION['user_initials'] 
 
             <!-- Left: Maharashtra Emblem -->
             <div class="header-left">
-                <a href="user_dashboard.php">
+                <a href="<?php echo isset($_SESSION['username']) ? 'user_dashboard.php' : 'landingpage.php'; ?>">
                     <img src="assets/maharashtra-emblem.png" alt="Maharashtra State Emblem" class="brand-emblem-img">
                 </a>
             </div>
 
             <!-- Middle: Center Title & Branding -->
             <div class="header-middle">
-                <a href="user_dashboard.php" class="brand-text-wrapper">
+                <a href="<?php echo isset($_SESSION['username']) ? 'user_dashboard.php' : 'landingpage.php'; ?>" class="brand-text-wrapper">
                     <h1 class="brand-title">Zilla Parishad Hingoli</h1>
                     <p class="brand-subtitle">Inter-Department Portal</p>
                 </a>

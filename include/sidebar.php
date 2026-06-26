@@ -210,68 +210,66 @@ $dashboard_url = getDashboardUrl($role);
 
 <!-- Sidebar -->
 <aside id="sidebar" class="sidebar">
-    <div>
-        <div class="sidebar-brand">
-            <span>
-            </span>
-        </div>
-
-        <ul class="sidebar-menu">
-
-
-            <!-- Role-based items -->
-            <?php if ($normalizedRole === 'ग्रामपंचायत अधिकारी' || $normalizedRole === 'शिक्षक' || $normalizedRole === 'अंगणवाडी सेविका' || $normalizedRole === 'teacher'): ?>
-                <li
-                    class="sidebar-item <?php echo in_array(basename($_SERVER['PHP_SELF']), ['user_dashboard.php', 'gram_panchayat.php', 'anganwadi.php']) ? 'active' : ''; ?>">
-                    <a href="<?php echo $dashboard_url; ?>"><i class="fa-solid fa-chart-line"></i> डॅशबोर्ड (Dashboard)</a>
-                </li>
-                <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'issueform.php') ? 'active' : ''; ?>">
-                    <a href="issueform.php"><i class="fa-solid fa-plus-circle"></i>समस्या नोंदवा(Raise Issue)</a>
-                </li>
-                <li
-                    class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'complaint_report.php') ? 'active' : ''; ?>">
-                    <a href="complaint_report.php"><i class="fa-solid fa-file-invoice"></i>माझ्या तक्रारी(My Issues)</a>
-                </li>
-            <?php elseif (in_array($normalizedRole, ['bdo', 'tho', 'hod'])): ?>
-                <li
-                    class="sidebar-item <?php echo in_array(basename($_SERVER['PHP_SELF']), ['user_dashboard.php', 'BDO.php', 'THO.php', 'Hod.php']) ? 'active' : ''; ?>">
-                    <a href="<?php echo $dashboard_url; ?>"><i class="fa-solid fa-chart-line"></i>डॅशबोर्ड(Dashboard)</a>
-                </li>
-                <li
-                    class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'assign_issues.php' && ($_GET['view'] ?? '') !== 'transfer') ? 'active' : ''; ?>">
-                    <a href="assign_issues.php?view=assigned"><i class="fa-solid fa-list-check"></i> नियुक्त तक्रारी
-                        (Assigned Issues)</a>
-                </li>
-                <li
-                    class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'assign_issues.php' && ($_GET['view'] ?? '') === 'transfer') ? 'active' : ''; ?>">
-                    <a href="assign_issues.php?view=transfer"><i class="fa-solid fa-right-left"></i> माझे हस्तांतरण
-                        (My Transfers)</a>
-                </li>
-                <li
-                    class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'assign_issues.php' && ($_GET['view'] ?? '') === 'transferred_by_me') ? 'active' : ''; ?>">
-                    <a href="assign_issues.php?view=transferred_by_me"><i class="fa-solid fa-right-left"></i> माझ्याकडून हस्तांतरित
-                        (Transfer By Me)</a>
-                </li>
-            <?php else: ?>
-                <!-- Default / CEO / Admin fallback view -->
-                <li
-                    class="sidebar-item <?php echo in_array(basename($_SERVER['PHP_SELF']), ['ceo_dashbord.php']) ? 'active' : ''; ?>">
-                    <a href="<?php echo $dashboard_url; ?>"><i class="fa-solid fa-chart-line"></i> डॅशबोर्ड (Dashboard)</a>
-                </li>
-               
-                <li
-                    class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'ceo_report.php') ? 'active' : ''; ?>">
-                    <a href="complaint_report.php"><i class="fa-solid fa-file-invoice"></i> तक्रार अहवाल (Issue Report)</a>
-                </li>
-            
-            <?php endif; ?>
-
-
-        </ul>
+    <div class="sidebar-brand">
+        <span>
+        </span>
     </div>
 
+    <ul class="sidebar-menu">
+
+
+        <!-- Role-based items -->
+        <?php if ($normalizedRole === 'ग्रामपंचायत अधिकारी' || $normalizedRole === 'शिक्षक' || $normalizedRole === 'अंगणवाडी सेविका' || $normalizedRole === 'teacher'): ?>
+            <li
+                class="sidebar-item <?php echo in_array(basename($_SERVER['PHP_SELF']), ['user_dashboard.php', 'gram_panchayat.php', 'anganwadi.php']) ? 'active' : ''; ?>">
+                <a href="<?php echo $dashboard_url; ?>"><i class="fa-solid fa-chart-line"></i> डॅशबोर्ड (Dashboard)</a>
+            </li>
+            <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'issueform.php') ? 'active' : ''; ?>">
+                <a href="issueform.php"><i class="fa-solid fa-plus-circle"></i>समस्या नोंदवा(Raise Issue)</a>
+            </li>
+            <li
+                class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'complaint_report.php') ? 'active' : ''; ?>">
+                <a href="complaint_report.php"><i class="fa-solid fa-file-invoice"></i>माझ्या तक्रारी(My Issues)</a>
+            </li>
+        <?php elseif (in_array($normalizedRole, ['bdo', 'tho', 'hod'])): ?>
+            <li
+                class="sidebar-item <?php echo in_array(basename($_SERVER['PHP_SELF']), ['user_dashboard.php', 'BDO.php', 'THO.php', 'Hod.php']) ? 'active' : ''; ?>">
+                <a href="<?php echo $dashboard_url; ?>"><i class="fa-solid fa-chart-line"></i>डॅशबोर्ड(Dashboard)</a>
+            </li>
+            <li
+                class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'assign_issues.php' && ($_GET['view'] ?? '') !== 'transfer') ? 'active' : ''; ?>">
+                <a href="assign_issues.php?view=assigned"><i class="fa-solid fa-list-check"></i> नियुक्त तक्रारी
+                    (Assigned Issues)</a>
+            </li>
+            <li
+                class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'assign_issues.php' && ($_GET['view'] ?? '') === 'transfer') ? 'active' : ''; ?>">
+                <a href="assign_issues.php?view=transfer"><i class="fa-solid fa-right-left"></i> माझे हस्तांतरण
+                    (My Transfers)</a>
+            </li>
+            <li
+                class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'assign_issues.php' && ($_GET['view'] ?? '') === 'transferred_by_me') ? 'active' : ''; ?>">
+                <a href="assign_issues.php?view=transferred_by_me"><i class="fa-solid fa-right-left"></i> माझ्याकडून हस्तांतरित
+                    (Transfer By Me)</a>
+            </li>
+        <?php else: ?>
+            <!-- Default / CEO / Admin fallback view -->
+            <li
+                class="sidebar-item <?php echo in_array(basename($_SERVER['PHP_SELF']), ['ceo_dashbord.php']) ? 'active' : ''; ?>">
+                <a href="<?php echo $dashboard_url; ?>"><i class="fa-solid fa-chart-line"></i> डॅशबोर्ड (Dashboard)</a>
+            </li>
+           
+            <li
+                class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'ceo_report.php') ? 'active' : ''; ?>">
+                <a href="complaint_report.php"><i class="fa-solid fa-file-invoice"></i> तक्रार अहवाल (Issue Report)</a>
+            </li>
+        
+        <?php endif; ?>
+
+
+    </ul>
+
     <div class="sidebar-bottom">
-        <a href="logout.php" title="Logout">Logout</a>
+        <a href="logout.php" title="Logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
     </div>
 
 </aside>

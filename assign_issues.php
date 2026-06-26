@@ -28,9 +28,10 @@ if ($view === 'transfer') {
     $params[] = $_SESSION['username'] ?? '';
     $types .= "s";
 } elseif ($view === 'transferred_by_me') {
-    $where = "issue_number COLLATE utf8mb4_unicode_ci IN (SELECT issue_no COLLATE utf8mb4_unicode_ci FROM transfer WHERE transfer_by = ?)";
+    $where = "issue_number COLLATE utf8mb4_unicode_ci IN (SELECT issue_no COLLATE utf8mb4_unicode_ci FROM transfer WHERE transfer_by = ? OR transfer_by = (SELECT name FROM users WHERE username = ? LIMIT 1))";
     $params[] = $_SESSION['username'] ?? '';
-    $types .= "s";
+    $params[] = $_SESSION['username'] ?? '';
+    $types .= "ss";
 } else {
     // view === 'assigned'
     if ($normalizedRole === 'ceo') {
@@ -81,9 +82,9 @@ if (!empty($complaints)) {
     $issue_numbers = array_column($complaints, 'issue_number');
     if (!empty($issue_numbers)) {
         $placeholders = implode(',', array_fill(0, count($issue_numbers), '?'));
-        $trans_sql = "SELECT t.issue_no, t.reason, t.transfer_by, u.department 
+        $trans_sql = "SELECT t.issue_no, t.reason, t.transfer_by, COALESCE(u.department, '') AS department 
                       FROM transfer t 
-                      JOIN users u ON BINARY t.transfer_by = BINARY u.username 
+                      LEFT JOIN users u ON BINARY t.transfer_by = BINARY u.username 
                       WHERE t.issue_no IN ($placeholders)
                       ORDER BY t.transfer_id ASC";
         $trans_stmt = $conn->prepare($trans_sql);

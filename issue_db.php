@@ -159,10 +159,12 @@ if (basename(__FILE__) == basename($_SERVER['SCRIPT_FILENAME'])) {
         );
 
         if ($stmt->execute()) {
+            $next_issue_number = generateIssueNumber($conn);
             echo json_encode([
                 'success' => true,
-                'message' => 'à¤¸à¤®à¤¸à¥à¤¯à¤¾ à¤¯à¤¶à¤¸à¥à¤µà¥€à¤°à¤¿à¤¤à¥à¤¯à¤¾ à¤¨à¥‹à¤‚à¤¦à¤µà¤²à¥€ à¤—à¥‡à¤²à¥€!',
-                'issue_number' => $issue_number
+                'message' => 'समस्या यशस्वीरित्या नोंदवली गेली!',
+                'issue_number' => $issue_number,
+                'next_issue_number' => $next_issue_number
             ]);
         } else {
             echo json_encode([

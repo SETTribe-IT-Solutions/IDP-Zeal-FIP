@@ -177,7 +177,7 @@ if (!isset($dashboard_icon)) {
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 20px;
             margin-bottom: 40px;
         }
@@ -632,9 +632,15 @@ if (!isset($dashboard_icon)) {
             <p class="welcome-desc"><?php echo htmlspecialchars($dashboard_description); ?></p>
         </div>
         <div class="welcome-actions">
+            <?php
+            $current_role = strtolower($_SESSION['user_role'] ?? '');
+            $hide_new_issue_roles = ['bdo', 'tho', 'hod', 'ceo'];
+            if (!in_array($current_role, $hide_new_issue_roles)):
+            ?>
             <a href="issueform.php" class="welcome-btn welcome-btn-primary">
                 <i class="fa-solid fa-plus-circle"></i> नवीन समस्या नोंदवा
             </a>
+            <?php endif; ?>
             <a href="complaint_report.php" class="welcome-btn welcome-btn-secondary">
                 <i class="fa-solid fa-file-invoice"></i> अहवाल पहा
             </a>
@@ -664,18 +670,8 @@ if (!isset($dashboard_icon)) {
                 <i class="fa-solid fa-envelope-open"></i>
             </div>
             <div class="stat-info">
-                <h3>उघडलेल्या समस्या</h3>
+                <h3>प्रलंबित समस्या</h3>
                 <p class="stat-number"><?php echo $open_issues; ?></p>
-            </div>
-        </div>
-        <div class="stat-card stat-progress">
-            <div class="stat-card-glow"></div>
-            <div class="stat-icon-wrapper">
-                <i class="fa-solid fa-spinner"></i>
-            </div>
-            <div class="stat-info">
-                <h3>प्रक्रियेत</h3>
-                <p class="stat-number"><?php echo $in_progress_issues; ?></p>
             </div>
         </div>
         <div class="stat-card stat-resolved">
@@ -690,43 +686,7 @@ if (!isset($dashboard_icon)) {
         </div>
     </div>
 
-    <div class="section-container">
-        <h2 class="section-title"><i class="fa-solid fa-gears"></i> जलद प्रवेश</h2>
-        <div class="action-grid">
-            <a href="issueform.php" class="action-card">
-                <div class="action-card-icon bg-blue">
-                    <i class="fa-solid fa-pen-to-square"></i>
-                </div>
-                <h4>समस्या नोंदणी फॉर्म</h4>
-                <p>काही नवीन तांत्रिक किंवा प्रशासकीय समस्या असल्यास येथे फॉर्म भरा आणि फोटो अपलोड करा.</p>
-                <span class="action-card-link">उघडा <i class="fa-solid fa-arrow-right-long"></i></span>
-            </a>
-            <a href="complaint_report.php" class="action-card">
-                <div class="action-card-icon bg-purple">
-                    <i class="fa-solid fa-table-list"></i>
-                </div>
-                <h4>तक्रार अहवाल आणि ट्रॅकिंग</h4>
-                <p>नोंदवलेल्या तक्रारींचा सविस्तर अहवाल पहा, फिल्टर करा आणि CSV फाईल निर्यात करा.</p>
-                <span class="action-card-link">तपासा <i class="fa-solid fa-arrow-right-long"></i></span>
-            </a>
-            <a href="create_user.php" class="action-card">
-                <div class="action-card-icon bg-emerald">
-                    <i class="fa-solid fa-user-plus"></i>
-                </div>
-                <h4>नवीन अधिकारी नोंदणी</h4>
-                <p>पोर्टलवर नवीन अधिकारी किंवा कर्मचाऱ्यांची माहिती समाविष्ट करून खाते तयार करा.</p>
-                <span class="action-card-link">नोंदणी करा <i class="fa-solid fa-arrow-right-long"></i></span>
-            </a>
-            <a href="forgetpassward.php" class="action-card">
-                <div class="action-card-icon bg-amber">
-                    <i class="fa-solid fa-key"></i>
-                </div>
-                <h4>खाते सुरक्षा आणि पासवर्ड</h4>
-                <p>तुमच्या लॉगिन सुरक्षिततेसाठी पासवर्ड बदला किंवा इतर सुरक्षा पर्याय निवडा.</p>
-                <span class="action-card-link">बदला <i class="fa-solid fa-arrow-right-long"></i></span>
-            </a>
-        </div>
-    </div>
+
 
     <div class="section-container">
         <div class="recent-header">

@@ -139,7 +139,7 @@ if ($roleResult) {
     }
 }
 
-// Transfer history
+// Transfer history (still needed for the Timeline modal)
 $transferHistory = [];
 $transferResult = $conn->query("
     SELECT issue_no, transfer_to, transfer_by, reason
@@ -163,25 +163,23 @@ if ($transferResult) {
 }
 
 // Main issues – ordered by date (most recent first)
-// LEFT JOIN with users table to resolve correct department/designation for transferred issues
 $issueSql = "
     SELECT
-        r.issue_number,
-        r.issue_date,
-        r.taluka,
-        r.village,
-        COALESCE(u.department, r.department) AS department,
-        COALESCE(u.designation, r.department_head) AS department_head,
-        r.registration_type,
-        r.position,
-        r.mobile,
-        r.description,
-        r.photo,
-        r.status,
-        r.resolved_remark
-    FROM tbl_raiseissue r
-    LEFT JOIN users u ON r.transfer_to IS NOT NULL AND r.transfer_to != '' AND BINARY r.transfer_to = BINARY u.username
-    ORDER BY r.issue_date DESC, r.issue_number DESC
+        issue_number,
+        issue_date,
+        taluka,
+        village,
+        department,
+        department_head,
+        registration_type,
+        position,
+        mobile,
+        description,
+        photo,
+        status,
+        resolved_remark
+    FROM tbl_raiseissue
+    ORDER BY issue_date DESC, issue_number DESC
 ";
 
 $issueResult = $conn->query($issueSql);
@@ -1178,7 +1176,7 @@ $conn->close();
 </style>
 
 <script>
-    // Pass transferHistory to JS
+    // Pass transferHistory to JS (still needed for Timeline modal)
     const transferHistory = <?php echo json_encode($transferHistory, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
 
     $(document).ready(function() {
@@ -1193,23 +1191,21 @@ $conn->close();
             paging: true,
             pageLength: 25,
             lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-            // ***** SORT BY DATE (column index 1) descending – most recent first *****
             order: [[1, 'desc']],
             columnDefs: [
-                // Responsive priorities
                 { responsivePriority: 1, targets: 0 },
                 { responsivePriority: 2, targets: 2 },
                 { responsivePriority: 3, targets: 7 },
                 { responsivePriority: 4, targets: 8 },
                 { responsivePriority: 5, targets: [1, 3, 4, 5, 6] },
-                // Treat the Date column (index 1) as date type for correct sorting
                 { type: 'date', targets: 1 }
             ],
             language: {
                 emptyTable: "No issues found",
                 zeroRecords: "No matching issues found"
             },
-            dom: '<"datatable-top"lf>t<"datatable-bottom"ip>',
+            // ✅ UPDATED: Move info (i) to the top, above the table
+            dom: '<"datatable-top"l><"datatable-info"i>t<"datatable-bottom"p>',
             searching: true
         });
 
@@ -1218,19 +1214,26 @@ $conn->close();
             table.search(this.value).draw();
         });
 
-        // Column filters
+        // ----- Status filter – map dropdown to database values -----
         $('#statusFilter').on('change', function() {
             var val = $(this).val();
-            table.column(7).search(val ? val : '', true, false).draw();
+            if (val === 'transferred') {
+                table.column(7).search('transfer', true, false);
+            } else {
+                table.column(7).search(val ? val : '', true, false);
+            }
+            table.draw();
             updateVisibleCount();
         });
 
+        // Department filter (column index 3)
         $('#departmentFilter').on('change', function() {
             var val = $(this).val();
             table.column(3).search(val ? val : '', true, false).draw();
             updateVisibleCount();
         });
 
+        // Taluka filter (column index 4 – location column)
         $('#talukaFilter').on('change', function() {
             var val = $(this).val();
             table.column(4).search(val ? val : '', true, false).draw();
@@ -1243,6 +1246,7 @@ $conn->close();
             updateVisibleCount();
         });
 
+        // Role filter (column index 5 – Reporter column)
         $('#roleFilter').on('change', function() {
             var val = $(this).val();
             table.column(5).search(val ? val : '', true, false).draw();
@@ -1268,15 +1272,13 @@ $conn->close();
             $('#visibleCount').text(total + ' visible');
         }
 
-        // Listen to draw event
         table.on('draw', function() {
             updateVisibleCount();
         });
 
-        // Initial update
         updateVisibleCount();
 
-        // Export CSV (visible rows only)
+        // Export CSV (visible rows only) with UTF-8 BOM
         window.exportVisibleRows = function() {
             var header = ['Issue No', 'Date', 'Details', 'Department', 'Location', 'Reporter', 'Photo', 'Status', 'Timeline'];
             var lines = [header];
@@ -1290,7 +1292,8 @@ $conn->close();
             });
 
             var csv = lines.map(line => line.join(',')).join('\n');
-            var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            var bom = '\uFEFF';
+            var blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
             var link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
             link.download = 'ceo_issue_report.csv';
@@ -1355,7 +1358,7 @@ $conn->close();
             document.body.style.overflow = '';
         };
 
-        // Photo modal functions
+        // Photo modal
         window.openPhotoModal = function(photoUrl) {
             var modal = document.getElementById('photoModal');
             var img = document.getElementById('modalPhotoImg');
@@ -1369,7 +1372,6 @@ $conn->close();
             document.body.style.overflow = '';
         };
 
-        // Escape HTML
         function escapeHtml(value) {
             return String(value || '').replace(/[&<>"']/g, function(char) {
                 return {

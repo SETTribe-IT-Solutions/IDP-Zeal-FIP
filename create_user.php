@@ -1552,6 +1552,16 @@ if (empty($system_roles)) {
                         <button type="submit" class="cu-btn" id="submitBtn"><i class="fa-solid fa-floppy-disk"></i> Save
                             User</button>
                     </div>
+
+                    <div style="text-align:center;margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border-color);">
+                        <span style="font-size:0.92rem;color:var(--text-secondary);">Already have an account?</span>
+                        <a href="login.php" id="btn-back-to-login"
+                           style="display:inline-flex;align-items:center;gap:0.4rem;margin-left:0.5rem;font-size:0.95rem;font-weight:700;color:var(--primary);text-decoration:none;padding:0.35rem 0.9rem;border:2px solid var(--primary);border-radius:8px;transition:background 0.2s,color 0.2s;"
+                           onmouseover="this.style.background='var(--primary)';this.style.color='#fff';"
+                           onmouseout="this.style.background='transparent';this.style.color='var(--primary)';">
+                            <i class="fa-solid fa-arrow-right-to-bracket"></i> Login
+                        </a>
+                    </div>
                 </div>
             </form>
 

@@ -2,7 +2,7 @@
 session_start();
 require_once __DIR__ . '/include/config.php';
 
-if (empty($_SESSION['username']) || strtolower($_SESSION['user_role'] ?? '') !== '') {
+if (empty($_SESSION['username']) || strtolower($_SESSION['user_role'] ?? '') !== 'ceo') {
     header('Location: login.php');
     exit;
 }

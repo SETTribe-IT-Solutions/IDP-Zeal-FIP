@@ -253,12 +253,12 @@ $dashboard_url = getDashboardUrl($role);
             <!-- Default / CEO / Admin fallback view -->
             <li
                 class="sidebar-item <?php echo in_array(basename($_SERVER['PHP_SELF']), ['ceo_dashbord.php']) ? 'active' : ''; ?>">
-                <a href="<?php echo $dashboard_url; ?>"><i class="fa-solid fa-chart-line"></i> डॅशबोर्ड (Dashboard)</a>
+                <a href="ceo_dashbord.php"><i class="fa-solid fa-chart-line"></i> डॅशबोर्ड (Dashboard)</a>
             </li>
            
             <li
                 class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'ceo_report.php') ? 'active' : ''; ?>">
-                <a href="complaint_report.php"><i class="fa-solid fa-file-invoice"></i> तक्रार अहवाल (Issue Report)</a>
+                <a href="ceo_report.php"><i class="fa-solid fa-file-invoice"></i> तक्रार अहवाल (Issue Report)</a>
             </li>
         
         <?php endif; ?>

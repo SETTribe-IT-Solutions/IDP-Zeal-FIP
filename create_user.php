@@ -159,609 +159,27 @@ $departments = [
     'समाज कल्याण विभाग'
 ];
 
-$villages = [
-    'आमदरी',
-    'आजलसोंडा',
-    'अंजनवाडा',
-    'अंजनवाडी',
-    'अंखली',
-    'आसोला + औंधा',
-    'आसोला ता./क.',
-    'आसनाडा',
-    'बेरूळा',
-    'चीमेगाव',
-    'चिंचोली निलोजी',
-    'चौंडी शहापूर',
-    'दरेगाव',
-    'देवळा',
-    'देवळा तुर्क पिंपरी',
-    'धार',
-    'धेगज',
-    'धोडगाव',
-    'धुधाला',
-    'दुरचुना',
-    'गाढळा',
-    'गंगलवाडी',
-    'गोजेगाव',
-    'गोळेगाव',
-    'हिवरखेडा',
-    'हिवरा जातू',
-    'जडगाव',
-    'जलालधाबा',
-    'जलालपूर',
-    'जामगव्हन',
-    'जवळ बाजार',
-    'जोडपिंपरी',
-    'काकडधबा',
-    'कांजरा',
-    'कथोडा',
-    'कथोडा तांडा',
-    'केळी',
-    'कोंडाशी बु.',
-    'कुंडकरपिंपरी',
-    'लाख',
-    'लांडळा',
-    'लक्ष्मणनाईक तांडा',
-    'लोहारा बु.',
-    'लोहारा खं.',
-    'मार्डी',
-    'माथा',
-    'मेथा',
-    'मूर्तिजापूर',
-    'नागेश्वाडी',
-    'नागझरी',
-    'नाळेगाव',
-    'नांदगाव',
-    'नांदखेडा',
-    'निशाणा',
-    'पांगरा लाख',
-    'पर्डी सवळी',
-    'पेरजबड',
-    'फुलधबा',
-    'पिमलाडारी',
-    'पिंपळा',
-    'पोटा बु.',
-    'पोठ खं.',
-    'पूर',
-    'पूरजळ',
-    'भोसी',
-    'राजदरी',
-    'रांजळा',
-    'सलाना',
-    'सांगनाईक तांडा',
-    'सरंगावाडी',
-    'सावळी खं.',
-    'सावळी',
-    'सेन्दुरसना',
-    'शिरड शाहापूर',
-    'सिद्धेश्वर',
-    'सिरळा',
-    'सोनवाडी',
-    'सुकापूर',
-    'सुरेगाव',
-    'सुरवाडी',
-    'टाकलगव्हन',
-    'तामटी तांडा',
-    'तपोवन',
-    'उखळी',
-    'उमरा',
-    'उंडेगाव',
-    'वडद',
-    'वडचुना',
-    'वागरवाडी',
-    'वागरवाडी तांडा',
-    'वळकी',
-    'वासई',
-    'येड़ुत',
-    'येहळेगाव',
-    'बोरजा',
-    'ब्राह्मणवाडा',
-    'राजापूर',
-    'रामेश्वर',
-    'रुपूर',
-    'सावरखेडा',
-    'येळी',
-    'बाभुळगाव',
-    'बोराळा',
-    'आडगाव',
-    'आखरुखा',
-    'अकोली',
-    'अंबा',
-    'अराळ',
-    'असेगाव',
-    'बाळेगाव',
-    'भेंडेगाव',
-    'भोगावन',
-    'भोरिपगाव',
-    'बोरगाव',
-    'बोरगाव (बु)',
-    'बोरीसावंत',
-    'ब्रह्मणगाव बु.',
-    'चिखली',
-    'चोंडी',
-    'दगडगाव',
-    'दगापिंपरी',
-    'दरेफळ',
-    'धाभडी',
-    'धामणगाव',
-    'धनोडा',
-    'धौलगाव',
-    'डिग्रस',
-    'डोंवाडा',
-    'एंजणगाव',
-    'गिरगाव',
-    'गुंडा',
-    'गुंज',
-    'हापसापूर',
-    'गणेशपूर',
-    'हयातनगर',
-    'हिरडगाव',
-    'हिवरा (खं)',
-    'जवळा (बु)',
-    'जवलाट-बाभुळगाव',
-    'जुन्नुना',
-    'कगबन',
-    'कळांबा',
-    'कन्हेरगाव',
-    'कारंजी',
-    'हट्टा',
-    'खांडेगाव',
-    'खुडनापूर',
-    'किण्होलाज',
-    'कोनसा',
-    'कोनाथा',
-    'कोर्ता',
-    'कोठारी',
-    'कोउडगाव',
-    'कुडाळा',
-    'करंजाळा',
-    'कुरंडवाडी',
-    'कुरुंडा',
-    'लहान',
-    'लिंगी',
-    'लोण (बु)',
-    'लोलेश्वर',
-    'महागाव',
-    'महमदपूरवाडी',
-    'मालवटा',
-    'मारळपूर',
-    'मारसूल',
-    'मटेगाव',
-    'माथारगाव',
-    'मोहोळगाव',
-    'मुढी',
-    'मुरुंबा (बु)',
-    'नाहाड',
-    'पालसगाव',
-    'पांगरा',
-    'पांग्रासाती',
-    'पांग्राशिंदे',
-    'पर्डी (बु)',
-    'पर्डी (खं)',
-    'परजना',
-    'परळी',
-    'परवा',
-    'पिंपळगाव',
-    'कवठा',
-    'पिंप्राळा',
-    'पुयणी (बु)',
-    'पुयणी (खं)',
-    'रायवाडी',
-    'राजवाडी',
-    'रंजना',
-    'रेणकपूर',
-    'रेऊलगाव',
-    'खांबाळा',
-    'रोडगा',
-    'सरोळे',
-    'सातेफळ',
-    'सावंगी (बु)',
-    'सेलू',
-    'शिंडी',
-    'सिरळी',
-    'सोमठाणा',
-    'सोनना',
-    'सुकळी',
-    'सुनेगाव',
-    'टाकळगाव',
-    'टेलगाव',
-    'टेंभुर्णी',
-    'थोरवा',
-    'तुळजापूरवाडी',
-    'वाघी',
-    'खापरखेडा',
-    'वाखरी',
-    'वापटी',
-    'वायरेगाव',
-    'कुपटी',
-    'पळशी',
-    'पिंपळचोरई',
-    'रिधोरा',
-    'रुंज',
-    'वाई',
-    'अंबाला',
-    'अंभेरी',
-    'आमला',
-    'अंधारवाडी',
-    'बालसोंड',
-    'बसांबा',
-    'बेलूरा',
-    'भांडगाव',
-    'भातसावंगी',
-    'भातसावंगी तांडा',
-    'भिंगी',
-    'भिर्डा',
-    'भोगाव',
-    'बोडखी',
-    'बोंडाळा',
-    'बोराळवाडी',
-    'बोरिशेकरी',
-    'ब्रामफुरी',
-    'चिंचाळा',
-    'चिंचोली',
-    'चोरजवळा',
-    'दातेगाव',
-    'देऊळगाव राम',
-    'देवठाणा',
-    'दिग्रस',
-    'दिग्रस वाणी',
-    'दुर्गाधमणी',
-    'दुर्गासवगी',
-    'गडीबोरी',
-    'घोटा',
-    'गिलोरी',
-    'हनवटखेडा',
-    'हिंगणी',
-    'हिरडी',
-    'हिवरबेल',
-    'इडोली',
-    'इंचा',
-    'इसापूर',
-    'जयपूरवाडी',
-    'जांभ्रुण (अंध)',
-    'जांभ्रुण तांडा',
-    'जामठी खुर्द',
-    'जोडतळा',
-    'कडाटी',
-    'कालमकोंडा बुद्रुक',
-    'कलगाव',
-    'कलकोंडी',
-    'कानडखेडा बुद्रुक',
-    'कानडखेडा खुर्द',
-    'कन्हेरगाव नाका',
-    'कांका',
-    'करवाडी',
-    'केसापूर',
-    'खडकाड बुद्रुक',
-    'खानापूर चित्त',
-    'खंडाळा',
-    'खरबी',
-    'खेड',
-    'खेरडा',
-    'कोठळग',
-    'लासिना',
-    'लिंबाळा मकट',
-    'लिंबाळा प.वा.',
-    'लिंबी',
-    'लोहगाव',
-    'लोहारा',
-    'माळधमणी',
-    'मल्हीवरा',
-    'माळशेलू',
-    'माळवाडी',
-    'नांदुरा',
-    'नर्सी नामदेव',
-    'नवलघावन',
-    'पाहणी',
-    'पाळसोना',
-    'पांघरी',
-    'पर्दा',
-    'परोळा',
-    'पाटोंडा',
-    'पेडगाव',
-    'फळेगाव',
-    'पिंपळदरी (टी.बी.)',
-    'पिंपळखुटा',
-    'पिंपळखेड',
-    'राहोले खुर्द',
-    'राहोली बुद्रुक',
-    'राजूरा',
-    'सगड',
-    'समगा',
-    'संतुकपिंपरी',
-    'सरकळी',
-    'सटांबा',
-    'सावा',
-    'सावड',
-    'सावर्गाव बान',
-    'सिरसाम बुद्रुक',
-    'ताकळी (ई.एन.)',
-    'उमरखोजा',
-    'वैजापूर',
-    'वडदा',
-    'वांझोळा',
-    'वराडी',
-    'वऱ्हुडगवली',
-    'उम्रा',
-    'आडा',
-    'ए-बलापूर',
-    'असोळा',
-    'असोलवाडी',
-    'बाभळी',
-    'बेलमंडळ',
-    'बेलथर',
-    'भातेगाव',
-    'भुर्क्याची वाडी',
-    'बिबगव्हाण',
-    'बोल्डा',
-    'बोल्डावाडी',
-    'बोथी',
-    'बोर',
-    'चाफंथ',
-    'चिंचोर्डी',
-    'चुनचा',
-    'दाभाडी',
-    'दांडेगाव',
-    'दाती',
-    'देवजना',
-    'धनोडा (ज)',
-    'ढोलक्याचीवाडी',
-    'डिग्गी',
-    'दिग्रस (बु.)',
-    'दिग्रस ता. कोंडूर',
-    'डोनरगावपुल',
-    'डोंगरगाव नाका',
-    'डोंगरकडा',
-    'गरोळ्याचीवाडी',
-    'घोडा',
-    'घोळवा',
-    'गोरळेगाव',
-    'गोलबाजार',
-    'गुंडाळवाडी',
-    'हरवाडी',
-    'हिवरा टा. जावळा',
-    'जांबरण',
-    'जांब ता. सिंदगी',
-    'जांगवहन',
-    'जांगावन टा. जावळा',
-    'जारोडा',
-    'जटलवाडी',
-    'कडपदेव',
-    'कलमकोंडा (के)',
-    'कळ्याचीवाडी',
-    'कामठा',
-    'कान्दळी',
-    'कनेगाव',
-    'कसबेडहवंड',
-    'कावडा',
-    'कावडी',
-    'खरवड',
-    'कुंभारवाडी टा. चाफनाथ',
-    'किलेवडगाव',
-    'कोंडूर',
-    'कोपरवाडी',
-    'कृष्णापूर टा. स.',
-    'कुंभारवाडी टा. क.',
-    'रमेश्वर',
-    'कुर्ताडी',
-    'महारी (बु.)',
-    'माळधवंड',
-    'मळेगाव',
-    'मसोद',
-    'मोरगाव',
-    'मोरवड',
-    'मुंधळ',
-    'नांधापूर',
-    'नरवाडी',
-    'नवख (खु.)',
-    'निमटोक',
-    'पालोडी',
-    'पारडी',
-    'पावनमारी',
-    'पेटवडगाव'
-];
+$taluka_villages_file = __DIR__ . '/taluka_villages.json';
+$taluka_villages_data = [];
+if (file_exists($taluka_villages_file)) {
+    $raw = file_get_contents($taluka_villages_file);
+    if (substr($raw, 0, 3) === "\xEF\xBB\xBF") {
+        $raw = substr($raw, 3);
+    }
+    $taluka_villages_data = json_decode($raw, true);
+}
 
-$grampanchayats = [
-    'आमदरी',
-    'आजलसोंडा',
-    'अंजनवाडा',
-    'अंजनवाडी',
-    'अंखली',
-    'आसोला + औंधा',
-    'आसोला ता./क.',
-    'आसनाडा',
-    'बेरूळा',
-    'चीमेगाव',
-    'चिंचोली निलोजी',
-    'चौंडी शहापूर',
-    'दरेगाव',
-    'देवळा',
-    'देवळा तुर्क पिंपरी',
-    'धार',
-    'धेगज',
-    'धोडगाव',
-    'धुधाला',
-    'दुरचुना',
-    'गाढळा',
-    'गंगलवाडी',
-    'गोजेगाव',
-    'गोळेगाव',
-    'हिवरखेडा',
-    'हिवरा जातू',
-    'जडगाव',
-    'जलालधाबा',
-    'जलालपूर',
-    'जामगव्हन',
-    'जवळ बाजार',
-    'जोडपिंपरी',
-    'काकडधबा',
-    'कांजरा',
-    'कथोडा',
-    'कथोडा तांडा',
-    'केळी',
-    'कोंडाशी बु.',
-    'कुंडकरपिंपरी',
-    'लाख',
-    'लांडळा',
-    'लक्ष्मणनाईक तांडा',
-    'लोहारा बु.',
-    'लोहारा खं.',
-    'मार्डी',
-    'माथा',
-    'मेथा',
-    'मूर्तिजापूर',
-    'नागेश्वाडी',
-    'नागझरी',
-    'नाळेगाव',
-    'नांदगाव',
-    'नांदखेडा',
-    'निशाणा',
-    'पांगरा लाख',
-    'पर्डी सवळी',
-    'पेरजबड',
-    'फुलधबा',
-    'पिमलाडारी',
-    'पिंपळा',
-    'पोटा बु.',
-    'पोठ खं.',
-    'पूर',
-    'पूरजळ',
-    'भोसी',
-    'राजदरी',
-    'रांजळा',
-    'सलाना',
-    'सांगनाईक तांडा',
-    'सरंगावाडी',
-    'सावळी खं.',
-    'सावळी',
-    'सेन्दुरसना',
-    'शिरड शाहापूर',
-    'सिद्धेश्वर',
-    'सिरळा',
-    'सोनवाडी',
-    'सुकापूर',
-    'सुरेगाव',
-    'सुरवाडी',
-    'टाकलगव्हन',
-    'तामटी तांडा',
-    'तपोवन',
-    'उखळी',
-    'उमरा',
-    'उंडेगाव',
-    'वडद',
-    'वडचुना',
-    'वागरवाडी',
-    'वागरवाडी तांडा',
-    'वळकी',
-    'वासई',
-    'येड़ुत',
-    'येहळेगाव',
-    'बोरजा',
-    'ब्राह्मणवाडा',
-    'राजापूर',
-    'रामेश्वर',
-    'रुपूर',
-    'सावरखेडा',
-    'येळी',
-    'बाभुळगाव',
-    'बोराळा',
-    'आडगाव',
-    'आखरुखा',
-    'अकोली',
-    'अंबा',
-    'अराळ',
-    'असेगाव',
-    'बाळेगाव',
-    'भेंडेगाव',
-    'भोगावन',
-    'भोरिपगाव',
-    'बोरगाव',
-    'बोरगाव (बु)',
-    'बोरीसावंत',
-    'ब्रह्मणगाव बु.',
-    'चिखली',
-    'चोंडी',
-    'दगडगाव',
-    'दगापिंपरी',
-    'दरेफळ',
-    'धाभडी',
-    'धामणगाव',
-    'धनोडा',
-    'धौलगाव',
-    'डिग्रस',
-    'डोंवाडा',
-    'एंजणगाव',
-    'गिरगाव',
-    'गुंडा',
-    'गुंज',
-    'हापसापूर',
-    'गणेशपूर',
-    'हयातनगर',
-    'हिरडगाव',
-    'हिवरा (खं)',
-    'जवळा (बु)',
-    'जवलाट-बाभुळगाव',
-    'जुन्नुना',
-    'कगबन',
-    'कळांबा',
-    'कन्हेरगाव',
-    'कारंजी',
-    'हट्टा',
-    'खांडेगाव',
-    'खुडनापूर',
-    'किण्होलाज',
-    'कोनसा',
-    'कोनाथा',
-    'कोर्ता',
-    'कोठारी',
-    'कोउडगाव',
-    'कुडाळा',
-    'करंजाळा',
-    'कुरंडवाडी',
-    'कुरुंडा',
-    'लहान',
-    'लिंगी',
-    'लोण (बु)',
-    'लोलेश्वर',
-    'महागाव',
-    'महमदपूरवाडी',
-    'मालवटा',
-    'मारळपूर',
-    'मारसूल',
-    'मटेगाव',
-    'माथारगाव',
-    'मोहोळगाव',
-    'मुढी',
-    'मुरुंबा (बु)',
-    'नाहाड',
-    'पालसगाव',
-    'पांगरा',
-    'पांग्रासाती',
-    'पांग्राशिंदे',
-    'पर्डी (बु)',
-    'पर्डी (खं)',
-    'परजना',
-    'परळी',
-    'परवा',
-    'पिंपळगाव',
-    'कवठा',
-    'पिंप्राळा',
-    'पुयणी (बु)',
-    'पुयणी (खं)',
-    'रायवाडी',
-    'राजवाडी',
-    'रंजना',
-    'रेणकपूर',
-    'रेऊलगाव',
-    'खांबाळा',
-    'रोडगा',
-    'सरोळे',
-    'सातेफळ',
-    'सावंगी (बु)',
-    'सेलू',
-    'शिंडी',
-    'सिरळी'
-];
+$all_villages = [];
+foreach ($taluka_villages_data as $tk => $vlist) {
+    if (is_array($vlist)) {
+        $all_villages = array_merge($all_villages, $vlist);
+    }
+}
+$all_villages = array_values(array_unique($all_villages));
+sort($all_villages);
+
+$villages = $all_villages;
+$grampanchayats = $all_villages;
 
 $talukas = ['औंढा नागनाथ', 'बसमत', 'हिंगोली', 'कळमनुरी', 'सेनगांव'];
 
@@ -1447,34 +865,50 @@ if (empty($system_roles)) {
                         <div class="cu-section-title"><i class="fa-solid fa-location-dot"></i> Location Details</div>
                         <div class="cu-row">
                             <div class="cu-field">
-                                <label for="village"><i class="fa-solid fa-tree-city"></i> Village</label>
-                                <select class="cu-select" id="village" name="village">
-                                    <option value="">-- निवडा गांव --</option>
-                                    <?php foreach ($villages as $v): ?>
-                                        <option value="<?php echo htmlspecialchars($v); ?>" <?php echo $data['village'] === $v ? 'selected' : ''; ?>><?php echo htmlspecialchars($v); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="cu-field">
-                                <label for="grampanchayat"><i class="fa-solid fa-landmark"></i> Grampanchayat</label>
-                                <select class="cu-select" id="grampanchayat" name="grampanchayat">
-                                    <option value="">-- निवडा ग्रामपंचायत --</option>
-                                    <?php foreach ($grampanchayats as $g): ?>
-                                        <option value="<?php echo htmlspecialchars($g); ?>" <?php echo $data['grampanchayat'] === $g ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($g); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="cu-row">
-                            <div class="cu-field">
                                 <label for="taluka"><i class="fa-solid fa-map-location-dot"></i> Taluka</label>
                                 <select class="cu-select" id="taluka" name="taluka">
                                     <option value="">-- निवडा तालुका --</option>
                                     <?php foreach ($talukas as $t): ?>
                                         <option value="<?php echo htmlspecialchars($t); ?>" <?php echo $data['taluka'] === $t ? 'selected' : ''; ?>><?php echo htmlspecialchars($t); ?></option>
                                     <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="cu-field">
+                                <label for="village"><i class="fa-solid fa-tree-city"></i> Village</label>
+                                <select class="cu-select" id="village" name="village">
+                                    <option value="">-- निवडा गांव --</option>
+                                    <?php 
+                                    $taluka_map = [
+                                        'औंढा नागनाथ' => 'aundha',
+                                        'बसमत' => 'basmat',
+                                        'हिंगोली' => 'hingoli',
+                                        'कळमनुरी' => 'kalamnuri',
+                                        'सेनगांव' => 'sengaon'
+                                    ];
+                                    $selected_tk = isset($taluka_map[$data['taluka']]) ? $taluka_map[$data['taluka']] : '';
+                                    $render_villages = [];
+                                    if ($selected_tk && isset($taluka_villages_data[$selected_tk])) {
+                                        $render_villages = $taluka_villages_data[$selected_tk];
+                                    } else {
+                                        $render_villages = $villages;
+                                    }
+                                    foreach ($render_villages as $v): 
+                                    ?>
+                                        <option value="<?php echo htmlspecialchars($v); ?>" <?php echo $data['village'] === $v ? 'selected' : ''; ?>><?php echo htmlspecialchars($v); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="cu-row">
+                            <div class="cu-field">
+                                <label for="grampanchayat"><i class="fa-solid fa-landmark"></i> Grampanchayat</label>
+                                <select class="cu-select" id="grampanchayat" name="grampanchayat">
+                                    <option value="">-- निवडा ग्रामपंचायत --</option>
+                                    <?php if (!empty($data['grampanchayat'])): ?>
+                                        <option value="<?php echo htmlspecialchars($data['grampanchayat']); ?>" selected>
+                                            <?php echo htmlspecialchars($data['grampanchayat']); ?>
+                                        </option>
+                                    <?php endif; ?>
                                 </select>
                             </div>
                             <div class="cu-field">
@@ -1793,6 +1227,7 @@ if (empty($system_roles)) {
                         document.querySelectorAll('.cu-step').forEach(function (s) { s.classList.remove('active', 'completed'); });
                         document.querySelectorAll('.cu-pw-req').forEach(function (r) { r.classList.remove('pass', 'fail'); r.querySelector('i').className = 'fa-solid fa-circle'; });
                         setTimeout(filterDesignations, 0);
+                        setTimeout(filterVillages, 0);
                         setTimeout(function () {
                             if (systemRoleSelect && roleInput) {
                                 roleInput.readOnly = (systemRoleSelect.value !== '');
@@ -1855,6 +1290,92 @@ if (empty($system_roles)) {
                         departmentSelect.addEventListener('change', filterDesignations);
                     }
                     filterDesignations();
+
+                    // Dynamic village and grampanchayat filtering
+                    var talukaSelect = document.getElementById('taluka');
+                    var villageSelect = document.getElementById('village');
+                    var grampanchayatSelect = document.getElementById('grampanchayat');
+
+                    var talukaVillagesMap = <?php echo json_encode($taluka_villages_data, JSON_UNESCAPED_UNICODE); ?>;
+                    var talukaKeyMap = {
+                        'औंढा नागनाथ': 'aundha',
+                        'बसमत': 'basmat',
+                        'हिंगोली': 'hingoli',
+                        'कळमनुरी': 'kalamnuri',
+                        'सेनगांव': 'sengaon'
+                    };
+
+                    var initialVillage = <?php echo json_encode($data['village'], JSON_UNESCAPED_UNICODE); ?>;
+                    var initialGrampanchayat = <?php echo json_encode($data['grampanchayat'], JSON_UNESCAPED_UNICODE); ?>;
+
+                    function filterVillages() {
+                        if (!talukaSelect || !villageSelect) return;
+                        var selectedTaluka = talukaSelect.value;
+                        var currentVillage = villageSelect.value || initialVillage;
+
+                        // Clear village options except the first one
+                        villageSelect.innerHTML = '<option value="">-- निवडा गांव --</option>';
+
+                        var listToUse = [];
+                        var key = talukaKeyMap[selectedTaluka];
+                        if (key && talukaVillagesMap[key]) {
+                            listToUse = talukaVillagesMap[key];
+                        }
+
+                        listToUse.forEach(function (v) {
+                            var opt = document.createElement('option');
+                            opt.value = v;
+                            opt.textContent = v;
+                            if (v === currentVillage) {
+                                opt.selected = true;
+                            }
+                            villageSelect.appendChild(opt);
+                        });
+
+                        updateGrampanchayat();
+                    }
+
+                    function updateGrampanchayat() {
+                        if (!villageSelect || !grampanchayatSelect) return;
+                        var selectedVillage = villageSelect.value || initialVillage;
+
+                        // Clear grampanchayat options and set it to match the village
+                        grampanchayatSelect.innerHTML = '<option value="">-- निवडा ग्रामपंचायत --</option>';
+
+                        if (selectedVillage) {
+                            var opt = document.createElement('option');
+                            opt.value = selectedVillage;
+                            opt.textContent = selectedVillage;
+                            opt.selected = true;
+                            grampanchayatSelect.appendChild(opt);
+                            grampanchayatSelect.value = selectedVillage;
+                        }
+
+                        if (typeof validateField === 'function') {
+                            validateField(villageSelect);
+                            validateField(grampanchayatSelect);
+                        }
+                    }
+
+                    if (talukaSelect) {
+                        talukaSelect.addEventListener('change', function () {
+                            initialVillage = '';
+                            initialGrampanchayat = '';
+                            filterVillages();
+                            updateProgress();
+                        });
+                    }
+
+                    if (villageSelect) {
+                        villageSelect.addEventListener('change', function () {
+                            initialVillage = '';
+                            initialGrampanchayat = '';
+                            updateGrampanchayat();
+                            updateProgress();
+                        });
+                    }
+
+                    filterVillages();
 
                     updateProgress();
                     if (mobileInput) { var c = document.getElementById('counter-mobile'); if (c) c.textContent = mobileInput.value.length + ' / 10'; }

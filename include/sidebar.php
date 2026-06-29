@@ -16,8 +16,6 @@ if (!function_exists('getDashboardUrl')) {
                 return 'BDO.php';
             case 'tho':
                 return 'THO.php';
-            case 'ceo':
-                return 'CEO.php';
             case 'hod':
                 return 'Hod.php';
             case 'ग्रामपंचायत अधिकारी':

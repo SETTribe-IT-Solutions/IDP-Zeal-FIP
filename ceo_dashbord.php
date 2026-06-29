@@ -25,7 +25,7 @@ WHERE status='Resolved'
 $transfer = $conn->query("
 SELECT COUNT(*) total
 FROM tbl_raiseissue
-WHERE status='Transferred'
+WHERE status='Transfer'
 ")->fetch_assoc()['total'];
 
 // DEPARTMENT REPORT
@@ -36,7 +36,7 @@ GROUP_CONCAT(DISTINCT r.department_head SEPARATOR ', ') as department_head,
 COUNT(r.id) total,
 IFNULL(SUM(r.status IN('Pending','Received')), 0) pending,
 IFNULL(SUM(r.status='Resolved'), 0) resolved,
-IFNULL(SUM(r.status='Transferred'), 0) transfer
+IFNULL(SUM(r.status='Transfer'), 0) transfer
 FROM (SELECT DISTINCT department FROM users WHERE department IS NOT NULL AND department != '') u
 LEFT JOIN tbl_raiseissue r ON u.department COLLATE utf8mb4_general_ci = r.department COLLATE utf8mb4_general_ci
 GROUP BY u.department
@@ -49,6 +49,25 @@ while($row=$deptQuery->fetch_assoc())
 {
     $departments[]=$row;
 }
+
+// REAL TRANSFER COUNT PER DEPARTMENT (from transfer table via issue_id)
+$realTransferQuery = $conn->query("
+    SELECT ri.department, COUNT(t.issue_id) AS real_transfer
+    FROM transfer t
+    INNER JOIN tbl_raiseissue ri ON ri.id = t.issue_id
+    WHERE ri.department IS NOT NULL AND ri.department != ''
+    GROUP BY ri.department
+");
+$realTransferMap = [];
+if ($realTransferQuery) {
+    while ($trow = $realTransferQuery->fetch_assoc()) {
+        $realTransferMap[$trow['department']] = (int)$trow['real_transfer'];
+    }
+}
+foreach ($departments as &$dept) {
+    $dept['transfer'] = $realTransferMap[$dept['department']] ?? 0;
+}
+unset($dept);
 
 // CHART DATA
 $chart=$conn->query("
@@ -295,17 +314,24 @@ $active_page = 'ceo_dashbord';
         }
 
         .dept-stats-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            display: flex;
             gap: 0.5rem;
             margin-bottom: 1.2rem;
+            align-items: stretch;
         }
 
         .dept-stat-box {
             text-align: center;
-            padding: 0.8rem 0.5rem;
+            padding: 0.75rem 0.4rem;
             border-radius: 8px;
             background: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 80px;
+            box-sizing: border-box;
+            flex: 1;
         }
 
         .dept-stat-box.resolved { border-bottom: 3px solid #11998e; }
@@ -315,16 +341,19 @@ $active_page = 'ceo_dashbord';
         .dept-stat-value {
             font-size: 1.2rem;
             font-weight: 700;
-            margin-bottom: 0.2rem;
+            line-height: 1;
+            margin-bottom: 0.25rem;
             color: var(--text-main);
         }
 
         .dept-stat-label {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: var(--text-muted);
             text-transform: uppercase;
             font-weight: 600;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.4px;
+            line-height: 1;
+            white-space: nowrap;
         }
 
         .progress-wrapper {
@@ -778,6 +807,7 @@ $active_page = 'ceo_dashbord';
                         <th>Total</th>
                         <th>Pending</th>
                         <th>Resolved</th>
+                        <th>Transferred</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -788,6 +818,7 @@ $active_page = 'ceo_dashbord';
                         <td><span class="badge bg-primary rounded-pill dept-filter-btn shadow-sm" style="cursor: pointer;" data-dept="<?=htmlspecialchars($d['department'])?>" data-status="all" title="View all issues"><?=$d['total']?></span></td>
                         <td><span class="badge bg-warning text-dark rounded-pill dept-filter-btn shadow-sm" style="cursor: pointer;" data-dept="<?=htmlspecialchars($d['department'])?>" data-status="Pending|Received" title="View pending issues"><?=$d['pending']?></span></td>
                         <td><span class="badge bg-success rounded-pill dept-filter-btn shadow-sm" style="cursor: pointer;" data-dept="<?=htmlspecialchars($d['department'])?>" data-status="Resolved" title="View resolved issues"><?=$d['resolved']?></span></td>
+                        <td><span class="badge rounded-pill dept-filter-btn shadow-sm" style="cursor: pointer; background-color: #8e2de2; color: #fff;" data-dept="<?=htmlspecialchars($d['department'])?>" data-status="Transferred" title="View transferred issues"><?=$d['transfer']?></span></td>
                     </tr>
                     <?php } ?>
                 </tbody>

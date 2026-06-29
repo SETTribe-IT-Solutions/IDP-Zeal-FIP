@@ -55,7 +55,7 @@ if ($result && mysqli_num_rows($result) === 1) {
                 break;
             case 'ceo':
                 $canonicalRole = 'CEO';
-                $redirect = 'CEO.php';
+                $redirect = 'ceo_dashbord.php';
                 break;
             case 'hod':
                 $canonicalRole = 'Hod';

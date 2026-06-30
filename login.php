@@ -60,6 +60,7 @@ if (isset($_GET['error'])) {
         .form-label{font-weight:600;font-size:0.95rem}
         .form-control{height:48px;font-size:1rem;border-radius:8px}
         .input-group-text{background:#fff;border-right:0}
+        .input-group > :last-child.input-group-text{border-right: var(--bs-border-width, 1px) solid var(--bs-border-color, #dee2e6)}
 
         .btn-login{background:var(--primary);border-color:var(--primary);font-weight:700;padding:0.6rem; font-size:1rem}
         .btn-login:hover{background:#0b5ed7;border-color:#0b5ed7}

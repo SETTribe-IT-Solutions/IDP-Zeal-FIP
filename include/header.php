@@ -1529,6 +1529,34 @@ $user_initials = isset($_SESSION['user_initials']) ? $_SESSION['user_initials'] 
                 gap: 4px;
             }
         }
+
+        /* Live Header Clock CSS */
+        .header-datetime {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            font-family: var(--font-body);
+            color: var(--text-secondary);
+            font-size: 11px;
+            font-weight: 500;
+            line-height: 1.3;
+            margin-right: 8px;
+            text-align: right;
+        }
+        .header-datetime .dt-time {
+            font-weight: 700;
+            color: var(--primary-light);
+            font-size: 13px;
+        }
+        .header-datetime .dt-date {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+        @media screen and (max-width: 768px) {
+            .header-datetime {
+                display: none;
+            }
+        }
     </style>
 </head>
 
@@ -1564,6 +1592,10 @@ $user_initials = isset($_SESSION['user_initials']) ? $_SESSION['user_initials'] 
 
             <!-- Right: ZP Logo & Actions -->
             <div class="header-right">
+                <div class="header-datetime">
+                    <span class="dt-time" id="headerClockTime"></span>
+                    <span class="dt-date" id="headerClockDate"></span>
+                </div>
                 <img src="assets/zp-logo.png" alt="ZP Hingoli Logo" class="brand-logo-img">
 
                 <div class="header-divider"></div>
@@ -1671,4 +1703,30 @@ $user_initials = isset($_SESSION['user_initials']) ? $_SESSION['user_initials'] 
                 }
             }
         })();
+
+        // Live Header Clock
+        function updateHeaderClock() {
+            const now = new Date();
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            
+            const dayName = days[now.getDay()];
+            const dateStr = now.getDate() + ' ' + months[now.getMonth()] + ' ' + now.getFullYear();
+            
+            let hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12; // 0 should be 12
+            const timeStr = String(hours).padStart(2, '0') + ':' + minutes + ':' + seconds + ' ' + ampm;
+            
+            const clockTimeEl = document.getElementById('headerClockTime');
+            const clockDateEl = document.getElementById('headerClockDate');
+            if (clockTimeEl) clockTimeEl.textContent = timeStr;
+            if (clockDateEl) clockDateEl.textContent = dayName + ', ' + dateStr;
+        }
+        setInterval(updateHeaderClock, 1000);
+        document.addEventListener('DOMContentLoaded', updateHeaderClock);
+        updateHeaderClock();
     </script>

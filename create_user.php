@@ -162,11 +162,7 @@ $departments = [
 $taluka_villages_file = __DIR__ . '/taluka_villages.json';
 $taluka_villages_data = [];
 if (file_exists($taluka_villages_file)) {
-    $raw = file_get_contents($taluka_villages_file);
-    if (substr($raw, 0, 3) === "\xEF\xBB\xBF") {
-        $raw = substr($raw, 3);
-    }
-    $taluka_villages_data = json_decode($raw, true);
+    $taluka_villages_data = json_decode(file_get_contents($taluka_villages_file), true);
 }
 
 $all_villages = [];

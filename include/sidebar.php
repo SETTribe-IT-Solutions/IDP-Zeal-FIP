@@ -28,178 +28,241 @@ if (!function_exists('getDashboardUrl')) {
 
 $dashboard_url = getDashboardUrl($role);
 ?>
+
 <style>
-    /* ===== SIDEBAR ===== */
+    /* =========================================
+       EXACT UI RE-CREATION FOR SIDEBAR
+       ========================================= */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    /* Sidebar Container */
     .sidebar {
         width: 260px;
-        height: calc(100vh - var(--header-height, 70px));
-        background: linear-gradient(180deg, #1e3c72, #2a5298);
+        height: 100vh;
         position: fixed;
-        top: var(--header-height, 70px);
+        top: 0;
         left: 0;
-        box-shadow: 4px 0 15px rgba(0, 0, 0, 0.15);
+        background: linear-gradient(180deg, #1e277a 0%, #2b63b7 100%);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         display: flex;
         flex-direction: column;
-        transition: width 0.3s ease, transform 0.3s ease;
         z-index: 1000;
+        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
         overflow: hidden;
     }
 
-    /* Desktop minimized state */
-    .sidebar.minimized {
-        width: 0;
+    /* Logo / Brand Section */
+    .sidebar-brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 30px 20px 20px 24px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        margin-bottom: 10px;
     }
 
-    /* ===== SIDEBAR MENU ===== */
+    .brand-icon-box {
+        width: 44px;
+        height: 44px;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .brand-icon-box svg {
+        width: 22px;
+        height: 22px;
+        stroke: #fff;
+        stroke-width: 2;
+    }
+
+    .brand-text {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .brand-text .title-main {
+        color: #ffffff;
+        font-size: 16px;
+        font-weight: 700;
+        line-height: 1.2;
+        letter-spacing: 0.3px;
+    }
+
+    .brand-text .title-sub {
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-top: 2px;
+    }
+
+    /* Sidebar Menu */
     .sidebar-menu {
         list-style: none;
-        padding: 20px 0;
+        padding: 10px 16px;
+        margin: 0;
         flex: 1;
         overflow-y: auto;
         overflow-x: hidden;
-        white-space: nowrap;
+    }
+
+    .sidebar-menu::-webkit-scrollbar {
+        width: 4px;
+    }
+    .sidebar-menu::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
     }
 
     .sidebar-item {
-        margin: 8px 15px;
+        margin-bottom: 6px;
     }
 
     .sidebar-item a {
-        display: block;
-        padding: 14px 20px;
-        color: #fff;
+        display: flex;
+        align-items: center;
+        padding: 12px 18px;
+        color: rgba(255, 255, 255, 0.6);
         text-decoration: none;
-        border-radius: 10px;
+        border-radius: 14px;
         transition: all 0.3s ease;
-        font-size: 16px;
+        font-size: 14px;
         font-weight: 500;
+        position: relative;
     }
 
     .sidebar-item a i {
-        margin-right: 12px;
+        margin-right: 14px;
         width: 20px;
         text-align: center;
         font-size: 16px;
-        transition: transform 0.3s ease;
+        color: rgba(255, 255, 255, 0.5);
+        transition: color 0.3s;
     }
 
-    .sidebar-item a:hover i {
-        transform: scale(1.1);
-    }
-
+    /* Hover state */
     .sidebar-item a:hover {
-        background: rgba(255, 255, 255, 0.15);
-        transform: translateX(5px);
+        color: #fff;
+        background: rgba(255, 255, 255, 0.08);
+    }
+    .sidebar-item a:hover i {
+        color: #fff;
     }
 
+    /* Active State - EXACT PILL STYLE FROM IMAGE */
     .sidebar-item.active a {
-        background: #fff;
-        color: #1e3c72;
-        font-weight: bold;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        background: linear-gradient(90deg, #3eb1e1 0%, #2b6dc9 100%);
+        color: #ffffff;
+        font-weight: 600;
+        box-shadow: 0 4px 15px rgba(62, 177, 225, 0.3);
     }
 
-    /* ===== SIDEBAR BOTTOM ===== */
+    .sidebar-item.active a i {
+        color: #ffffff;
+    }
+
+    /* Active State White Dot (Notification dot from image) */
+    .sidebar-item.active a::after {
+        content: '';
+        position: absolute;
+        right: 18px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 8px;
+        height: 8px;
+        background: #ffffff;
+        border-radius: 50%;
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    }
+
+    /* Logout Section */
     .sidebar-bottom {
-        padding: 12px 15px;
+        padding: 20px 16px 30px 16px;
         display: flex;
+        flex-direction: column;
         gap: 8px;
-        justify-content: center;
-        align-items: center;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(30, 60, 114, 0.5);
+        background: transparent;
         flex-shrink: 0;
     }
 
     .sidebar-bottom a {
-        flex: 1;
-        padding: 10px 12px;
-        background: rgba(255, 255, 255, 0.08);
-        color: #fff;
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        text-decoration: none;
-        text-align: center;
-        cursor: pointer;
-        border-radius: 8px;
-        font-size: 13px;
-        font-weight: 500;
-        transition: all 0.3s ease;
         display: flex;
         align-items: center;
         justify-content: center;
+        gap: 10px;
+        padding: 12px;
+        background: #f31f55; /* Pinkish red from image */
+        color: #fff;
+        border: none;
+        text-decoration: none;
+        text-align: center;
+        cursor: pointer;
+        border-radius: 30px;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        width: 100%;
     }
 
     .sidebar-bottom a:hover {
-        background: rgba(255, 255, 255, 0.15);
-        transform: translateY(-1px);
+        background: #d41949;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(243, 31, 85, 0.3);
     }
 
-    /* ===== MAIN CONTENT ===== */
+    /* ---------------------------
+       Responsive & Toggle Logic
+       --------------------------- */
+
+    /* Mobile Hidden state */
+    @media screen and (max-width: 768px) {
+        .sidebar {
+            transform: translateX(-100%);
+            width: 280px;
+        }
+        .sidebar.mobile-open {
+            transform: translateX(0);
+        }
+        .main-content, .main-content.minimized {
+            margin-left: 0 !important;
+        }
+        .mobile-sidebar-toggle {
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+    }
+
+    /* Desktop Minimized state */
+    .sidebar.minimized {
+        transform: translateX(-100%);
+    }
     .main-content {
         margin-left: 260px;
-        padding: 30px;
         transition: margin-left 0.3s ease;
-        min-height: calc(100vh - var(--header-height, 70px));
+        min-height: 100vh;
     }
-
     .main-content.minimized {
         margin-left: 0;
     }
 
-    /* ===== MOBILE SIDEBAR TOGGLE BUTTON (in header) ===== */
-    .mobile-sidebar-toggle {
-        display: none;
-        background: transparent;
-        border: none;
-        color: inherit;
-        font-size: 1.4rem;
-        cursor: pointer;
-        padding: 6px 10px;
-        line-height: 1;
-        z-index: 1100;
-    }
-
-    /* ===== OVERLAY for mobile ===== */
+    /* Overlay */
     #sidebarOverlay {
         display: none;
         position: fixed;
         inset: 0;
-        background: rgba(0, 0, 0, 0.4);
+        background: rgba(0, 0, 0, 0.5);
         z-index: 999;
+        backdrop-filter: blur(2px);
     }
-
     #sidebarOverlay.active {
         display: block;
-    }
-
-    /* ===== RESPONSIVE ===== */
-    @media screen and (max-width: 768px) {
-
-        /* Hide the sidebar off-canvas by default on mobile */
-        .sidebar {
-            width: 260px;
-            transform: translateX(-100%);
-            top: var(--header-height, 70px);
-            height: calc(100vh - var(--header-height, 70px));
-        }
-
-        /* When open on mobile */
-        .sidebar.mobile-open {
-            transform: translateX(0);
-        }
-
-        /* Main content always full width on mobile */
-        .main-content,
-        .main-content.minimized {
-            margin-left: 0;
-        }
-
-        /* Show mobile toggle button in header */
-        .mobile-sidebar-toggle {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
     }
 </style>
 
@@ -208,47 +271,55 @@ $dashboard_url = getDashboardUrl($role);
 
 <!-- Sidebar -->
 <aside id="sidebar" class="sidebar">
+    
+    <!-- Brand / Logo Area -->
     <div class="sidebar-brand">
-        <span>
-        </span>
+        <div class="brand-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+        </div>
+        <div class="brand-text">
+            <span class="title-main">ZP Hingoli</span>
+            <span class="title-sub">PORTAL</span>
+        </div>
     </div>
 
+    <!-- Menu Items -->
     <ul class="sidebar-menu">
 
-
-        <!-- Role-based items -->
         <?php if ($normalizedRole === 'ग्रामपंचायत अधिकारी' || $normalizedRole === 'शिक्षक' || $normalizedRole === 'अंगणवाडी सेविका' || $normalizedRole === 'teacher'): ?>
-            <li
-                class="sidebar-item <?php echo in_array(basename($_SERVER['PHP_SELF']), ['user_dashboard.php', 'gram_panchayat.php', 'anganwadi.php']) ? 'active' : ''; ?>">
-                <a href="<?php echo $dashboard_url; ?>"><i class="fa-solid fa-chart-line"></i> डॅशबोर्ड (Dashboard)</a>
+            
+            <li class="sidebar-item <?php echo in_array(basename($_SERVER['PHP_SELF']), ['user_dashboard.php', 'gram_panchayat.php', 'anganwadi.php']) ? 'active' : ''; ?>">
+                <a href="<?php echo $dashboard_url; ?>"><i class="fa-solid fa-border-all"></i> डॅशबोर्ड</a>
             </li>
+            
             <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'issueform.php') ? 'active' : ''; ?>">
-                <a href="issueform.php"><i class="fa-solid fa-plus-circle"></i>समस्या नोंदवा(Raise Issue)</a>
+                <a href="issueform.php"><i class="fa-solid fa-pen-to-square"></i> समस्या नोंदवा</a>
             </li>
-            <li
-                class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'complaint_report.php') ? 'active' : ''; ?>">
-                <a href="complaint_report.php"><i class="fa-solid fa-file-invoice"></i>माझ्या तक्रारी(My Issues)</a>
+            
+            <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'complaint_report.php') ? 'active' : ''; ?>">
+                <a href="complaint_report.php"><i class="fa-solid fa-file-lines"></i> माझ्या तक्रारी</a>
             </li>
+
         <?php elseif (in_array($normalizedRole, ['bdo', 'tho', 'hod'])): ?>
-            <li
-                class="sidebar-item <?php echo in_array(basename($_SERVER['PHP_SELF']), ['user_dashboard.php', 'BDO.php', 'THO.php', 'Hod.php']) ? 'active' : ''; ?>">
-                <a href="<?php echo $dashboard_url; ?>"><i class="fa-solid fa-chart-line"></i>डॅशबोर्ड(Dashboard)</a>
+            
+            <li class="sidebar-item <?php echo in_array(basename($_SERVER['PHP_SELF']), ['user_dashboard.php', 'BDO.php', 'THO.php', 'Hod.php']) ? 'active' : ''; ?>">
+                <a href="<?php echo $dashboard_url; ?>"><i class="fa-solid fa-border-all"></i> डॅशबोर्ड</a>
             </li>
-            <li
-                class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'assign_issues.php' && ($_GET['view'] ?? '') !== 'transfer') ? 'active' : ''; ?>">
-                <a href="assign_issues.php?view=assigned"><i class="fa-solid fa-list-check"></i> नियुक्त तक्रारी
-                    (Assigned Issues)</a>
+            
+            <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'assign_issues.php' && ($_GET['view'] ?? '') !== 'transfer') ? 'active' : ''; ?>">
+                <a href="assign_issues.php?view=assigned"><i class="fa-solid fa-list-check"></i> नियुक्त तक्रारी</a>
             </li>
-            <li
-                class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'assign_issues.php' && ($_GET['view'] ?? '') === 'transfer') ? 'active' : ''; ?>">
-                <a href="assign_issues.php?view=transfer"><i class="fa-solid fa-right-left"></i> माझे हस्तांतरण
-                    (My Transfers)</a>
+            
+            <li class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'assign_issues.php' && ($_GET['view'] ?? '') === 'transfer') ? 'active' : ''; ?>">
+                <a href="assign_issues.php?view=transfer"><i class="fa-solid fa-arrow-right-arrow-left"></i> तक्रार हस्तांतरण</a>
             </li>
-            <li
-                class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'assign_issues.php' && ($_GET['view'] ?? '') === 'transferred_by_me') ? 'active' : ''; ?>">
-                <a href="assign_issues.php?view=transferred_by_me"><i class="fa-solid fa-right-left"></i> माझ्याकडून हस्तांतरित
-                    (Transfer By Me)</a>
-            </li>
+
         <?php else: ?>
             <!-- Default / CEO / Admin fallback view -->
             <li
@@ -260,18 +331,19 @@ $dashboard_url = getDashboardUrl($role);
                 class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'ceo_report.php') ? 'active' : ''; ?>">
                 <a href="ceo_report.php"><i class="fa-solid fa-file-invoice"></i> तक्रार अहवाल (Issue Report)</a>
             </li>
-        
-        <?php endif; ?>
 
+        <?php endif; ?>
 
     </ul>
 
+    <!-- Logout Button (Pink/Red Pill) -->
     <div class="sidebar-bottom">
-        <a href="logout.php" title="Logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+        <a href="logout.php">
+            <i class="fa-solid fa-arrow-right-from-bracket" style="font-size: 16px;"></i> Logout
+        </a>
     </div>
 
 </aside>
-
 
 <!-- JavaScript for Toggle Functionality -->
 <script>
@@ -280,19 +352,17 @@ $dashboard_url = getDashboardUrl($role);
     const overlay = document.getElementById("sidebarOverlay");
     const isMobile = () => window.innerWidth <= 768;
 
-    /* ---- DESKTOP TOGGLE ---- */
-    // Desktop toggle button lives in the sidebar bottom or header
-    // We use a single button with id="desktopSidebarToggle" placed in header (non-mobile)
+    // Desktop toggle
     const desktopBtn = document.getElementById("desktopSidebarToggle");
     if (desktopBtn) {
         desktopBtn.addEventListener("click", function () {
-            if (isMobile()) return; // handled by mobile toggle
+            if (isMobile()) return;
             sidebar.classList.toggle("minimized");
             if (mainContent) mainContent.classList.toggle("minimized");
         });
     }
 
-    /* ---- MOBILE TOGGLE ---- */
+    // Mobile toggle
     const mobileBtn = document.getElementById("mobileSidebarToggle");
     if (mobileBtn) {
         mobileBtn.addEventListener("click", function () {
@@ -301,20 +371,18 @@ $dashboard_url = getDashboardUrl($role);
         });
     }
 
-    /* ---- CLOSE sidebar when overlay is clicked (mobile) ---- */
+    // Close on overlay click
     overlay.addEventListener("click", function () {
         sidebar.classList.remove("mobile-open");
         overlay.classList.remove("active");
     });
 
-    /* ---- Handle resize ---- */
+    // Handle resize
     window.addEventListener("resize", function () {
         if (!isMobile()) {
-            // On desktop: remove mobile classes
             sidebar.classList.remove("mobile-open");
             overlay.classList.remove("active");
         } else {
-            // On mobile: remove desktop classes
             sidebar.classList.remove("minimized");
             if (mainContent) mainContent.classList.remove("minimized");
         }

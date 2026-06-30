@@ -211,11 +211,7 @@ $departments = [
     'समाज कल्याण विभाग'
 ];
 
-$taluka_villages_file = __DIR__ . '/taluka_villages.json';
-$taluka_villages_data = [];
-if (file_exists($taluka_villages_file)) {
-    $taluka_villages_data = json_decode(file_get_contents($taluka_villages_file), true);
-}
+require_once __DIR__ . '/include/location_mapping.php';
 
 $talukas = array_keys($location_mapping);
 $villages = [];

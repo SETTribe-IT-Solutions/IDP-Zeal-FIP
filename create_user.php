@@ -927,34 +927,50 @@ if (empty($system_roles)) {
                         <div class="cu-section-title"><i class="fa-solid fa-location-dot"></i> Location Details</div>
                         <div class="cu-row">
                             <div class="cu-field">
-                                <label for="village"><i class="fa-solid fa-tree-city"></i> Village</label>
-                                <select class="cu-select" id="village" name="village">
-                                    <option value="">-- निवडा गांव --</option>
-                                    <?php foreach ($villages as $v): ?>
-                                        <option value="<?php echo htmlspecialchars($v); ?>" <?php echo $data['village'] === $v ? 'selected' : ''; ?>><?php echo htmlspecialchars($v); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="cu-field">
-                                <label for="grampanchayat"><i class="fa-solid fa-landmark"></i> Grampanchayat</label>
-                                <select class="cu-select" id="grampanchayat" name="grampanchayat">
-                                    <option value="">-- निवडा ग्रामपंचायत --</option>
-                                    <?php foreach ($grampanchayats as $g): ?>
-                                        <option value="<?php echo htmlspecialchars($g); ?>" <?php echo $data['grampanchayat'] === $g ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($g); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="cu-row">
-                            <div class="cu-field">
                                 <label for="taluka"><i class="fa-solid fa-map-location-dot"></i> Taluka</label>
                                 <select class="cu-select" id="taluka" name="taluka">
                                     <option value="">-- निवडा तालुका --</option>
                                     <?php foreach ($talukas as $t): ?>
                                         <option value="<?php echo htmlspecialchars($t); ?>" <?php echo $data['taluka'] === $t ? 'selected' : ''; ?>><?php echo htmlspecialchars($t); ?></option>
                                     <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="cu-field">
+                                <label for="village"><i class="fa-solid fa-tree-city"></i> Village</label>
+                                <select class="cu-select" id="village" name="village">
+                                    <option value="">-- निवडा गांव --</option>
+                                    <?php 
+                                    $taluka_map = [
+                                        'औंढा नागनाथ' => 'aundha',
+                                        'बसमत' => 'basmat',
+                                        'हिंगोली' => 'hingoli',
+                                        'कळमनुरी' => 'kalamnuri',
+                                        'सेनगांव' => 'sengaon'
+                                    ];
+                                    $selected_tk = isset($taluka_map[$data['taluka']]) ? $taluka_map[$data['taluka']] : '';
+                                    $render_villages = [];
+                                    if ($selected_tk && isset($taluka_villages_data[$selected_tk])) {
+                                        $render_villages = $taluka_villages_data[$selected_tk];
+                                    } else {
+                                        $render_villages = $villages;
+                                    }
+                                    foreach ($render_villages as $v): 
+                                    ?>
+                                        <option value="<?php echo htmlspecialchars($v); ?>" <?php echo $data['village'] === $v ? 'selected' : ''; ?>><?php echo htmlspecialchars($v); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="cu-row">
+                            <div class="cu-field">
+                                <label for="grampanchayat"><i class="fa-solid fa-landmark"></i> Grampanchayat</label>
+                                <select class="cu-select" id="grampanchayat" name="grampanchayat">
+                                    <option value="">-- निवडा ग्रामपंचायत --</option>
+                                    <?php if (!empty($data['grampanchayat'])): ?>
+                                        <option value="<?php echo htmlspecialchars($data['grampanchayat']); ?>" selected>
+                                            <?php echo htmlspecialchars($data['grampanchayat']); ?>
+                                        </option>
+                                    <?php endif; ?>
                                 </select>
                             </div>
                             <div class="cu-field">
@@ -1320,6 +1336,7 @@ if (empty($system_roles)) {
                         document.querySelectorAll('.cu-step').forEach(function (s) { s.classList.remove('active', 'completed'); });
                         document.querySelectorAll('.cu-pw-req').forEach(function (r) { r.classList.remove('pass', 'fail'); r.querySelector('i').className = 'fa-solid fa-circle'; });
                         setTimeout(filterDesignations, 0);
+                        setTimeout(filterVillages, 0);
                         setTimeout(function () {
                             if (systemRoleSelect && roleInput) {
                                 roleInput.readOnly = (systemRoleSelect.value !== '');
@@ -1382,6 +1399,92 @@ if (empty($system_roles)) {
                         departmentSelect.addEventListener('change', filterDesignations);
                     }
                     filterDesignations();
+
+                    // Dynamic village and grampanchayat filtering
+                    var talukaSelect = document.getElementById('taluka');
+                    var villageSelect = document.getElementById('village');
+                    var grampanchayatSelect = document.getElementById('grampanchayat');
+
+                    var talukaVillagesMap = <?php echo json_encode($taluka_villages_data, JSON_UNESCAPED_UNICODE); ?>;
+                    var talukaKeyMap = {
+                        'औंढा नागनाथ': 'aundha',
+                        'बसमत': 'basmat',
+                        'हिंगोली': 'hingoli',
+                        'कळमनुरी': 'kalamnuri',
+                        'सेनगांव': 'sengaon'
+                    };
+
+                    var initialVillage = <?php echo json_encode($data['village'], JSON_UNESCAPED_UNICODE); ?>;
+                    var initialGrampanchayat = <?php echo json_encode($data['grampanchayat'], JSON_UNESCAPED_UNICODE); ?>;
+
+                    function filterVillages() {
+                        if (!talukaSelect || !villageSelect) return;
+                        var selectedTaluka = talukaSelect.value;
+                        var currentVillage = villageSelect.value || initialVillage;
+
+                        // Clear village options except the first one
+                        villageSelect.innerHTML = '<option value="">-- निवडा गांव --</option>';
+
+                        var listToUse = [];
+                        var key = talukaKeyMap[selectedTaluka];
+                        if (key && talukaVillagesMap[key]) {
+                            listToUse = talukaVillagesMap[key];
+                        }
+
+                        listToUse.forEach(function (v) {
+                            var opt = document.createElement('option');
+                            opt.value = v;
+                            opt.textContent = v;
+                            if (v === currentVillage) {
+                                opt.selected = true;
+                            }
+                            villageSelect.appendChild(opt);
+                        });
+
+                        updateGrampanchayat();
+                    }
+
+                    function updateGrampanchayat() {
+                        if (!villageSelect || !grampanchayatSelect) return;
+                        var selectedVillage = villageSelect.value || initialVillage;
+
+                        // Clear grampanchayat options and set it to match the village
+                        grampanchayatSelect.innerHTML = '<option value="">-- निवडा ग्रामपंचायत --</option>';
+
+                        if (selectedVillage) {
+                            var opt = document.createElement('option');
+                            opt.value = selectedVillage;
+                            opt.textContent = selectedVillage;
+                            opt.selected = true;
+                            grampanchayatSelect.appendChild(opt);
+                            grampanchayatSelect.value = selectedVillage;
+                        }
+
+                        if (typeof validateField === 'function') {
+                            validateField(villageSelect);
+                            validateField(grampanchayatSelect);
+                        }
+                    }
+
+                    if (talukaSelect) {
+                        talukaSelect.addEventListener('change', function () {
+                            initialVillage = '';
+                            initialGrampanchayat = '';
+                            filterVillages();
+                            updateProgress();
+                        });
+                    }
+
+                    if (villageSelect) {
+                        villageSelect.addEventListener('change', function () {
+                            initialVillage = '';
+                            initialGrampanchayat = '';
+                            updateGrampanchayat();
+                            updateProgress();
+                        });
+                    }
+
+                    filterVillages();
 
                     updateProgress();
                     if (mobileInput) { var c = document.getElementById('counter-mobile'); if (c) c.textContent = mobileInput.value.length + ' / 10'; }

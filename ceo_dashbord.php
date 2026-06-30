@@ -352,8 +352,9 @@ $active_page = 'ceo_dashbord';
             text-transform: uppercase;
             font-weight: 600;
             letter-spacing: 0.4px;
-            line-height: 1;
+            line-height: 1.2;
             white-space: nowrap;
+            text-align: center;
         }
  
         .progress-wrapper {
@@ -552,15 +553,32 @@ $active_page = 'ceo_dashbord';
                 flex-wrap: wrap;
                 gap: 0.5rem;
             }
-            /* Department tracking cards: 2 per row on mobile */
+            /* Department tracking cards: responsive on mobile */
             .dept-track-card {
-                padding: 1rem;
+                padding: 0.85rem;
+            }
+            .dept-track-header {
+                flex-wrap: wrap;
+                gap: 0.4rem;
+            }
+            .dept-track-title {
+                font-size: 0.95rem;
             }
             .dept-stats-grid {
-                gap: 0.4rem;
+                gap: 0.35rem;
+            }
+            .dept-stat-box {
+                height: auto;
+                min-height: 64px;
+                padding: 0.5rem 0.25rem;
             }
             .dept-stat-value {
                 font-size: 1rem;
+            }
+            .dept-stat-label {
+                font-size: 0.62rem;
+                white-space: normal;
+                letter-spacing: 0.2px;
             }
             /* DataTable controls stack vertically */
             .dataTables_wrapper .dataTables_filter,
@@ -628,6 +646,25 @@ $active_page = 'ceo_dashbord';
             }
             .chart-container {
                 height: 220px;
+            }
+            /* Dept stat boxes: even more compact on very small screens */
+            .dept-stats-grid {
+                gap: 0.25rem;
+            }
+            .dept-stat-box {
+                min-height: 58px;
+                padding: 0.4rem 0.15rem;
+            }
+            .dept-stat-value {
+                font-size: 0.9rem;
+            }
+            .dept-stat-label {
+                font-size: 0.58rem;
+                letter-spacing: 0;
+            }
+            .dept-track-total {
+                font-size: 1.2rem;
+                padding: 0.15rem 0.6rem;
             }
         }
 

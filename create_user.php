@@ -110,6 +110,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors[] = 'DB unique check prepare failed: ' . $mysqli->error;
         }
 
+        // Check if username is already registered
+        $check_user_stmt = $mysqli->prepare('SELECT COUNT(*) FROM users WHERE username = ?');
+        if ($check_user_stmt) {
+            $check_user_stmt->bind_param('s', $data['username']);
+            $check_user_stmt->execute();
+            $check_user_stmt->bind_result($user_count);
+            $check_user_stmt->fetch();
+            $check_user_stmt->close();
+            if ($user_count > 0) {
+                $errors[] = 'Username is already registered.';
+                $username_duplicate_error = true;
+            }
+        } else {
+            $errors[] = 'DB unique check prepare failed: ' . $mysqli->error;
+        }
+
         if (empty($errors)) {
             // Hash the security answer for secure storage (case-insensitive: store lowercase)
             $hashed_security_answer = password_hash(mb_strtolower(trim($data['security_answer']), 'UTF-8'), PASSWORD_DEFAULT);
@@ -195,29 +211,23 @@ $departments = [
     'समाज कल्याण विभाग'
 ];
 
-$taluka_villages_file = __DIR__ . '/taluka_villages.json';
-$taluka_villages_data = [];
-if (file_exists($taluka_villages_file)) {
-    $raw = file_get_contents($taluka_villages_file);
-    if (substr($raw, 0, 3) === "\xEF\xBB\xBF") {
-        $raw = substr($raw, 3);
-    }
-    $taluka_villages_data = json_decode($raw, true);
-}
+require_once __DIR__ . '/include/location_mapping.php';
 
-$all_villages = [];
-foreach ($taluka_villages_data as $tk => $vlist) {
-    if (is_array($vlist)) {
-        $all_villages = array_merge($all_villages, $vlist);
+$talukas = array_keys($location_mapping);
+$villages = [];
+$grampanchayats = [];
+foreach ($location_mapping as $t => $vs) {
+    foreach ($vs as $v => $gps) {
+        $villages[] = $v;
+        foreach ($gps as $g) {
+            $grampanchayats[] = $g;
+        }
     }
 }
-$all_villages = array_values(array_unique($all_villages));
-sort($all_villages);
-
-$villages = $all_villages;
-$grampanchayats = $all_villages;
-
-$talukas = ['औंढा नागनाथ', 'बसमत', 'हिंगोली', 'कळमनुरी', 'सेनगांव'];
+$villages = array_values(array_unique($villages));
+sort($villages);
+$grampanchayats = array_values(array_unique($grampanchayats));
+sort($grampanchayats);
 
 $temp_conn = db_connect();
 $system_roles = [];
@@ -806,7 +816,7 @@ if (empty($system_roles)) {
         <?php if (!empty($errors)): ?>
             <?php
             $display_errors = array_filter($errors, function ($e) {
-                return $e !== 'Mobile number is already registered.';
+                return $e !== 'Mobile number is already registered.' && $e !== 'Username is already registered.';
             });
             ?>
             <?php if (!empty($display_errors)): ?>
@@ -832,6 +842,22 @@ if (empty($system_roles)) {
                     Swal.fire({
                         title: 'Error!',
                         text: 'The mobile number is already registered.',
+                        icon: 'error',
+                        confirmButtonColor: '#dc2626',
+                        confirmButtonText: 'OK'
+                    });
+                });
+            </script>
+        <?php endif; ?>
+
+        <?php if (isset($username_duplicate_error) && $username_duplicate_error): ?>
+            <!-- SweetAlert2 for duplicate username -->
+            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+            <script>
+                document.addEventListener("DOMContentLoaded", function () {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'Username is already registered. Please choose a different username.',
                         icon: 'error',
                         confirmButtonColor: '#dc2626',
                         confirmButtonText: 'OK'

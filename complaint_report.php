@@ -10,25 +10,31 @@ if (!isset($_SESSION['username'])) {
 require_once 'include/config.php';
 
 $can_perform_actions = true;
-$role = $_SESSION['role'] ?? '';
+$role = $_SESSION['user_role'] ?? '';
 
 $conn = db_connect();
 $complaints = [];
 $dbError = '';
 
 $user_village = '';
+$user_taluka = '';
 if (isset($_SESSION['username'])) {
-    $stmt = $conn->prepare("SELECT village FROM users WHERE username = ?");
+    $stmt = $conn->prepare("SELECT village, taluka FROM users WHERE username = ?");
     if ($stmt) {
         $stmt->bind_param("s", $_SESSION['username']);
         $stmt->execute();
         $res = $stmt->get_result();
         if ($res && $row = $res->fetch_assoc()) {
             $user_village = trim($row['village'] ?? '');
+            $user_taluka = trim($row['taluka'] ?? '');
         }
         $stmt->close();
     }
 }
+
+$session_role = !empty($_SESSION['user_system_role']) ? $_SESSION['user_system_role'] : ($_SESSION['user_role'] ?? '');
+$normalized_role = strtolower(trim($session_role));
+$is_officer = in_array($normalized_role, ['bdo', 'tho', 'hod', 'ceo']);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     header('Content-Type: application/json');
@@ -45,6 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $villageClause = '';
     if (!empty($user_village)) {
         $villageClause = ' AND village = ?';
+    } elseif ($is_officer && !empty($user_taluka)) {
+        $villageClause = ' AND taluka = ?';
     }
 
     if ($action === 'delete_complaint') {
@@ -52,6 +60,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if ($stmt) {
             if (!empty($user_village)) {
                 $stmt->bind_param("ss", $issue_number, $user_village);
+            } elseif ($is_officer && !empty($user_taluka)) {
+                $stmt->bind_param("ss", $issue_number, $user_taluka);
             } else {
                 $stmt->bind_param("s", $issue_number);
             }
@@ -89,6 +99,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if ($stmt) {
             if (!empty($user_village)) {
                 $stmt->bind_param("ssssssssss", $description, $department, $department_head, $village, $taluka, $registration_type, $issue_date, $status, $issue_number, $user_village);
+            } elseif ($is_officer && !empty($user_taluka)) {
+                $stmt->bind_param("ssssssssss", $description, $department, $department_head, $village, $taluka, $registration_type, $issue_date, $status, $issue_number, $user_taluka);
             } else {
                 $stmt->bind_param("sssssssss", $description, $department, $department_head, $village, $taluka, $registration_type, $issue_date, $status, $issue_number);
             }
@@ -123,15 +135,24 @@ $sql = "SELECT
             status
         FROM tbl_raiseissue";
 
+$params = [];
+$types = "";
+
 if (!empty($user_village)) {
     $sql .= " WHERE village = ?";
+    $params[] = $user_village;
+    $types .= "s";
+} elseif ($is_officer && !empty($user_taluka)) {
+    $sql .= " WHERE taluka = ?";
+    $params[] = $user_taluka;
+    $types .= "s";
 }
 $sql .= " ORDER BY id DESC";
 
 $stmt = $conn->prepare($sql);
 if ($stmt) {
-    if (!empty($user_village)) {
-        $stmt->bind_param("s", $user_village);
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
     }
     $stmt->execute();
     $result = $stmt->get_result();
@@ -222,9 +243,11 @@ function isDeleteDisabled($status)
             <h1>📋 माझी तक्रारी</h1>
             <p>आपल्या सर्व तक्रारीचे रेकॉर्ड पहा आणि व्यवस्थापित करा</p>
         </div>
+        <?php if (!$is_officer): ?>
         <button class="btn-primary" onclick="openNewComplaintForm()">
             ➕ नवीन तक्रार दाखल करा
         </button>
+        <?php endif; ?>
     </div>
 
     <!-- Filters & Search Section -->

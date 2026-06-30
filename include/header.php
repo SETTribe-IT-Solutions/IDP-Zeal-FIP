@@ -141,6 +141,172 @@ $user_initials = isset($_SESSION['user_initials']) ? $_SESSION['user_initials'] 
             --border-color: #334155;
         }
 
+        /* ==========================================================================
+           UNIFIED DARK THEME OVERRIDES FOR SUB-PAGES (TABLES, CARDS, FORMS, ETC.)
+           ========================================================================== */
+        body.dark-theme .filter-section,
+        body.dark-theme .table-wrapper,
+        body.dark-theme .modal-content,
+        body.dark-theme .empty-state,
+        body.dark-theme .dataTables_wrapper,
+        body.dark-theme .table-responsive,
+        body.dark-theme .container,
+        body.dark-theme .cu-card,
+        body.dark-theme .cu-progress,
+        body.dark-theme .cu-body {
+            background: var(--bg-card) !important;
+            background-color: var(--bg-card) !important;
+            color: var(--text-primary) !important;
+            border-color: var(--border-color) !important;
+            box-shadow: none !important;
+        }
+
+        body.dark-theme h1,
+        body.dark-theme h2,
+        body.dark-theme h3,
+        body.dark-theme h4,
+        body.dark-theme h5,
+        body.dark-theme h6,
+        body.dark-theme .page-title h1,
+        body.dark-theme .modal-header h2,
+        body.dark-theme .form-group label,
+        body.dark-theme label,
+        body.dark-theme .complaints-table th,
+        body.dark-theme .complaints-table td,
+        body.dark-theme .complaint-subject strong,
+        body.dark-theme .empty-state h3,
+        body.dark-theme .dataTables_wrapper .dataTables_length,
+        body.dark-theme .dataTables_wrapper .dataTables_filter,
+        body.dark-theme .dataTables_wrapper .dataTables_filter input,
+        body.dark-theme .dataTables_wrapper .dataTables_length select,
+        body.dark-theme table.dataTable thead th,
+        body.dark-theme table.dataTable tbody td,
+        body.dark-theme .dt-buttons .dt-button,
+        body.dark-theme .dept-stat-value,
+        body.dark-theme .cu-section-title,
+        body.dark-theme .header h1 {
+            color: var(--text-primary) !important;
+        }
+
+        body.dark-theme p,
+        body.dark-theme .page-title p,
+        body.dark-theme .complaint-desc,
+        body.dark-theme .empty-state p,
+        body.dark-theme .dataTables_wrapper .dataTables_info,
+        body.dark-theme .dept-stat-label,
+        body.dark-theme .progress-label,
+        body.dark-theme .header p,
+        body.dark-theme .header .subtitle {
+            color: var(--text-secondary) !important;
+        }
+
+        body.dark-theme input,
+        body.dark-theme select,
+        body.dark-theme textarea,
+        body.dark-theme .filter-select,
+        body.dark-theme .search-box input,
+        body.dark-theme .form-control,
+        body.dark-theme .dataTables_wrapper .dataTables_filter input,
+        body.dark-theme .dataTables_wrapper .dataTables_length select,
+        body.dark-theme .cu-step {
+            background-color: var(--bg-input) !important;
+            color: var(--text-primary) !important;
+            border: 1px solid var(--border-color) !important;
+        }
+
+        body.dark-theme input:focus,
+        body.dark-theme select:focus,
+        body.dark-theme textarea:focus,
+        body.dark-theme .filter-select:focus,
+        body.dark-theme .search-box input:focus,
+        body.dark-theme .form-control:focus,
+        body.dark-theme .dataTables_wrapper .dataTables_filter input:focus {
+            background-color: var(--bg-hover) !important;
+            border-color: var(--primary-light) !important;
+            outline: none !important;
+        }
+
+        body.dark-theme input[readonly],
+        body.dark-theme .form-control[readonly],
+        body.dark-theme textarea[readonly] {
+            background-color: var(--bg-hover) !important;
+            color: var(--text-muted) !important;
+            border-color: var(--border-color) !important;
+            cursor: not-allowed !important;
+        }
+
+        body.dark-theme .complaints-table thead,
+        body.dark-theme table.dataTable thead th {
+            background: var(--bg-hover) !important;
+            border-bottom: 2px solid var(--border-color) !important;
+        }
+
+        body.dark-theme .complaints-table tbody tr:hover,
+        body.dark-theme table.dataTable tbody tr:hover {
+            background-color: var(--bg-hover) !important;
+        }
+
+        body.dark-theme .complaints-table td,
+        body.dark-theme table.dataTable tbody td {
+            border-bottom: 1px solid var(--border-color) !important;
+        }
+
+        body.dark-theme .dataTables_wrapper .dataTables_paginate .paginate_button {
+            background: var(--bg-card) !important;
+            color: var(--text-secondary) !important;
+            border: 1px solid var(--border-color) !important;
+        }
+
+        body.dark-theme .dataTables_wrapper .dataTables_paginate .paginate_button:hover,
+        body.dark-theme .dt-buttons .dt-button:hover {
+            background: var(--bg-hover) !important;
+            color: var(--text-primary) !important;
+        }
+
+        body.dark-theme .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+            background: var(--primary-light) !important;
+            color: white !important;
+            border-color: var(--primary-light) !important;
+        }
+
+        body.dark-theme .dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
+            background: var(--bg-hover) !important;
+            color: var(--text-muted) !important;
+            border-color: var(--border-color) !important;
+            opacity: 0.5;
+        }
+
+        body.dark-theme .modal-close:hover {
+            background-color: var(--bg-hover) !important;
+            color: var(--text-primary) !important;
+        }
+
+        body.dark-theme .dept-stat-box {
+            background: var(--bg-hover) !important;
+        }
+
+        body.dark-theme .progress {
+            background-color: var(--border-color) !important;
+        }
+
+        body.dark-theme .ceo-report-page {
+            background-color: var(--bg-body) !important;
+        }
+
+        body.dark-theme .report-hero {
+            background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-hover) 100%) !important;
+            border-left: 6px solid var(--primary-light) !important;
+            box-shadow: none !important;
+        }
+
+        body.dark-theme .report-hero h1 {
+            color: var(--text-primary) !important;
+        }
+
+        body.dark-theme .report-hero p {
+            color: var(--text-secondary) !important;
+        }
+
         body.light-theme {
             --bg-body: #f8fafc;
             --bg-header: rgba(255, 255, 255, 0.85);

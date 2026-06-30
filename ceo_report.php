@@ -17,6 +17,20 @@ $page_description = 'Executive issue report with department-wise tracking.';
 
 $conn = db_connect();
 
+$user_taluka = '';
+if (isset($_SESSION['username'])) {
+    $stmt = $conn->prepare("SELECT taluka FROM users WHERE username = ?");
+    if ($stmt) {
+        $stmt->bind_param("s", $_SESSION['username']);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        if ($res && $row = $res->fetch_assoc()) {
+            $user_taluka = trim($row['taluka'] ?? '');
+        }
+        $stmt->close();
+    }
+}
+
 if (isset($_GET['transfer_issue'])) {
     header('Content-Type: application/json');
     $issueNumber = trim((string) $_GET['transfer_issue']);
@@ -165,28 +179,43 @@ if ($transferResult) {
 // Main issues – ordered by date (most recent first)
 $issueSql = "
     SELECT
-        issue_number,
-        issue_date,
-        taluka,
-        village,
-        department,
-        department_head,
-        registration_type,
-        position,
-        mobile,
-        description,
-        photo,
-        status,
-        resolved_remark
-    FROM tbl_raiseissue
-    ORDER BY issue_date DESC, issue_number DESC
+        r.issue_number,
+        r.issue_date,
+        r.taluka,
+        r.village,
+        COALESCE(u.department, r.department) AS department,
+        COALESCE(u.designation, r.department_head) AS department_head,
+        r.registration_type,
+        r.position,
+        r.mobile,
+        r.description,
+        r.photo,
+        r.status,
+        r.resolved_remark
+    FROM tbl_raiseissue r
+    LEFT JOIN users u ON r.transfer_to IS NOT NULL AND r.transfer_to != '' AND BINARY r.transfer_to = BINARY u.username
 ";
 
-$issueResult = $conn->query($issueSql);
-if ($issueResult) {
-    while ($row = $issueResult->fetch_assoc()) {
-        $issues[] = $row;
+if ($user_taluka !== '') {
+    $issueSql .= " WHERE r.taluka = ? ";
+}
+$issueSql .= " ORDER BY r.issue_date DESC, r.issue_number DESC";
+
+$issueStmt = $conn->prepare($issueSql);
+if ($issueStmt) {
+    if ($user_taluka !== '') {
+        $issueStmt->bind_param("s", $user_taluka);
     }
+    $issueStmt->execute();
+    $issueResult = $issueStmt->get_result();
+    if ($issueResult) {
+        while ($row = $issueResult->fetch_assoc()) {
+            $issues[] = $row;
+        }
+    } else {
+        $dbError = $conn->error;
+    }
+    $issueStmt->close();
 } else {
     $dbError = $conn->error;
 }

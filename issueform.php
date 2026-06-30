@@ -641,7 +641,7 @@ include 'include/header.php';
                     <label><i class="fas fa-phone"></i>तक्रारकर्त्याचे मोबाईल क्र <span
                             class="required">*</span></label>
                     <input type="tel" id="mobile" name="mobile" placeholder="10 अंकी मोबाईल क्रमांक" pattern="[0-9]{10}"
-                        maxlength="10" value="<?php echo htmlspecialchars($is_edit_mode ? ($edit_issue['mobile'] ?? $user_mobile) : $user_mobile); ?>" required>
+                        maxlength="10" value="<?php echo htmlspecialchars($is_edit_mode ? ($edit_issue['mobile'] ?? $user_mobile) : $user_mobile); ?>" readonly required>
                 </div>
 
                 <div class="form-group full-width">
@@ -881,11 +881,11 @@ include 'include/header.php';
                             confirmButtonText: 'बंद करा'
                         });
 
-                        document.getElementById('issueNumber').value = result.issue_number;
-                        const currentIssueNumber = result.issue_number;
+                        document.getElementById('issueNumber').value = result.next_issue_number;
+                        const nextIssueNumber = result.next_issue_number;
                         document.getElementById('issueForm').reset();
                         restorePrefilledValues();
-                        document.getElementById('issueNumber').value = currentIssueNumber;
+                        document.getElementById('issueNumber').value = nextIssueNumber;
                         document.getElementById('issueDate').value = new Date().toISOString().split('T')[0];
                     }
                 } else {

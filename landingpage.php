@@ -792,6 +792,13 @@ $page_description = 'Official Zilla Parishad Hingoli portal for inter-department
 </style>
 <?php include('include/header.php'); ?>
 <main class="main-content">
+    <?php if (isset($_SESSION['success_message'])): ?>
+        <div class="alert alert-success" style="padding: 16px; background-color: var(--success-color); color: white; border-radius: var(--radius-md); margin-bottom: 20px; font-weight: 500; display: flex; align-items: center; gap: 10px; box-shadow: var(--shadow-sm);">
+            <i class="fa-solid fa-circle-check"></i>
+            <span><?php echo htmlspecialchars($_SESSION['success_message']); ?></span>
+        </div>
+        <?php unset($_SESSION['success_message']); ?>
+    <?php endif; ?>
 
     <section class="landing-hero">
         <div class="hero-panel">
@@ -799,7 +806,7 @@ $page_description = 'Official Zilla Parishad Hingoli portal for inter-department
             <h1 class="hero-title">हिंगोली जिल्हा परिषद आंतर-विभागीय समस्या व्यवस्थापन पोर्टल</h1>
             <p class="hero-title-sub">Hingoli District Inter-Departmental Issue Management Portal</p>
             <p class="hero-text">हिंगोली जिल्हा परिषद आणि सविस्तर सेवांसाठी अधिकृत समस्यांचे निवारण पोर्टल. एकाच ठिकाणी तक्रारी नोंदवा, प्रगती बघा आणि स्थानिक प्रशासनाशी जोडलेले अपडेट मिळवा.</p>
-            <div class="hero-actions">
+            <div class="hero-actions" style="display: none;">
                 <a href="login.php" class="btn btn-primary hero-btn-login">लॉगिन करा / Login <i class="fa-solid fa-right-to-bracket ms-2"></i></a>
                 <a href="create_user.php" class="btn btn-outline hero-btn-register">नवीन खाते / Register <i class="fa-solid fa-user-plus ms-2"></i></a>
             </div>

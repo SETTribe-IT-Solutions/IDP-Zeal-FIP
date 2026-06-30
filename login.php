@@ -67,6 +67,12 @@ if (isset($_GET['error'])) {
 
         .forgot-link{display:block;text-align:center;margin-top:.75rem;font-size:0.9rem;color:#2563eb}
 
+        .divider{display:flex;align-items:center;gap:.75rem;margin:1rem 0;color:#9ca3af;font-size:0.85rem}
+        .divider::before,.divider::after{content:'';flex:1;height:1px;background:#e5e7eb}
+
+        .btn-register{display:block;width:100%;background:transparent;border:2px solid #2fa5a0;color:#1f3a47;font-weight:700;padding:0.55rem;font-size:0.95rem;border-radius:8px;text-align:center;text-decoration:none;transition:background 0.2s,color 0.2s;}
+        .btn-register:hover{background:#2fa5a0;color:#fff;}
+
         .error-box{
             background:#fde8e8;
             border:1px solid #f5c2c7;
@@ -125,6 +131,12 @@ if (isset($_GET['error'])) {
             </div>
 
             <a href="forgetpassward.php" class="forgot-link">Forgot Password?</a>
+
+            <div class="divider">or</div>
+
+            <a href="create_user.php" class="btn-register" id="btn-register">
+                <i class="bi bi-person-plus me-1"></i> User Registration
+            </a>
         </form>
     </main>
 

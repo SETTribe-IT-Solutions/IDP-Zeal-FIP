@@ -1,6 +1,10 @@
 <?php
+// Start session
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 // User form with DB save to userdata.users.
-include __DIR__ . '/include/header.php';
 include __DIR__ . '/include/config.php';
 
 $errors = [];
@@ -15,8 +19,20 @@ $data = [
     'mobile' => '',
     'username' => '',
     'password' => '',
+    'security_question' => '',
+    'security_answer' => '',
     'system_role' => '',
     'role' => ''
+];
+
+// Security questions list (used in both registration and forgot password)
+$security_questions = [
+    'तुमच्या आईचे माहेरचे नाव काय आहे? (What is your mother\'s maiden name?)',
+    'तुमच्या पहिल्या शाळेचे नाव काय आहे? (What is the name of your first school?)',
+    'तुमच्या आवडत्या शिक्षकांचे नाव काय आहे? (What is the name of your favorite teacher?)',
+    'तुमच्या बालपणीच्या सर्वात चांगल्या मित्राचे नाव काय आहे? (What is the name of your childhood best friend?)',
+    'तुमचे जन्मस्थान कोणते आहे? (What is your place of birth?)',
+    'तुमच्या पहिल्या पाळीव प्राण्याचे नाव काय आहे? (What is the name of your first pet?)'
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -56,6 +72,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors[] = 'Password must contain at least one special character.';
         }
     }
+    if ($data['security_question'] === '') {
+        $errors[] = 'Security question is required.';
+    }
+    if ($data['security_answer'] === '') {
+        $errors[] = 'Security answer is required.';
+    } elseif (strlen($data['security_answer']) < 2) {
+        $errors[] = 'Security answer must be at least 2 characters.';
+    }
     if ($data['mobile'] !== '') {
         if (!preg_match('/^[0-9]{10}$/', $data['mobile'])) {
             $errors[] = 'Mobile number must be exactly 10 digits.';
@@ -86,16 +110,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors[] = 'DB unique check prepare failed: ' . $mysqli->error;
         }
 
+        // Check if username is already registered
+        $check_user_stmt = $mysqli->prepare('SELECT COUNT(*) FROM users WHERE username = ?');
+        if ($check_user_stmt) {
+            $check_user_stmt->bind_param('s', $data['username']);
+            $check_user_stmt->execute();
+            $check_user_stmt->bind_result($user_count);
+            $check_user_stmt->fetch();
+            $check_user_stmt->close();
+            if ($user_count > 0) {
+                $errors[] = 'Username is already registered.';
+                $username_duplicate_error = true;
+            }
+        } else {
+            $errors[] = 'DB unique check prepare failed: ' . $mysqli->error;
+        }
+
         if (empty($errors)) {
+            // Hash the security answer for secure storage (case-insensitive: store lowercase)
+            $hashed_security_answer = password_hash(mb_strtolower(trim($data['security_answer']), 'UTF-8'), PASSWORD_DEFAULT);
+
             $stmt = $mysqli->prepare(
-                'INSERT INTO users (name, designation, department, village, grampanchayat, taluka, mobile_no, username, password, system_role, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                'INSERT INTO users (name, designation, department, village, grampanchayat, taluka, mobile_no, username, password, security_question, security_answer, system_role, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
             );
 
             if (!$stmt) {
                 $errors[] = 'DB prepare failed: ' . $mysqli->error;
             } else {
                 $stmt->bind_param(
-                    'sssssssssss',
+                    'sssssssssssss',
                     $data['name'],
                     $data['designation'],
                     $data['department'],
@@ -105,12 +148,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $data['mobile'],
                     $data['username'],
                     $data['password'],
+                    $data['security_question'],
+                    $hashed_security_answer,
                     $data['system_role'],
                     $data['role']
                 );
 
                 if ($stmt->execute()) {
                     $submitted = true;
+                    $_SESSION['success_message'] = 'नवीन खाते यशस्वीरित्या तयार केले आहे! कृपया लॉगिन करा. (New account created successfully! Please login.)';
+                    header("Location: landingpage.php");
+                    exit;
                 } else {
                     $errors[] = 'DB insert failed: ' . $stmt->error;
                 }
@@ -122,6 +170,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $mysqli->close();
     }
 }
+
+// Include header *after* redirect check to prevent header already sent issue
+include __DIR__ . '/include/header.php';
+
 
 // ---------- DATA ARRAYS ----------
 $designations = [
@@ -165,19 +217,21 @@ if (file_exists($taluka_villages_file)) {
     $taluka_villages_data = json_decode(file_get_contents($taluka_villages_file), true);
 }
 
-$all_villages = [];
-foreach ($taluka_villages_data as $tk => $vlist) {
-    if (is_array($vlist)) {
-        $all_villages = array_merge($all_villages, $vlist);
+$talukas = array_keys($location_mapping);
+$villages = [];
+$grampanchayats = [];
+foreach ($location_mapping as $t => $vs) {
+    foreach ($vs as $v => $gps) {
+        $villages[] = $v;
+        foreach ($gps as $g) {
+            $grampanchayats[] = $g;
+        }
     }
 }
-$all_villages = array_values(array_unique($all_villages));
-sort($all_villages);
-
-$villages = $all_villages;
-$grampanchayats = $all_villages;
-
-$talukas = ['औंढा नागनाथ', 'बसमत', 'हिंगोली', 'कळमनुरी', 'सेनगांव'];
+$villages = array_values(array_unique($villages));
+sort($villages);
+$grampanchayats = array_values(array_unique($grampanchayats));
+sort($grampanchayats);
 
 $temp_conn = db_connect();
 $system_roles = [];
@@ -766,7 +820,7 @@ if (empty($system_roles)) {
         <?php if (!empty($errors)): ?>
             <?php
             $display_errors = array_filter($errors, function ($e) {
-                return $e !== 'Mobile number is already registered.';
+                return $e !== 'Mobile number is already registered.' && $e !== 'Username is already registered.';
             });
             ?>
             <?php if (!empty($display_errors)): ?>
@@ -792,6 +846,22 @@ if (empty($system_roles)) {
                     Swal.fire({
                         title: 'Error!',
                         text: 'The mobile number is already registered.',
+                        icon: 'error',
+                        confirmButtonColor: '#dc2626',
+                        confirmButtonText: 'OK'
+                    });
+                });
+            </script>
+        <?php endif; ?>
+
+        <?php if (isset($username_duplicate_error) && $username_duplicate_error): ?>
+            <!-- SweetAlert2 for duplicate username -->
+            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+            <script>
+                document.addEventListener("DOMContentLoaded", function () {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'Username is already registered. Please choose a different username.',
                         icon: 'error',
                         confirmButtonColor: '#dc2626',
                         confirmButtonText: 'OK'
@@ -957,6 +1027,30 @@ if (empty($system_roles)) {
                                 <div class="cu-msg" id="msg-password"></div>
                             </div>
                         </div>
+
+                        <!-- Security Question Section -->
+                        <h3 class="cu-section-title"><i class="fa-solid fa-shield-halved"></i> सुरक्षा प्रश्न / Security Question</h3>
+                        <div class="cu-row">
+                            <div class="cu-field">
+                                <label for="security_question"><i class="fa-solid fa-question-circle"></i> सुरक्षा प्रश्न निवडा (Select Security Question) <span class="req">*</span></label>
+                                <select class="cu-select" id="security_question" name="security_question" required>
+                                    <option value="">-- प्रश्न निवडा / Select Question --</option>
+                                    <?php foreach ($security_questions as $q): ?>
+                                        <option value="<?php echo htmlspecialchars($q); ?>" <?php echo $data['security_question'] === $q ? 'selected' : ''; ?>><?php echo htmlspecialchars($q); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <div class="cu-msg" id="msg-security_question"></div>
+                            </div>
+                        </div>
+                        <div class="cu-row">
+                            <div class="cu-field">
+                                <label for="security_answer"><i class="fa-solid fa-key"></i> उत्तर (Answer) <span class="req">*</span></label>
+                                <input class="cu-input" id="security_answer" name="security_answer" type="text"
+                                    placeholder="तुमचे उत्तर येथे टाका / Enter your answer here"
+                                    value="<?php echo htmlspecialchars($data['security_answer']); ?>" required />
+                                <div class="cu-msg" id="msg-security_answer"></div>
+                            </div>
+                        </div>
                         <div class="cu-row">
                             <div class="cu-field">
                                 <label for="system_role"><i class="fa-solid fa-user-shield"></i> System Role</label>
@@ -981,6 +1075,16 @@ if (empty($system_roles)) {
                                 class="fa-solid fa-rotate-left"></i> Reset</button>
                         <button type="submit" class="cu-btn" id="submitBtn"><i class="fa-solid fa-floppy-disk"></i> Save
                             User</button>
+                    </div>
+
+                    <div style="text-align:center;margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border-color);">
+                        <span style="font-size:0.92rem;color:var(--text-secondary);">Already have an account?</span>
+                        <a href="login.php" id="btn-back-to-login"
+                           style="display:inline-flex;align-items:center;gap:0.4rem;margin-left:0.5rem;font-size:0.95rem;font-weight:700;color:var(--primary);text-decoration:none;padding:0.35rem 0.9rem;border:2px solid var(--primary);border-radius:8px;transition:background 0.2s,color 0.2s;"
+                           onmouseover="this.style.background='var(--primary)';this.style.color='#fff';"
+                           onmouseout="this.style.background='transparent';this.style.color='var(--primary)';">
+                            <i class="fa-solid fa-arrow-right-to-bracket"></i> Login
+                        </a>
                     </div>
                 </div>
             </form>
@@ -1029,6 +1133,19 @@ if (empty($system_roles)) {
                                 if (!/[0-9]/.test(v)) missing.push('one number');
                                 if (!/[^a-zA-Z0-9]/.test(v)) missing.push('one special character');
                                 if (missing.length) return 'Missing: ' + missing.join(', ');
+                                return '';
+                            }
+                        },
+                        security_question: {
+                            validate(v) {
+                                if (!v) return 'Security question is required';
+                                return '';
+                            }
+                        },
+                        security_answer: {
+                            validate(v) {
+                                if (!v.trim()) return 'Security answer is required';
+                                if (v.trim().length < 2) return 'Answer must be at least 2 characters';
                                 return '';
                             }
                         }
@@ -1175,7 +1292,7 @@ if (empty($system_roles)) {
                         var sections = {
                             personal: { fields: ['name'], optional: ['designation', 'department'] },
                             location: { fields: [], optional: ['village', 'grampanchayat', 'taluka', 'mobile'] },
-                            credentials: { fields: ['username', 'password'], optional: ['system_role', 'role'] }
+                            credentials: { fields: ['username', 'password', 'security_question', 'security_answer'], optional: ['system_role', 'role'] }
                         };
                         steps.forEach(function (step) {
                             var sName = step.getAttribute('data-section');

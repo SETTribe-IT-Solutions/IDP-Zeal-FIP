@@ -131,11 +131,11 @@ $active_page = 'ceo_dashbord';
 
     <style>
         :root {
-            --primary-bg: #f4f7f6;
-            --card-bg: #ffffff;
-            --text-main: #2b3445;
-            --text-muted: #7d879c;
-            --border-color: #e3e9ef;
+            --primary-bg: var(--bg-body, #f4f7f6);
+            --card-bg: var(--bg-card, #ffffff);
+            --text-main: var(--text-primary, #2b3445);
+            --text-muted: var(--text-secondary, #7d879c);
+            --border-color: var(--border-color, #e3e9ef);
             --blue-gradient: linear-gradient(135deg, #3a7bd5, #3a6073);
             --orange-gradient: linear-gradient(135deg, #f2994a, #f2c94c);
             --green-gradient: linear-gradient(135deg, #11998e, #38ef7d);
@@ -317,14 +317,14 @@ $active_page = 'ceo_dashbord';
             display: flex;
             gap: 0.5rem;
             margin-bottom: 1.2rem;
-            align-items: stretch;
+             align-items: stretch;
         }
-
+ 
         .dept-stat-box {
             text-align: center;
             padding: 0.75rem 0.4rem;
             border-radius: 8px;
-            background: #f8f9fa;
+            background: var(--bg-hover, #f8f9fa);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -333,11 +333,11 @@ $active_page = 'ceo_dashbord';
             box-sizing: border-box;
             flex: 1;
         }
-
+ 
         .dept-stat-box.resolved { border-bottom: 3px solid #11998e; }
         .dept-stat-box.pending { border-bottom: 3px solid #f2994a; }
         .dept-stat-box.transfer { border-bottom: 3px solid #8e2de2; }
-
+ 
         .dept-stat-value {
             font-size: 1.2rem;
             font-weight: 700;
@@ -345,21 +345,22 @@ $active_page = 'ceo_dashbord';
             margin-bottom: 0.25rem;
             color: var(--text-main);
         }
-
+ 
         .dept-stat-label {
             font-size: 0.7rem;
             color: var(--text-muted);
             text-transform: uppercase;
             font-weight: 600;
             letter-spacing: 0.4px;
-            line-height: 1;
+            line-height: 1.2;
             white-space: nowrap;
+            text-align: center;
         }
-
+ 
         .progress-wrapper {
             margin-top: auto;
         }
-
+ 
         .progress-label {
             display: flex;
             justify-content: space-between;
@@ -368,24 +369,24 @@ $active_page = 'ceo_dashbord';
             color: var(--text-muted);
             margin-bottom: 0.5rem;
         }
-
+ 
         .progress {
             height: 8px;
             border-radius: 50px;
-            background-color: #e9ecef;
+            background-color: var(--border-color, #e9ecef);
             overflow: hidden;
         }
-
+ 
         .progress-bar {
             background: var(--green-gradient);
             border-radius: 50px;
         }
-
+ 
         /* Tables styling */
         .table-responsive {
             border-radius: 8px;
             border: 1px solid var(--border-color);
-            background: white;
+            background: var(--bg-card, white);
         }
         
         table.dataTable {
@@ -395,7 +396,7 @@ $active_page = 'ceo_dashbord';
         }
         
         table.dataTable thead th {
-            background-color: #f8f9fa;
+            background-color: var(--bg-hover, #f8f9fa);
             color: var(--text-muted);
             font-weight: 600;
             text-transform: uppercase;
@@ -455,7 +456,7 @@ $active_page = 'ceo_dashbord';
 
         /* DataTables Buttons styling */
         .dt-buttons .dt-button {
-            background: white !important;
+            background: var(--bg-card, white) !important;
             border: 1px solid var(--border-color) !important;
             border-radius: 6px !important;
             color: var(--text-main) !important;
@@ -465,9 +466,9 @@ $active_page = 'ceo_dashbord';
             transition: all 0.2s ease !important;
             margin-bottom: 0.5rem;
         }
-
+ 
         .dt-buttons .dt-button:hover {
-            background: #f8f9fa !important;
+            background: var(--bg-hover, #f8f9fa) !important;
             color: var(--text-main) !important;
             box-shadow: var(--shadow-sm) !important;
         }
@@ -477,6 +478,8 @@ $active_page = 'ceo_dashbord';
             border-radius: 6px;
             padding: 0.4rem 0.8rem;
             outline: none;
+            background-color: var(--bg-input, white);
+            color: var(--text-main);
             transition: border-color 0.2s;
             margin-bottom: 0.5rem;
         }
@@ -485,12 +488,12 @@ $active_page = 'ceo_dashbord';
             border-color: #3a7bd5;
             box-shadow: 0 0 0 3px rgba(58, 123, 213, 0.1);
         }
-
+ 
         .dataTables_wrapper .dataTables_info,
         .dataTables_wrapper .dataTables_paginate {
             padding: 0.75rem 1rem;
         }
-
+ 
         .dataTables_wrapper .dataTables_paginate {
             display: flex;
             justify-content: flex-end;
@@ -498,17 +501,19 @@ $active_page = 'ceo_dashbord';
             flex-wrap: wrap;
             gap: 4px;
         }
-
+ 
         .dataTables_wrapper .dataTables_paginate .paginate_button {
             padding: 0.3rem 0.8rem;
             margin: 0 0.1rem;
             border-radius: 6px;
             border: 1px solid var(--border-color);
+            background: var(--bg-card, white) !important;
+            color: var(--text-main) !important;
             display: inline-block;
         }
-
+ 
         .dataTables_wrapper .dataTables_paginate .paginate_button.current {
-            background: #f8f9fa;
+            background: var(--bg-hover, #f8f9fa) !important;
             border-color: #3a7bd5;
             color: #3a7bd5 !important;
         }
@@ -548,15 +553,32 @@ $active_page = 'ceo_dashbord';
                 flex-wrap: wrap;
                 gap: 0.5rem;
             }
-            /* Department tracking cards: 2 per row on mobile */
+            /* Department tracking cards: responsive on mobile */
             .dept-track-card {
-                padding: 1rem;
+                padding: 0.85rem;
+            }
+            .dept-track-header {
+                flex-wrap: wrap;
+                gap: 0.4rem;
+            }
+            .dept-track-title {
+                font-size: 0.95rem;
             }
             .dept-stats-grid {
-                gap: 0.4rem;
+                gap: 0.35rem;
+            }
+            .dept-stat-box {
+                height: auto;
+                min-height: 64px;
+                padding: 0.5rem 0.25rem;
             }
             .dept-stat-value {
                 font-size: 1rem;
+            }
+            .dept-stat-label {
+                font-size: 0.62rem;
+                white-space: normal;
+                letter-spacing: 0.2px;
             }
             /* DataTable controls stack vertically */
             .dataTables_wrapper .dataTables_filter,
@@ -624,6 +646,25 @@ $active_page = 'ceo_dashbord';
             }
             .chart-container {
                 height: 220px;
+            }
+            /* Dept stat boxes: even more compact on very small screens */
+            .dept-stats-grid {
+                gap: 0.25rem;
+            }
+            .dept-stat-box {
+                min-height: 58px;
+                padding: 0.4rem 0.15rem;
+            }
+            .dept-stat-value {
+                font-size: 0.9rem;
+            }
+            .dept-stat-label {
+                font-size: 0.58rem;
+                letter-spacing: 0;
+            }
+            .dept-track-total {
+                font-size: 1.2rem;
+                padding: 0.15rem 0.6rem;
             }
         }
 

@@ -10,25 +10,31 @@ if (!isset($_SESSION['username'])) {
 require_once 'include/config.php';
 
 $can_perform_actions = true;
-$role = $_SESSION['role'] ?? '';
+$role = $_SESSION['user_role'] ?? '';
 
 $conn = db_connect();
 $complaints = [];
 $dbError = '';
 
 $user_village = '';
+$user_taluka = '';
 if (isset($_SESSION['username'])) {
-    $stmt = $conn->prepare("SELECT village FROM users WHERE username = ?");
+    $stmt = $conn->prepare("SELECT village, taluka FROM users WHERE username = ?");
     if ($stmt) {
         $stmt->bind_param("s", $_SESSION['username']);
         $stmt->execute();
         $res = $stmt->get_result();
         if ($res && $row = $res->fetch_assoc()) {
             $user_village = trim($row['village'] ?? '');
+            $user_taluka = trim($row['taluka'] ?? '');
         }
         $stmt->close();
     }
 }
+
+$session_role = !empty($_SESSION['user_system_role']) ? $_SESSION['user_system_role'] : ($_SESSION['user_role'] ?? '');
+$normalized_role = strtolower(trim($session_role));
+$is_officer = in_array($normalized_role, ['bdo', 'tho', 'hod', 'ceo']);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     header('Content-Type: application/json; charset=utf-8');
@@ -45,6 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $villageClause = '';
     if (!empty($user_village)) {
         $villageClause = ' AND village = ?';
+    } elseif ($is_officer && !empty($user_taluka)) {
+        $villageClause = ' AND taluka = ?';
     }
 
     if ($action === 'delete_complaint') {
@@ -52,6 +60,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if ($stmt) {
             if (!empty($user_village)) {
                 $stmt->bind_param("ss", $issue_number, $user_village);
+            } elseif ($is_officer && !empty($user_taluka)) {
+                $stmt->bind_param("ss", $issue_number, $user_taluka);
             } else {
                 $stmt->bind_param("s", $issue_number);
             }
@@ -89,6 +99,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if ($stmt) {
             if (!empty($user_village)) {
                 $stmt->bind_param("ssssssssss", $description, $department, $department_head, $village, $taluka, $registration_type, $issue_date, $status, $issue_number, $user_village);
+            } elseif ($is_officer && !empty($user_taluka)) {
+                $stmt->bind_param("ssssssssss", $description, $department, $department_head, $village, $taluka, $registration_type, $issue_date, $status, $issue_number, $user_taluka);
             } else {
                 $stmt->bind_param("sssssssss", $description, $department, $department_head, $village, $taluka, $registration_type, $issue_date, $status, $issue_number);
             }
@@ -123,15 +135,24 @@ $sql = "SELECT
             status
         FROM tbl_raiseissue";
 
+$params = [];
+$types = "";
+
 if (!empty($user_village)) {
     $sql .= " WHERE village = ?";
+    $params[] = $user_village;
+    $types .= "s";
+} elseif ($is_officer && !empty($user_taluka)) {
+    $sql .= " WHERE taluka = ?";
+    $params[] = $user_taluka;
+    $types .= "s";
 }
 $sql .= " ORDER BY id DESC";
 
 $stmt = $conn->prepare($sql);
 if ($stmt) {
-    if (!empty($user_village)) {
-        $stmt->bind_param("s", $user_village);
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
     }
     $stmt->execute();
     $result = $stmt->get_result();
@@ -238,12 +259,243 @@ function isDeleteDisabled($status)
 <?php include('include/sidebar.php'); ?>
 
 <main class="main-content">
-    
-    <style>
-        /* =========================================
-           EXACT UI RE-CREATION FOR COMPLAINT REPORT
-           ========================================= */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    <!-- Page Header -->
+    <div class="page-header-container">
+        <div class="page-title">
+            <h1>📋 माझी तक्रारी</h1>
+            <p>आपल्या सर्व तक्रारीचे रेकॉर्ड पहा आणि व्यवस्थापित करा</p>
+        </div>
+        <?php if (!$is_officer): ?>
+        <button class="btn-primary" onclick="openNewComplaintForm()">
+            ➕ नवीन तक्रार दाखल करा
+        </button>
+        <?php endif; ?>
+    </div>
+
+    <!-- Filters & Search Section -->
+    <div class="filter-section">
+        <div class="filter-group">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="समस्या क्रमांक, विषय किंवा गाव वारून शोधा...">
+                <span class="search-icon">🔍</span>
+            </div>
+
+            <div class="filter-controls">
+                <select id="statusFilter" class="filter-select">
+                    <option value="">🟢 एकूण</option>
+                    <option value="Pending">🟡 प्रलंबित</option>
+                    <option value="Resolved">🟣 निराकृत</option>
+                </select>
+
+                <select id="departmentFilter" class="filter-select">
+                    <option value="">सर्व विभाग</option>
+                    <?php foreach ($distinct_departments as $dept): ?>
+                        <option value="<?php echo htmlspecialchars($dept); ?>">
+                            <?php echo htmlspecialchars($dept); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+
+                <button class="btn-secondary" onclick="resetFilters()">🔄 रीसेट</button>
+                <button class="btn-secondary" onclick="exportComplaints()">📥 निर्यात</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Complaints Table -->
+    <div class="table-wrapper">
+        <table id="complaintsTable" class="complaints-table">
+            <thead>
+                <tr>
+                    <th>समस्या क्रमांक</th>
+                    <th>फोटो</th>
+                    <th>समस्या विषय</th>
+                    <th>विभाग</th>
+                    <th>नियुक्त अधिकारी</th>
+                    <th>गाव</th>
+                    <th>तालुका</th>
+                    <th>प्रकार</th>
+                    <th>दिनांक</th>
+                    <th>स्थिती</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="complaintTableBody">
+                <?php if (!empty($complaints)): ?>
+                    <?php foreach ($complaints as $complaint): ?>
+                        <?php
+                        $status = $complaint['status'] ?? 'Open';
+                        $badgeClass = badgeClass($status);
+                        $editDisabled = isEditDisabled($status);
+                        $deleteDisabled = isDeleteDisabled($status);
+                        ?>
+                        <tr class="complaint-row" data-status="<?= strtolower(trim($status)); ?>"
+                            data-department="<?= htmlspecialchars($complaint['department']); ?>"
+                            data-village="<?= htmlspecialchars($complaint['village']); ?>">
+                            <td class="complaint-id"><?= htmlspecialchars($complaint['issue_number']); ?></td>
+                            <td class="photo-cell">
+                                <?php if (!empty($complaint['photo'])): ?>
+                                    <img src="<?= htmlspecialchars($complaint['photo']); ?>" alt="तक्रार फोटो"
+                                        class="complaint-photo">
+                                <?php else: ?>
+                                    <span class="no-file-text" style="color: #64748b; font-size: 0.85rem; font-style: italic;">No
+                                        File</span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="complaint-subject">
+                                <strong><?= htmlspecialchars($complaint['description']); ?></strong>
+                                <p class="complaint-desc"><?= htmlspecialchars($complaint['description']); ?></p>
+                            </td>
+                            <td><?= htmlspecialchars($complaint['department']); ?></td>
+                            <td><?= htmlspecialchars($complaint['department_head'] ?? 'विभाग प्रमुख'); ?></td>
+                            <td><?= htmlspecialchars($complaint['village']); ?></td>
+                            <td><?= htmlspecialchars($complaint['taluka'] ?? 'Hingoli'); ?></td>
+                            <td><span class="badge-type"><?= htmlspecialchars($complaint['registration_type']); ?></span></td>
+                            <td><?= formatDate($complaint['issue_date']); ?></td>
+                            <td><span class="badge-status <?= $badgeClass; ?>"><?= htmlspecialchars($status); ?></span></td>
+                            <td>
+                                <div class="action-cell">
+                                    <button type="button" class="btn-icon btn-edit" title="<?= $editDisabled ? 'Edit disabled for resolved or transferred complaints' : 'Edit'; ?>"
+                                        data-issue="<?= htmlspecialchars(json_encode($complaint), ENT_QUOTES, 'UTF-8'); ?>"
+                                        <?= $editDisabled ? 'disabled aria-disabled="true"' : 'onclick="openEditModalFromButton(this)"'; ?>>
+                                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25Zm17.71-10.04a1 1 0 0 0 0-1.41L18.2 3.29a1 1 0 0 0-1.41 0l-1.96 1.96 3.75 3.75 2.13-1.79Z" />
+                                        </svg>
+                                    </button>
+                                    <button type="button" class="btn-icon btn-delete" title="<?= $deleteDisabled ? 'Delete disabled for resolved or transferred complaints' : 'Delete'; ?>"
+                                        <?= $deleteDisabled ? 'disabled aria-disabled="true"' : 'onclick="deleteComplaint(' . htmlspecialchars(json_encode($complaint['issue_number']), ENT_QUOTES, 'UTF-8') . ')"'; ?>>
+                                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12ZM8 9h8v10H8V9Zm7.5-5-1-1h-5l-1 1H5v2h14V4h-3.5Z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Empty State Message -->
+    <div id="emptyState" class="empty-state" style="display: none;">
+        <div class="empty-icon">📭</div>
+        <h3>कोणत्याही तक्रारी नाहीत</h3>
+        <p>आपल्यासाठी आता कोणत्याही तक्रारी रेकॉर्ड नाहीत।</p>
+        <button class="btn-primary" onclick="openNewComplaintForm()">नवीन तक्रार दाखल करा</button>
+    </div>
+
+
+
+    <div id="editModal" class="modal" style="display: none;">
+        <div class="modal-overlay" onclick="closeEditModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Complaint</h2>
+                <button class="modal-close" onclick="closeEditModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="editForm">
+                    <input type="hidden" id="editIssueNumber" />
+                    <div class="form-group">
+                        <label>Issue Number</label>
+                        <input type="text" id="editIssueDisplay" class="form-control" readonly />
+                    </div>
+                    <div class="form-group">
+                        <label for="editDescription">Description</label>
+                        <textarea id="editDescription" class="form-control" rows="4" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="editDepartment">Department</label>
+                        <select id="editDepartment" class="form-control" required>
+                            <option value="">-- Select Department --</option>
+                            <?php foreach ($distinct_departments as $dept): ?>
+                                <option value="<?php echo htmlspecialchars($dept); ?>">
+                                    <?php echo htmlspecialchars($dept); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editDepartmentHead">Assigned Officer</label>
+                        <select id="editDepartmentHead" class="form-control">
+                            <option value="">-- Select Officer --</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editVillage">Village</label>
+                            <input type="text" id="editVillage" class="form-control" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="editTaluka">Taluka</label>
+                            <input type="text" id="editTaluka" class="form-control" required />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editRegistrationType">Type</label>
+                            <input type="text" id="editRegistrationType" class="form-control" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="editIssueDate">Date</label>
+                            <input type="date" id="editIssueDate" class="form-control" required />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="editStatus">Status</label>
+                        <select id="editStatus" class="form-control" required>
+                            <option value="Pending">Pending</option>
+                            <option value="Resolved">Resolved</option>
+                            <option value="Open">Open</option>
+                            <option value="In-Progress">In-Progress</option>
+                            <option value="Closed">Closed</option>
+                        </select>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn-secondary" onclick="closeEditModal()">Cancel</button>
+                        <button type="submit" class="btn-primary">Update</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transfer Modal -->
+    <div id="transferModal" class="modal" style="display: none;">
+        <div class="modal-overlay" onclick="closeTransferModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>तक्रार हस्तांतरण</h2>
+                <button class="modal-close" onclick="closeTransferModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="transferForm">
+                    <input type="hidden" id="complaintIdTransfer" />
+
+                    <div class="form-group">
+                        <label>समस्या क्रमांक</label>
+                        <input type="text" id="transferIssueNumDisplay" class="form-control" readonly />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="transferDepartment">विभाग निवडा:</label>
+                        <select id="transferDepartment" class="form-control" required>
+                            <option value="">-- विभाग निवडा --</option>
+                            <?php foreach ($distinct_departments as $dept): ?>
+                                <option value="<?php echo htmlspecialchars($dept); ?>">
+                                    <?php echo htmlspecialchars($dept); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="transferDeptHead">संबंधित विभाग प्रमुख:</label>
+                        <select id="transferDeptHead" class="form-control" required>
+                            <option value="">-- निवडा विभाग प्रमुख --</option>
+                        </select>
+                    </div>
 
         .main-content {
             background: #eef5ff;

@@ -17,20 +17,6 @@ $page_description = 'Executive issue report with department-wise tracking.';
 
 $conn = db_connect();
 
-$user_taluka = '';
-if (isset($_SESSION['username'])) {
-    $stmt = $conn->prepare("SELECT taluka FROM users WHERE username = ?");
-    if ($stmt) {
-        $stmt->bind_param("s", $_SESSION['username']);
-        $stmt->execute();
-        $res = $stmt->get_result();
-        if ($res && $row = $res->fetch_assoc()) {
-            $user_taluka = trim($row['taluka'] ?? '');
-        }
-        $stmt->close();
-    }
-}
-
 if (isset($_GET['transfer_issue'])) {
     header('Content-Type: application/json');
     $issueNumber = trim((string) $_GET['transfer_issue']);
@@ -176,46 +162,32 @@ if ($transferResult) {
     }
 }
 
-// Main issues – ordered by date (most recent first)
+// Main issues – added resolved_photo to the SELECT
 $issueSql = "
     SELECT
-        r.issue_number,
-        r.issue_date,
-        r.taluka,
-        r.village,
-        COALESCE(u.department, r.department) AS department,
-        COALESCE(u.designation, r.department_head) AS department_head,
-        r.registration_type,
-        r.position,
-        r.mobile,
-        r.description,
-        r.photo,
-        r.status,
-        r.resolved_remark
-    FROM tbl_raiseissue r
-    LEFT JOIN users u ON r.transfer_to IS NOT NULL AND r.transfer_to != '' AND BINARY r.transfer_to = BINARY u.username
+        issue_number,
+        issue_date,
+        taluka,
+        village,
+        department,
+        department_head,
+        registration_type,
+        position,
+        mobile,
+        description,
+        photo,
+        resolved_photo,
+        status,
+        resolved_remark
+    FROM tbl_raiseissue
+    ORDER BY issue_date DESC, issue_number DESC
 ";
 
-if ($user_taluka !== '') {
-    $issueSql .= " WHERE r.taluka = ? ";
-}
-$issueSql .= " ORDER BY r.issue_date DESC, r.issue_number DESC";
-
-$issueStmt = $conn->prepare($issueSql);
-if ($issueStmt) {
-    if ($user_taluka !== '') {
-        $issueStmt->bind_param("s", $user_taluka);
+$issueResult = $conn->query($issueSql);
+if ($issueResult) {
+    while ($row = $issueResult->fetch_assoc()) {
+        $issues[] = $row;
     }
-    $issueStmt->execute();
-    $issueResult = $issueStmt->get_result();
-    if ($issueResult) {
-        while ($row = $issueResult->fetch_assoc()) {
-            $issues[] = $row;
-        }
-    } else {
-        $dbError = $conn->error;
-    }
-    $issueStmt->close();
 } else {
     $dbError = $conn->error;
 }
@@ -341,6 +313,7 @@ $conn->close();
                         <?php
                         $status = $issue['status'] ?: 'Open';
                         $statusClass = ceoStatusClass($status);
+                        $isResolved = (strtolower(trim($status)) === 'resolved');
                         ?>
                         <tr>
                             <td><strong class="issue-number"><?php echo htmlspecialchars($issue['issue_number']); ?></strong></td>
@@ -363,16 +336,32 @@ $conn->close();
                                 <strong><?php echo htmlspecialchars($issue['registration_type'] ?: '-'); ?></strong>
                                 <small><?php echo htmlspecialchars($issue['position'] ?: '-'); ?><?php echo !empty($issue['mobile']) ? ' | ' . htmlspecialchars($issue['mobile']) : ''; ?></small>
                             </td>
+                            <!-- PHOTO COLUMN with conditional logic -->
                             <td>
-                                <?php if (!empty($issue['photo'])): ?>
-                                    <a class="photo-link" href="#" onclick="openPhotoModal('<?php echo htmlspecialchars($issue['photo'], ENT_QUOTES); ?>'); return false;">
-                                        <i class="fa-regular fa-image"></i>
-                                        View
-                                    </a>
+                                <?php if (!empty($issue['photo']) || (!empty($issue['resolved_photo']) && $isResolved)): ?>
+                                    <?php if ($isResolved): ?>
+                                        <!-- Resolved: show two photos -->
+                                        <a class="photo-link" href="#" onclick="openDoublePhoto(
+                                            '<?php echo htmlspecialchars($issue['photo'] ?? '', ENT_QUOTES); ?>',
+                                            '<?php echo htmlspecialchars($issue['resolved_photo'] ?? '', ENT_QUOTES); ?>'
+                                        ); return false;">
+                                            <i class="fa-regular fa-image"></i>
+                                            View Photos
+                                        </a>
+                                    <?php else: ?>
+                                        <!-- Non-resolved: show single photo -->
+                                        <a class="photo-link" href="#" onclick="openSinglePhoto(
+                                            '<?php echo htmlspecialchars($issue['photo'] ?? '', ENT_QUOTES); ?>'
+                                        ); return false;">
+                                            <i class="fa-regular fa-image"></i>
+                                            View Photo
+                                        </a>
+                                    <?php endif; ?>
                                 <?php else: ?>
                                     <span class="muted-text">No photo</span>
                                 <?php endif; ?>
                             </td>
+                            <!-- END PHOTO COLUMN -->
                             <td>
                                 <span class="status-pill <?php echo $statusClass; ?>"><?php echo htmlspecialchars($status); ?></span>
                             </td>
@@ -416,14 +405,37 @@ $conn->close();
     </div>
 </div>
 
-<!-- Photo Modal -->
-<div class="photo-modal" id="photoModal" hidden>
-    <div class="photo-backdrop" onclick="closePhotoModal()"></div>
-    <div class="photo-content">
-        <button type="button" class="photo-close" onclick="closePhotoModal()" aria-label="Close photo">
+<!-- SINGLE PHOTO MODAL (for non-resolved) -->
+<div class="photo-modal" id="photoModalSingle" hidden>
+    <div class="photo-backdrop" onclick="closeSinglePhoto()"></div>
+    <div class="photo-content photo-content-single">
+        <button type="button" class="photo-close" onclick="closeSinglePhoto()" aria-label="Close photo">
             <i class="fa-solid fa-xmark"></i>
         </button>
-        <img id="modalPhotoImg" src="" alt="Issue photo">
+        <img id="singlePhotoImg" src="" alt="Issue photo" style="width:100%; max-height:80vh; object-fit:contain; border-radius:8px;">
+    </div>
+</div>
+
+<!-- DOUBLE PHOTO MODAL (for resolved) -->
+<div class="photo-modal" id="photoModalDouble" hidden>
+    <div class="photo-backdrop" onclick="closeDoublePhoto()"></div>
+    <div class="photo-content photo-content-double">
+        <button type="button" class="photo-close" onclick="closeDoublePhoto()" aria-label="Close photos">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <div class="photo-grid">
+            <div class="photo-item" id="originalPhotoContainer">
+                <p class="photo-label"><i class="fa-regular fa-image" style="margin-right:6px;"></i>Issue Photo</p>
+                <img id="doublePhotoImg1" src="" alt="Issue photo">
+            </div>
+            <div class="photo-item" id="resolvedPhotoContainer">
+                <p class="photo-label"><i class="fa-regular fa-check-circle" style="margin-right:6px;"></i>Resolved Photo</p>
+                <img id="doublePhotoImg2" src="" alt="Resolved photo">
+            </div>
+        </div>
+        <p class="photo-no-data" id="photoNoData" style="display:none; text-align:center; color:#64748b; padding:20px;">
+            No photos available
+        </p>
     </div>
 </div>
 
@@ -434,7 +446,6 @@ $conn->close();
 <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
 
 <style>
-    /* (All CSS remains exactly as before – no changes needed) */
     /* ----- Global / Reset ----- */
     .ceo-report-page {
         background: #f0f4ff;
@@ -483,7 +494,8 @@ $conn->close();
     .report-actions {
         display: flex;
         gap: 12px;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
+        flex-shrink: 0;
     }
 
     /* ----- Buttons ----- */
@@ -503,6 +515,8 @@ $conn->close();
         background: #eef2ff;
         color: #1e3a8a;
         border: 1px solid #dbe3ef;
+        white-space: nowrap;
+        flex-shrink: 0;
     }
 
     .report-btn.primary {
@@ -638,7 +652,8 @@ $conn->close();
 
     /* ----- DataTables Overrides ----- */
     .dataTables_wrapper .dataTables_filter {
-        display: none; /* we use our own search */
+        display: none;
+        /* we use our own search */
     }
     .dataTables_wrapper .dataTables_info {
         padding: 10px 0;
@@ -918,7 +933,7 @@ $conn->close();
         background: #ffffff;
         border-radius: 20px;
         padding: 28px 30px;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         overflow-y: auto;
         animation: fadeIn 0.25s ease;
     }
@@ -1025,7 +1040,7 @@ $conn->close();
         font-weight: 700;
     }
 
-    /* ----- Photo Modal ----- */
+    /* ----- PHOTO MODALS (single & double) - IMPROVED (EQUAL WIDTH FIX) ----- */
     .photo-modal[hidden] {
         display: none;
     }
@@ -1046,27 +1061,28 @@ $conn->close();
     }
     .photo-content {
         position: relative;
-        max-width: 90vw;
-        max-height: 90vh;
         background: #fff;
         border-radius: 16px;
-        padding: 12px;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        padding: 24px 24px 20px 24px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         animation: fadeIn 0.2s ease;
+        max-width: 90vw;
+        max-height: 90vh;
+        overflow-y: auto;
+        margin: auto;
     }
-    .photo-content img {
-        display: block;
-        max-width: 100%;
-        max-height: 80vh;
-        border-radius: 10px;
-        object-fit: contain;
+    .photo-content-single {
+        max-width: 600px;
+    }
+    .photo-content-double {
+        max-width: 900px;
     }
     .photo-close {
         position: absolute;
-        top: -16px;
-        right: -16px;
-        width: 42px;
-        height: 42px;
+        top: 12px;
+        right: 12px;
+        width: 40px;
+        height: 40px;
         border: 0;
         border-radius: 50%;
         background: #1e293b;
@@ -1076,16 +1092,84 @@ $conn->close();
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 4px 14px rgba(0,0,0,0.25);
-        transition: background 0.2s;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        transition: background 0.2s, transform 0.2s;
+        z-index: 10;
     }
     .photo-close:hover {
         background: #0f172a;
+        transform: rotate(90deg);
+    }
+
+    /* Double photo grid - EQUAL WIDTH columns */
+    .photo-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        padding: 10px 0 0 0;
+    }
+    .photo-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        height: 400px;           /* Forces equal height for BOTH containers */
+        max-height: 60vh;        /* Responsive height limit */
+        padding: 10px;
+        box-sizing: border-box;
+    }
+    .photo-item img {
+        width: 100%;
+        height: 100%;           /* Forces image to fill the exact container space */
+        object-fit: contain;    /* Keeps proper aspect ratio, no stretching */
+        border-radius: 4px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        background: #f8fafc;
+    }
+    .photo-label {
+        font-weight: 700;
+        font-size: 1.05rem;
+        margin: 0 0 10px;
+        letter-spacing: 0.3px;
+        background: linear-gradient(135deg, #2563eb, #7c3aed);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        display: inline-block;
+        padding-bottom: 2px;
+        border-bottom: 2px solid #dbeafe;
+    }
+    .photo-label i {
+        margin-right: 6px;
+        -webkit-text-fill-color: initial;
+        color: #2563eb;
+        opacity: 0.7;
+    }
+    .photo-no-data {
+        text-align: center;
+        color: #64748b;
+        padding: 30px 20px;
+        font-size: 1.1rem;
+    }
+    .photo-no-data i {
+        display: block;
+        font-size: 2.5rem;
+        margin-bottom: 12px;
+        color: #cbd5e1;
     }
 
     @keyframes fadeIn {
-        from { opacity: 0; transform: scale(0.95); }
-        to { opacity: 1; transform: scale(1); }
+        from {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
     }
 
     /* ----- Empty State (DataTables will manage) ----- */
@@ -1107,6 +1191,7 @@ $conn->close();
             text-align: center;
             padding: 24px 20px;
         }
+
         .report-actions {
             justify-content: center;
         }
@@ -1158,11 +1243,43 @@ $conn->close();
         .ceo-report-table td {
             padding: 10px 12px;
         }
+
+        /* Photo modal responsive - stack on mobile */
+        .photo-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+        .photo-item {
+            height: 300px; /* Adjust smaller height for mobile */
+            max-height: 50vh;
+            max-width: 100%;
+        }
+        .photo-content {
+            padding: 16px 16px 20px;
+            max-width: 95vw;
+            max-height: 95vh;
+        }
+        .photo-close {
+            top: 8px;
+            right: 8px;
+            width: 36px;
+            height: 36px;
+            font-size: 1.2rem;
+        }
     }
 
     @media (max-width: 480px) {
         .report-actions .report-btn {
-            width: 100%;
+            padding: 10px 14px;
+            font-size: 0.8rem;
+            min-height: 38px;
+        }
+        .report-btn i {
+            font-size: 0.9rem;
+        }
+        .report-actions {
+            gap: 8px;
+            flex-wrap: nowrap;
             justify-content: center;
         }
         .transfer-content {
@@ -1171,20 +1288,51 @@ $conn->close();
         .transfer-header h2 {
             font-size: 1.1rem;
         }
+        .photo-close {
+            top: 6px;
+            right: 6px;
+            width: 32px;
+            height: 32px;
+            font-size: 1rem;
+        }
+        .photo-item {
+            height: 250px;
+        }
+    }
+
+    @media (max-width: 380px) {
+        .report-actions .report-btn {
+            padding: 8px 10px;
+            font-size: 0.7rem;
+            min-height: 32px;
+            gap: 4px;
+        }
+        .report-actions {
+            gap: 6px;
+        }
+        .report-btn i {
+            font-size: 0.75rem;
+        }
     }
 
     /* ----- Print ----- */
     @media print {
-        header, .sidebar, #sidebarOverlay,
-        .report-actions, .filter-bar,
-        .dataTables_length, .dataTables_filter, .dataTables_paginate {
+        header,
+        .sidebar,
+        #sidebarOverlay,
+        .report-actions,
+        .filter-bar,
+        .dataTables_length,
+        .dataTables_filter,
+        .dataTables_paginate {
             display: none !important;
         }
         .main-content {
             margin-left: 0 !important;
             padding: 0 !important;
         }
-        .report-hero, .report-panel {
+        .report-hero,
+        .report-panel {
             box-shadow: none;
             border: 1px solid #ccc;
         }
@@ -1219,8 +1367,13 @@ $conn->close();
             },
             paging: true,
             pageLength: 25,
-            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-            order: [[1, 'desc']],
+            lengthMenu: [
+                [10, 25, 50, 100, -1],
+                [10, 25, 50, 100, "All"]
+            ],
+            order: [
+                [1, 'desc']
+            ],
             columnDefs: [
                 { responsivePriority: 1, targets: 0 },
                 { responsivePriority: 2, targets: 2 },
@@ -1233,7 +1386,6 @@ $conn->close();
                 emptyTable: "No issues found",
                 zeroRecords: "No matching issues found"
             },
-            // ✅ UPDATED: Move info (i) to the top, above the table
             dom: '<"datatable-top"l><"datatable-info"i>t<"datatable-bottom"p>',
             searching: true
         });
@@ -1309,7 +1461,9 @@ $conn->close();
 
         // Export CSV (visible rows only) with UTF-8 BOM
         window.exportVisibleRows = function() {
-            var header = ['Issue No', 'Date', 'Details', 'Department', 'Location', 'Reporter', 'Photo', 'Status', 'Timeline'];
+            var header = ['Issue No', 'Date', 'Details', 'Department', 'Location', 'Reporter', 'Photo', 'Status',
+                'Timeline'
+            ];
             var lines = [header];
 
             table.rows({ search: 'applied' }).every(function() {
@@ -1341,41 +1495,41 @@ $conn->close();
 
             if (!history.length) {
                 body.innerHTML = `
-                    <div class="transfer-empty">
-                        <i class="fa-regular fa-folder-open"></i>
-                        <h3>No transfer records</h3>
-                        <p>This issue has no timeline entries in the transfer table.</p>
-                    </div>
-                `;
+                        <div class="transfer-empty">
+                            <i class="fa-regular fa-folder-open"></i>
+                            <h3>No transfer records</h3>
+                            <p>This issue has no timeline entries in the transfer table.</p>
+                        </div>
+                    `;
             } else {
                 var rowsHtml = history.map(function(item, index) {
                     return `
-                        <tr>
-                            <td class="serial">${index + 1}</td>
-                            <td>${escapeHtml(item.transfer_by || '-')}</td>
-                            <td>${escapeHtml(item.transfer_to || 'Not specified')}</td>
-                            <td>${escapeHtml(item.reason || 'No reason added')}</td>
-                        </tr>
-                    `;
+                            <tr>
+                                <td class="serial">${index + 1}</td>
+                                <td>${escapeHtml(item.transfer_by || '-')}</td>
+                                <td>${escapeHtml(item.transfer_to || 'Not specified')}</td>
+                                <td>${escapeHtml(item.reason || 'No reason added')}</td>
+                            </tr>
+                        `;
                 }).join('');
 
                 body.innerHTML = `
-                    <div class="transfer-table-wrap">
-                        <table class="transfer-table">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Transferred By</th>
-                                    <th>Transferred To</th>
-                                    <th>Reason</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${rowsHtml}
-                            </tbody>
-                        </table>
-                    </div>
-                `;
+                        <div class="transfer-table-wrap">
+                            <table class="transfer-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Transferred By</th>
+                                        <th>Transferred To</th>
+                                        <th>Reason</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${rowsHtml}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
             }
 
             modal.hidden = false;
@@ -1387,17 +1541,72 @@ $conn->close();
             document.body.style.overflow = '';
         };
 
-        // Photo modal
-        window.openPhotoModal = function(photoUrl) {
-            var modal = document.getElementById('photoModal');
-            var img = document.getElementById('modalPhotoImg');
-            img.src = photoUrl;
+        // ----- SINGLE PHOTO (non-resolved) -----
+        window.openSinglePhoto = function(photoUrl) {
+            var modal = document.getElementById('photoModalSingle');
+            var img = document.getElementById('singlePhotoImg');
+            if (photoUrl && photoUrl.trim() !== '') {
+                img.src = photoUrl;
+                modal.hidden = false;
+                document.body.style.overflow = 'hidden';
+            } else {
+                alert('No photo available.');
+            }
+        };
+
+        window.closeSinglePhoto = function() {
+            document.getElementById('photoModalSingle').hidden = true;
+            document.body.style.overflow = '';
+        };
+
+        // ----- DOUBLE PHOTO (resolved) -----
+        window.openDoublePhoto = function(photoUrl, resolvedUrl) {
+            var modal = document.getElementById('photoModalDouble');
+            var img1 = document.getElementById('doublePhotoImg1');
+            var img2 = document.getElementById('doublePhotoImg2');
+            var container1 = document.getElementById('originalPhotoContainer');
+            var container2 = document.getElementById('resolvedPhotoContainer');
+            var noData = document.getElementById('photoNoData');
+
+            // Reset
+            container1.classList.remove('empty');
+            container2.classList.remove('empty');
+            img1.style.display = 'block';
+            img2.style.display = 'block';
+            noData.style.display = 'none';
+
+            var hasPhoto = false;
+
+            if (photoUrl && photoUrl.trim() !== '') {
+                img1.src = photoUrl;
+                hasPhoto = true;
+            } else {
+                img1.src = '';
+                container1.classList.add('empty');
+                img1.style.display = 'none';
+            }
+
+            if (resolvedUrl && resolvedUrl.trim() !== '') {
+                img2.src = resolvedUrl;
+                hasPhoto = true;
+            } else {
+                img2.src = '';
+                container2.classList.add('empty');
+                img2.style.display = 'none';
+            }
+
+            if (!hasPhoto) {
+                noData.style.display = 'block';
+                img1.style.display = 'none';
+                img2.style.display = 'none';
+            }
+
             modal.hidden = false;
             document.body.style.overflow = 'hidden';
         };
 
-        window.closePhotoModal = function() {
-            document.getElementById('photoModal').hidden = true;
+        window.closeDoublePhoto = function() {
+            document.getElementById('photoModalDouble').hidden = true;
             document.body.style.overflow = '';
         };
 
@@ -1409,7 +1618,7 @@ $conn->close();
                     '>': '&gt;',
                     '"': '&quot;',
                     "'": '&#039;'
-                }[char];
+                } [char];
             });
         }
 
@@ -1419,8 +1628,11 @@ $conn->close();
                 if (!$('#transferModal')[0].hidden) {
                     closeTransferModal();
                 }
-                if (!$('#photoModal')[0].hidden) {
-                    closePhotoModal();
+                if (!$('#photoModalSingle')[0].hidden) {
+                    closeSinglePhoto();
+                }
+                if (!$('#photoModalDouble')[0].hidden) {
+                    closeDoublePhoto();
                 }
             }
         });
@@ -1428,4 +1640,5 @@ $conn->close();
 </script>
 
 </body>
+
 </html>

@@ -843,53 +843,63 @@ include 'include/header.php';
             }
         });
 
-        // Form submission
+        // ============================================================
+        //  UPDATED FORM SUBMISSION – auto‑close & refresh with new ID
+        // ============================================================
         document.getElementById('issueForm').addEventListener('submit', async function (e) {
             e.preventDefault();
 
             const submitBtn = document.getElementById('submitBtn');
-
             submitBtn.classList.add('loading');
             submitBtn.disabled = true;
 
             try {
                 const formData = new FormData(this);
-
                 const response = await fetch('issue_db.php', {
                     method: 'POST',
                     body: formData
                 });
-
                 const result = await response.json();
 
                 if (result.success) {
                     if (isEditMode) {
-                        Swal.fire({
+                        // Edit mode – show success and redirect to report page
+                        await Swal.fire({
                             title: 'यशस्वी!',
                             text: result.message,
                             icon: 'success',
                             confirmButtonColor: '#0284c7',
                             confirmButtonText: 'ठीक आहे'
-                        }).then(() => {
-                            window.location.href = 'complaint_report.php';
                         });
+                        window.location.href = 'complaint_report.php';
                     } else {
-                        Swal.fire({
+                        // Insert mode – auto‑close success, then reset form with new ID
+                        await Swal.fire({
                             title: 'यशस्वी!',
+                            text: 'तुमची समस्या यशस्वीरित्या नोंदवली गेली.',
                             icon: 'success',
                             confirmButtonColor: '#0284c7',
-                            confirmButtonText: 'बंद करा'
+                            confirmButtonText: 'बंद करा',
+                            timer: 2000,               // auto‑close after 2 seconds
+                            timerProgressBar: true,
+                            willClose: () => {
+                                // Reset the entire form
+                                document.getElementById('issueForm').reset();
+                                // Restore prefilled user data (taluka, village, department, etc.)
+                                restorePrefilledValues();
+                                // Set the new issue number from server response
+                                document.getElementById('issueNumber').value = result.next_issue_number;
+                                // Set date to today
+                                document.getElementById('issueDate').value = new Date().toISOString().split('T')[0];
+                                // Clear file input and update UI
+                                const photoInput = document.getElementById('photo');
+                                photoInput.value = '';
+                                updateFileUploadUI(null);
+                            }
                         });
-
-                        document.getElementById('issueNumber').value = result.next_issue_number;
-                        const nextIssueNumber = result.next_issue_number;
-                        document.getElementById('issueForm').reset();
-                        restorePrefilledValues();
-                        document.getElementById('issueNumber').value = nextIssueNumber;
-                        document.getElementById('issueDate').value = new Date().toISOString().split('T')[0];
                     }
                 } else {
-                    Swal.fire({
+                    await Swal.fire({
                         title: 'त्रुटी',
                         text: result.message,
                         icon: 'error',
@@ -897,9 +907,8 @@ include 'include/header.php';
                         confirmButtonText: 'बंद करा'
                     });
                 }
-
             } catch (error) {
-                Swal.fire({
+                await Swal.fire({
                     title: 'त्रुटी',
                     text: 'सर्व्हरशी संपर्क साधताना त्रुटी आली. कृपया पुन्हा प्रयत्न करा.',
                     icon: 'error',

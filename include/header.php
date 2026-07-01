@@ -1715,17 +1715,15 @@ $user_initials = isset($_SESSION['user_initials']) ? $_SESSION['user_initials'] 
 
             <!-- Left: Maharashtra Emblem -->
             <div class="header-left">
-                <a href="<?php echo isset($_SESSION['username']) ? 'user_dashboard.php' : 'landingpage.php'; ?>">
-                    <img src="assets/maharashtra-emblem.png" alt="Maharashtra State Emblem" class="brand-emblem-img">
-                </a>
+                <img src="assets/maharashtra-emblem.png" alt="Maharashtra State Emblem" class="brand-emblem-img">
             </div>
 
             <!-- Middle: Center Title & Branding -->
             <div class="header-middle">
-                <a href="<?php echo isset($_SESSION['username']) ? 'user_dashboard.php' : 'landingpage.php'; ?>" class="brand-text-wrapper">
+                <div class="brand-text-wrapper">
                     <h1 class="brand-title">Zilla Parishad Hingoli</h1>
                     <p class="brand-subtitle">Inter-Department Portal</p>
-                </a>
+                </div>
             </div>
 
             <!-- Right: ZP Logo & Actions -->
@@ -1780,6 +1778,8 @@ $user_initials = isset($_SESSION['user_initials']) ? $_SESSION['user_initials'] 
                         <?php if (basename($_SERVER['PHP_SELF']) == 'landingpage.php'): ?>
                             <a href="login.php" class="header-btn header-btn-outline">लॉगिन / Login</a>
                             <a href="create_user.php" class="header-btn header-btn-primary">नोंदणी / Register</a>
+                        <?php elseif (in_array($active_page, ['create_user', 'login'])): ?>
+                            <a href="landingpage.php" class="header-btn header-btn-outline"><i class="fa-solid fa-house"></i> Home</a>
                         <?php endif; ?>
                     <?php endif; ?>
 

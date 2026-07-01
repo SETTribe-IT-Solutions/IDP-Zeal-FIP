@@ -241,9 +241,6 @@ include 'include/sidebar.php';
             <a href="issueform.php" class="welcome-btn welcome-btn-primary">
                 <i class="fa-solid fa-plus-circle"></i> नवीन समस्या नोंदवा
             </a>
-            <a href="complaint_report.php" class="welcome-btn welcome-btn-secondary">
-                <i class="fa-solid fa-file-invoice"></i> अहवाल पहा
-            </a>
         </div>
     </div>
 

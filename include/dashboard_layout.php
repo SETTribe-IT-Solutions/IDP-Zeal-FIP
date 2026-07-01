@@ -641,9 +641,6 @@ if (!isset($dashboard_icon)) {
                 <i class="fa-solid fa-plus-circle"></i> नवीन समस्या नोंदवा
             </a>
             <?php endif; ?>
-            <a href="complaint_report.php" class="welcome-btn welcome-btn-secondary">
-                <i class="fa-solid fa-file-invoice"></i> अहवाल पहा
-            </a>
         </div>
     </div>
 

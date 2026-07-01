@@ -5,10 +5,9 @@ include __DIR__ . '/include/config.php';
 
 $errors = [];
 $submitted = false;
+$taluka_villages_data = json_decode(file_get_contents(__DIR__ . '/taluka_villages.json'), true);
 $data = [
     'name' => '',
-    'designation' => '',
-    'department' => '',
     'village' => '',
     'grampanchayat' => '',
     'taluka' => '',
@@ -16,7 +15,18 @@ $data = [
     'username' => '',
     'password' => '',
     'system_role' => '',
-    'role' => ''
+    'role' => '',
+    'security_question' => '',
+    'security_answer' => ''
+];
+
+$security_questions = [
+    'तुमच्या आईचे माहेरचे नाव काय आहे? (What is your mother\'s maiden name?)',
+    'तुमच्या पहिल्या शाळेचे नाव काय आहे? (What is the name of your first school?)',
+    'तुमच्या आवडत्या शिक्षकांचे नाव काय आहे? (What is the name of your favorite teacher?)',
+    'तुमच्या बालपणीच्या सर्वात चांगल्या मित्राचे नाव काय आहे? (What is the name of your childhood best friend?)',
+    'तुमचे जन्मस्थान कोणते आहे? (What is your place of birth?)',
+    'तुमच्या पहिल्या पाळीव प्राण्याचे नाव काय आहे? (What is the name of your first pet?)'
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -30,11 +40,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Basic validation
     if ($data['name'] === '') {
         $errors[] = 'Name is required.';
-    } elseif (!preg_match('/^[\p{L}\s]+$/u', $data['name'])) {
+    } elseif (!preg_match('/^[a-zA-Z ]+$/', $data['name'])) {
         $errors[] = 'Name should only contain alphabets and spaces.';
+    } elseif (mb_strlen(trim($data['name'])) < 2) {
+        $errors[] = 'Name must be at least 2 characters.';
     }
     if ($data['username'] === '') {
         $errors[] = 'Username is required.';
+    }
+    if ($data['security_question'] === '') {
+        $errors[] = 'Security question is required.';
+    }
+    if ($data['security_answer'] === '') {
+        $errors[] = 'Security answer is required.';
     }
     if ($data['password'] === '') {
         $errors[] = 'Password is required.';
@@ -86,9 +104,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors[] = 'DB unique check prepare failed: ' . $mysqli->error;
         }
 
+        // Check if username is already taken
+        $check_stmt_user = $mysqli->prepare('SELECT COUNT(*) FROM users WHERE username = ?');
+        if ($check_stmt_user) {
+            $check_stmt_user->bind_param('s', $data['username']);
+            $check_stmt_user->execute();
+            $check_stmt_user->bind_result($count_user);
+            $check_stmt_user->fetch();
+            $check_stmt_user->close();
+            if ($count_user > 0) {
+                $errors[] = 'Username already exists.';
+                $username_duplicate_error = true;
+            }
+        } else {
+            $errors[] = 'DB unique check prepare failed: ' . $mysqli->error;
+        }
+
         if (empty($errors)) {
             $stmt = $mysqli->prepare(
-                'INSERT INTO users (name, designation, department, village, grampanchayat, taluka, mobile_no, username, password, system_role, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                'INSERT INTO users (name, village, grampanchayat, taluka, mobile_no, username, password, system_role, role, security_question, security_answer) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
             );
 
             if (!$stmt) {
@@ -97,8 +131,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->bind_param(
                     'sssssssssss',
                     $data['name'],
-                    $data['designation'],
-                    $data['department'],
                     $data['village'],
                     $data['grampanchayat'],
                     $data['taluka'],
@@ -106,7 +138,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $data['username'],
                     $data['password'],
                     $data['system_role'],
-                    $data['role']
+                    $data['role'],
+                    $data['security_question'],
+                    $data['security_answer']
                 );
 
                 if ($stmt->execute()) {
@@ -124,41 +158,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // ---------- DATA ARRAYS ----------
-$designations = [
-    'गट विकास अधिकारी',
-    'तालुका आरोग्य अधिकारी',
-    'गटशिक्षणाधिकारी',
-    'बालविकास प्रकल्प अधिकारी',
-    'विस्तार अधिकारी (कृषी)',
-    'पशुवैद्यकीय अधिकारी',
-    'उप. मुख्य कार्यकारी अधिकारी (सा)',
-    'उप. मुख्य कार्यकारी अधिकारी (पं)',
-    'जिल्हा आरोग्य अधिकारी',
-    'प्रकल्प संचालक (जि.ग्रा.वि.य.)',
-    'उप. मुख्य कार्यकारी अधिकारी (महिला आणि बाल विकास)',
-    'कृषी विकास अधिकारी',
-    'शिक्षणाधिकारी (प्राथमिक)',
-    'शिक्षणाधिकारी (माध्यमिक)',
-    'जिल्हा समाजकल्याण अधिकारी',
-    'जिल्हा पशुसंवर्धन अधिकारी',
-    'तालुका अभियान व्यवस्थापक'
-];
-
-$departments = [
-    'पंचायत समिती',
-    'आरोग्य विभाग',
-    'शिक्षण विभाग',
-    'महिला व बालकल्याण विभाग',
-    'कृषी विभाग',
-    'पशुसंवर्धन विभाग',
-    'सामान्य प्रशासन विभाग',
-    'ग्रामपंचायत विभाग',
-    'जिल्हा ग्रामीण विकास यंत्रणा',
-    'शिक्षण विभाग (प्राथमिक)',
-    'शिक्षण विभाग (माध्यमिक)',
-    'समाज कल्याण विभाग'
-];
-
 $villages = [
     'आमदरी',
     'आजलसोंडा',
@@ -776,8 +775,14 @@ if ($temp_conn) {
     }
     $temp_conn->close();
 }
+
+$excluded_roles = ['ceo', 'bdo', 'tho', 'hod'];
+$system_roles = array_filter($system_roles, function($role) use ($excluded_roles) {
+    return !in_array(strtolower($role), $excluded_roles);
+});
+
 if (empty($system_roles)) {
-    $system_roles = ['अंगणवाडी सेविका', 'ग्रामपंचायत अधिकारी', 'शिक्षक', 'THO', 'BDO', 'HoD', 'CEO'];
+    $system_roles = ['अंगणवाडी सेविका', 'ग्रामपंचायत अधिकारी', 'शिक्षक'];
 }
 ?>
 
@@ -1122,12 +1127,6 @@ if (empty($system_roles)) {
         font-size: 0.7rem;
     }
 
-    .cu-counter {
-        font-size: 0.72rem;
-        color: var(--text-muted);
-        text-align: right;
-        margin-top: 0.15rem;
-    }
 
     .cu-actions {
         display: flex;
@@ -1352,7 +1351,7 @@ if (empty($system_roles)) {
         <?php if (!empty($errors)): ?>
             <?php
             $display_errors = array_filter($errors, function ($e) {
-                return $e !== 'Mobile number is already registered.';
+                return $e !== 'Mobile number is already registered.' && $e !== 'Username already exists.';
             });
             ?>
             <?php if (!empty($display_errors)): ?>
@@ -1386,6 +1385,23 @@ if (empty($system_roles)) {
             </script>
         <?php endif; ?>
 
+        <?php if (isset($username_duplicate_error) && $username_duplicate_error): ?>
+            <script>
+                document.addEventListener("DOMContentLoaded", function () {
+                    var usernameField = document.getElementById('username');
+                    if (usernameField) {
+                        usernameField.classList.add('invalid');
+                        var msg = document.getElementById('msg-username');
+                        if (msg) {
+                            msg.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> User Already Exist. <a href="login.php" style="color: var(--primary); text-decoration: underline;">Login</a> or enter new username.';
+                            msg.style.display = 'block';
+                            msg.className = 'cu-msg show error';
+                        }
+                    }
+                });
+            </script>
+        <?php endif; ?>
+
         <?php if ($submitted): ?>
             <!-- SweetAlert2 -->
             <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -1413,31 +1429,11 @@ if (empty($system_roles)) {
                         <div class="cu-section-title"><i class="fa-solid fa-id-card"></i> Personal Details</div>
                         <div class="cu-row full">
                             <div class="cu-field">
-                                <label for="name"><i class="fa-solid fa-user-tie"></i> Full Name <span
+                                <label for="name"><i class="fa-solid fa-user-tie"></i> Name <span
                                         class="req">*</span></label>
-                                <input class="cu-input" id="name" name="name" type="text" placeholder="Enter full name"
+                                <input class="cu-input" id="name" name="name" type="text" placeholder="Enter name"
                                     value="<?php echo htmlspecialchars($data['name']); ?>" />
                                 <div class="cu-msg" id="msg-name"></div>
-                            </div>
-                        </div>
-                        <div class="cu-row">
-                            <div class="cu-field">
-                                <label for="department"><i class="fa-solid fa-building-user"></i> Department</label>
-                                <select class="cu-select" id="department" name="department">
-                                    <option value="">-- निवडा विभाग --</option>
-                                    <?php foreach ($departments as $d): ?>
-                                        <option value="<?php echo htmlspecialchars($d); ?>" <?php echo $data['department'] === $d ? 'selected' : ''; ?>><?php echo htmlspecialchars($d); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="cu-field">
-                                <label for="designation"><i class="fa-solid fa-briefcase"></i> Designation</label>
-                                <select class="cu-select" id="designation" name="designation">
-                                    <option value="">-- निवडा पदवी --</option>
-                                    <?php foreach ($designations as $d): ?>
-                                        <option value="<?php echo htmlspecialchars($d); ?>" <?php echo $data['designation'] === $d ? 'selected' : ''; ?>><?php echo htmlspecialchars($d); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
                             </div>
                         </div>
                     </div>
@@ -1500,7 +1496,6 @@ if (empty($system_roles)) {
                                     maxlength="10" placeholder="Enter 10 digit mobile number"
                                     value="<?php echo htmlspecialchars($data['mobile']); ?>" />
                                 <div class="cu-msg" id="msg-mobile"></div>
-                                <div class="cu-counter" id="counter-mobile">0 / 10</div>
                             </div>
                         </div>
                     </div>
@@ -1543,6 +1538,25 @@ if (empty($system_roles)) {
                                 <div class="cu-msg" id="msg-password"></div>
                             </div>
                         </div>
+                        <div class="cu-row full">
+                            <div class="cu-field">
+                                <label for="security_question"><i class="fa-solid fa-circle-question"></i> Security Question <span class="req">*</span></label>
+                                <select class="cu-select" id="security_question" name="security_question">
+                                    <option value="">-- निवडा सुरक्षा प्रश्न (Select Security Question) --</option>
+                                    <?php foreach ($security_questions as $q): ?>
+                                        <option value="<?php echo htmlspecialchars($q); ?>" <?php echo $data['security_question'] === $q ? 'selected' : ''; ?>><?php echo htmlspecialchars($q); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <div class="cu-msg" id="msg-security_question"></div>
+                            </div>
+                        </div>
+                        <div class="cu-row full">
+                            <div class="cu-field">
+                                <label for="security_answer"><i class="fa-solid fa-key"></i> Security Answer <span class="req">*</span></label>
+                                <input class="cu-input" id="security_answer" name="security_answer" type="text" placeholder="Enter your answer" value="<?php echo htmlspecialchars($data['security_answer']); ?>" />
+                                <div class="cu-msg" id="msg-security_answer"></div>
+                            </div>
+                        </div>
                         <div class="cu-row">
                             <div class="cu-field">
                                 <label for="system_role"><i class="fa-solid fa-user-shield"></i> System Role</label>
@@ -1568,6 +1582,9 @@ if (empty($system_roles)) {
                         <button type="submit" class="cu-btn" id="submitBtn"><i class="fa-solid fa-floppy-disk"></i> Save
                             User</button>
                     </div>
+                    <div style="text-align: center; margin-top: 15px; font-size: 0.9rem; color: var(--text-light);">
+                        Already a User? <a href="login.php" style="color: var(--primary); text-decoration: none; font-weight: 600;">Login</a>
+                    </div>
                 </div>
             </form>
 
@@ -1580,9 +1597,10 @@ if (empty($system_roles)) {
                     const rules = {
                         name: {
                             validate(v) {
-                                if (!v.trim()) return 'Full name is required';
+                                if (!v.trim()) return 'Name is required';
+                                if (/\d/.test(v)) return 'Numbers are not allowed in name';
+                                if (/[^a-zA-Z ]/.test(v)) return 'Special characters are not allowed in name';
                                 if (v.trim().length < 2) return 'Name must be at least 2 characters';
-                                if (!/^[\p{L}\s]+$/u.test(v.trim())) return 'Name should only contain alphabets and spaces';
                                 return '';
                             }
                         },
@@ -1617,8 +1635,22 @@ if (empty($system_roles)) {
                                 if (missing.length) return 'Missing: ' + missing.join(', ');
                                 return '';
                             }
+                        },
+                        security_question: {
+                            validate(v) {
+                                if (!v) return 'Security question is required';
+                                return '';
+                            }
+                        },
+                        security_answer: {
+                            validate(v) {
+                                if (!v.trim()) return 'Security answer is required';
+                                return '';
+                            }
                         }
                     };
+
+
 
                     function showMsg(id, msg, type) {
                         var el = document.getElementById('msg-' + id);
@@ -1646,33 +1678,64 @@ if (empty($system_roles)) {
                         else { field.classList.remove('invalid'); field.classList.add('valid'); showMsg(name, 'Looks good!', 'ok'); return true; }
                     }
 
+                    let usernameDebounceTimer;
                     Object.keys(rules).forEach(function (name) {
                         var field = form.querySelector('[name="' + name + '"]');
                         if (!field) return;
                         field.addEventListener('input', function () {
-                            if (this.value) validateField(this);
+                            if (this.value) {
+                                validateField(this);
+                                if (name === 'username' && this.classList.contains('valid')) {
+                                    clearTimeout(usernameDebounceTimer);
+                                    usernameDebounceTimer = setTimeout(() => {
+                                        fetch('check_username.php?username=' + encodeURIComponent(this.value.trim()))
+                                            .then(r => r.json())
+                                            .then(d => {
+                                                if (d.exists) {
+                                                    this.classList.remove('valid');
+                                                    this.classList.add('invalid');
+                                                    var msg = document.getElementById('msg-username');
+                                                    if (msg) {
+                                                        msg.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> User Already Exist. <a href="login.php" style="color: var(--primary); text-decoration: underline;">Login</a> or enter new username.';
+                                                        msg.className = 'cu-msg show error';
+                                                    }
+                                                }
+                                            });
+                                    }, 500);
+                                }
+                            }
                             else { this.classList.remove('valid', 'invalid'); clearMsg(name); }
                             updateProgress();
                             if (name === 'password') updatePwRequirements();
                         });
-                        field.addEventListener('blur', function () { if (this.value) validateField(this); });
+                        field.addEventListener('blur', function () { 
+                            if (this.value) {
+                                validateField(this);
+                                if (name === 'username' && this.classList.contains('valid')) {
+                                    fetch('check_username.php?username=' + encodeURIComponent(this.value.trim()))
+                                        .then(r => r.json())
+                                        .then(d => {
+                                            if (d.exists) {
+                                                this.classList.remove('valid');
+                                                this.classList.add('invalid');
+                                                var msg = document.getElementById('msg-username');
+                                                if (msg) {
+                                                    msg.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> User Already Exist. <a href="login.php" style="color: var(--primary); text-decoration: underline;">Login</a> or enter new username.';
+                                                    msg.className = 'cu-msg show error';
+                                                }
+                                            }
+                                        });
+                                }
+                            }
+                        });
                     });
 
-                    // Name: alphabets and spaces only (including Marathi letters)
-                    var nameInput = document.getElementById('name');
-                    if (nameInput) {
-                        nameInput.addEventListener('input', function () {
-                            this.value = this.value.replace(/[^\p{L}\s]/gu, '');
-                        });
-                    }
 
                     // Mobile: digits only
                     var mobileInput = document.getElementById('mobile');
                     if (mobileInput) {
                         mobileInput.addEventListener('input', function () {
                             this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);
-                            var counter = document.getElementById('counter-mobile');
-                            if (counter) counter.textContent = this.value.length + ' / 10';
                         });
                     }
 
@@ -1759,7 +1822,7 @@ if (empty($system_roles)) {
                     function updateProgress() {
                         var steps = document.querySelectorAll('.cu-step');
                         var sections = {
-                            personal: { fields: ['name'], optional: ['designation', 'department'] },
+                            personal: { fields: ['name'], optional: [] },
                             location: { fields: [], optional: ['village', 'grampanchayat', 'taluka', 'mobile'] },
                             credentials: { fields: ['username', 'password'], optional: ['system_role', 'role'] }
                         };
@@ -1804,74 +1867,19 @@ if (empty($system_roles)) {
                         });
                         var bar = document.getElementById('pwStrengthBar');
                         if (bar) { bar.style.width = '0%'; bar.style.background = 'transparent'; }
-                        var counter = document.getElementById('counter-mobile');
-                        if (counter) counter.textContent = '0 / 10';
+
                         document.querySelectorAll('.cu-step').forEach(function (s) { s.classList.remove('active', 'completed'); });
                         document.querySelectorAll('.cu-pw-req').forEach(function (r) { r.classList.remove('pass', 'fail'); r.querySelector('i').className = 'fa-solid fa-circle'; });
-                        setTimeout(filterDesignations, 0);
                         setTimeout(filterVillages, 0);
                         setTimeout(function () {
                             if (systemRoleSelect && roleInput) {
+                                roleInput.value = systemRoleSelect.value;
                                 roleInput.readOnly = (systemRoleSelect.value !== '');
                             }
                         }, 0);
                     };
 
-                    // Dynamic department/designation filtering
-                    var departmentSelect = document.getElementById('department');
-                    var designationSelect = document.getElementById('designation');
-                    var originalDesignations = <?php echo json_encode($designations, JSON_UNESCAPED_UNICODE); ?>;
-                    var deptDesignationMap = {
-                        'पंचायत समिती': ['गट विकास अधिकारी'],
-                        'आरोग्य विभाग': ['गट विकास अधिकारी', 'तालुका आरोग्य अधिकारी', 'जिल्ха आरोग्य अधिकारी'],
-                        'शिक्षण विभाग': ['गट विकास अधिकारी', 'गटशिक्षणाधिकारी'],
-                        'महिला व बालकल्याण विभाग': ['गट विकास अधिकारी', 'बालविकास प्रकल्प अधिकारी', 'उप. मुख्य कार्यकारी अधिकारी (महिला आणि बाल विकास)'],
-                        'कृषी विभाग': ['गट विकास अधिकारी', 'विस्तार अधिकारी (कृषी)', 'कृषी विकास अधिकारी'],
-                        'पशुसंवर्धन विभाग': ['गट विकास अधिकारी', 'पशुवैद्यकीय अधिकारी', 'जिल्हा पशुसंवर्धन अधिकारी'],
-                        'सामान्य प्रशासन विभाग': ['गट विकास अधिकारी', 'उप. मुख्य कार्यकारी अधिकारी (सा)'],
-                        'ग्रामपंचायत विभाग': ['गट विकास अधिकारी', 'उप. मुख्य कार्यकारी अधिकारी (पं)'],
-                        'जिल्हा ग्रामीण विकास यंत्रणा': ['गट विकास अधिकारी', 'प्रकल्प संचालक (जि.ग्रा.वि.य.)', 'तालुका अभियान व्यवस्थापक'],
-                        'शिक्षण विभाग (प्राथमिक)': ['गट विकास अधिकारी', 'शिक्षणाधिकारी (प्राथमिक)'],
-                        'शिक्षण विभाग (माध्यमिक)': ['गट विकास अधिकारी', 'शिक्षणाधिकारी (माध्यमिक)'],
-                        'समाज कल्याण विभाग': ['गट विकास अधिकारी', 'जिल्हा समाजकल्याण अधिकारी']
-                    };
-
-                    function filterDesignations() {
-                        if (!departmentSelect || !designationSelect) return;
-                        var selectedDept = departmentSelect.value;
-                        var currentDesignation = designationSelect.value;
-
-                        // Clear current options except the first one
-                        designationSelect.innerHTML = '<option value="">-- निवडा पदवी --</option>';
-
-                        var allowed = deptDesignationMap[selectedDept];
-                        if (selectedDept && allowed) {
-                            allowed.forEach(function (d) {
-                                var opt = document.createElement('option');
-                                opt.value = d;
-                                opt.textContent = d;
-                                if (d === currentDesignation) {
-                                    opt.selected = true;
-                                }
-                                designationSelect.appendChild(opt);
-                            });
-                        } else {
-                            originalDesignations.forEach(function (d) {
-                                var opt = document.createElement('option');
-                                opt.value = d;
-                                opt.textContent = d;
-                                if (d === currentDesignation) {
-                                    opt.selected = true;
-                                }
-                                designationSelect.appendChild(opt);
-                            });
-                        }
-                    }
-
-                    if (departmentSelect) {
-                        departmentSelect.addEventListener('change', filterDesignations);
-                    }
-                    filterDesignations();
+                    // Removed Dynamic department/designation filtering
 
                     // Dynamic village and grampanchayat filtering
                     var talukaSelect = document.getElementById('taluka');
@@ -1960,7 +1968,6 @@ if (empty($system_roles)) {
                     filterVillages();
 
                     updateProgress();
-                    if (mobileInput) { var c = document.getElementById('counter-mobile'); if (c) c.textContent = mobileInput.value.length + ' / 10'; }
                 })();
             </script>
 

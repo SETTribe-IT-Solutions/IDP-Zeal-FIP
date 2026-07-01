@@ -148,8 +148,6 @@ $page_description = 'Official Zilla Parishad Hingoli portal for inter-department
         content: '';
         position: absolute;
         inset: 0;
-        background: radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.18), transparent 22%),
-            radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.08), transparent 26%);
         pointer-events: none;
     }
 
@@ -178,9 +176,8 @@ $page_description = 'Official Zilla Parishad Hingoli portal for inter-department
         min-height: 400px;
         width: 100%;
         border-radius: 28px;
-        background: radial-gradient(circle at top left, rgba(59, 130, 246, 0.25), rgba(14, 165, 233, 0.05) 45%),
-                    radial-gradient(circle at bottom right, rgba(236, 72, 153, 0.15), transparent 40%);
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+        background: transparent;
+        box-shadow: none;
         position: relative;
         overflow: hidden;
         display: flex;
@@ -193,23 +190,29 @@ $page_description = 'Official Zilla Parishad Hingoli portal for inter-department
 
     .hero-img-wrapper {
         position: relative;
-        width: 100%;
-        max-height: 350px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        border-radius: 20px;
+        left: -50px;
+        width: auto;
+        max-width: 100%;
+        display: inline-block;
         overflow: hidden;
-        box-shadow: 0 20px 45px rgba(0, 0, 0, 0.25);
-        border: 1px solid rgba(255, 255, 255, 0.15);
+        -webkit-mask-image: url('maha.png');
+        -webkit-mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-image: url('maha.png');
+        mask-size: contain;
+        mask-repeat: no-repeat;
+        mask-position: center;
+        filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.4));
         animation: heroFloat 6s ease-in-out infinite;
+        margin: 0 auto;
     }
 
     .landing-hero .hero-visual .hero-main-img {
         width: 100%;
         height: auto;
-        max-height: 350px;
         object-fit: contain;
+        display: block;
         transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
@@ -789,6 +792,178 @@ $page_description = 'Official Zilla Parishad Hingoli portal for inter-department
             gap: 16px;
         }
     }
+
+    /* --- Premium Glassmorphism Overrides for Background Image --- */
+    :root {
+        --glass-bg-light: rgba(255, 255, 255, 0.25);
+        --glass-bg-dark: rgba(15, 23, 42, 0.45);
+        --glass-border-light: rgba(255, 255, 255, 0.4);
+        --glass-border-dark: rgba(255, 255, 255, 0.1);
+        --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
+    }
+
+    .main-content {
+        background-color: rgba(255, 255, 255, 0.15) !important;
+        backdrop-filter: blur(16px) saturate(120%) !important;
+        -webkit-backdrop-filter: blur(16px) saturate(120%);
+        border: 1px solid var(--glass-border-light);
+    }
+    body.dark-theme .main-content {
+        background-color: rgba(15, 23, 42, 0.2) !important;
+        border: 0px solid var(--glass-border-dark);
+        margin-bottom: 1%;
+    }
+
+    /* Make hero use the background image with no overlay */
+    .landing-hero {
+        background-color: transparent !important;
+        background-image: url('background.png') !important;
+        background-size: cover !important;
+        background-position: center !important;
+        background-repeat: no-repeat !important;
+        backdrop-filter: none !important;
+        border: 1px solid var(--glass-border-light) !important;
+        box-shadow: var(--glass-shadow) !important;
+    }
+    body.dark-theme .landing-hero {
+        background-image: url('background.png') !important;
+        border: 1px solid var(--glass-border-dark) !important;
+    }
+    .landing-hero .hero-title, 
+    .landing-hero .hero-title-sub,
+    .landing-hero .hero-badge {
+        color: #ffffff !important;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    }
+    body.dark-theme .landing-hero .hero-title,
+    body.dark-theme .landing-hero .hero-title-sub,
+    body.dark-theme .landing-hero .hero-badge {
+        color: #ffffff !important;
+    }
+    .landing-hero .hero-text {
+        color: rgba(255, 255, 255, 0.95) !important;
+        font-weight: 500;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    }
+    body.dark-theme .landing-hero .hero-text {
+        color: rgba(255, 255, 255, 0.95) !important;
+    }
+    
+    /* Cards glassmorphism */
+    .stat-card, .landing-note, .info-card, .feature-card, .quick-card, .notice-item, .section-container {
+        background: rgba(255, 255, 255, 0.35) !important;
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--glass-border-light) !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05) !important;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease, border-color 0.3s ease;
+    }
+    body.dark-theme .stat-card, 
+    body.dark-theme .landing-note, 
+    body.dark-theme .info-card, 
+    body.dark-theme .feature-card, 
+    body.dark-theme .quick-card, 
+    body.dark-theme .notice-item,
+    body.dark-theme .section-container {
+        background: rgba(15, 23, 42, 0.45) !important;
+        border: 1px solid var(--glass-border-dark) !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
+    }
+
+    /* Hover states for glassy cards */
+    .stat-card:hover, .landing-note:hover, .info-card:hover, .feature-card:hover, .quick-card:hover, .notice-item:hover {
+        background: rgba(255, 255, 255, 0.55) !important;
+        transform: translateY(-5px);
+        border-color: rgba(255, 255, 255, 0.8) !important;
+    }
+    body.dark-theme .stat-card:hover, 
+    body.dark-theme .landing-note:hover, 
+    body.dark-theme .info-card:hover, 
+    body.dark-theme .feature-card:hover, 
+    body.dark-theme .quick-card:hover, 
+    body.dark-theme .notice-item:hover {
+        background: rgba(15, 23, 42, 0.65) !important;
+        border-color: rgba(255, 255, 255, 0.3) !important;
+    }
+
+    /* Ensure text readability over glass */
+    .stat-card *, .landing-note *, .info-card *, .feature-card *, .quick-card *, .notice-item * {
+        text-shadow: none !important;
+    }
+    
+    .stat-card .stat-label, 
+    .stat-card .stat-sub,
+    .landing-note span,
+    .landing-note strong,
+    .info-card h4, .info-card p,
+    .feature-card h4, .feature-card p, .feature-card-subtitle,
+    .quick-card h4, .quick-card p, .feature-card-subtitle,
+    .notice-item a, .notice-item span {
+        color: #1e293b !important;
+        font-weight: 600;
+    }
+
+    .notice-item span.text-muted, .notice-item span.notice-date {
+        color: #475569 !important;
+        font-weight: 500;
+    }
+
+    body.dark-theme .stat-card .stat-label, 
+    body.dark-theme .stat-card .stat-sub,
+    body.dark-theme .landing-note span,
+    body.dark-theme .landing-note strong,
+    body.dark-theme .info-card h4, body.dark-theme .info-card p,
+    body.dark-theme .feature-card h4, body.dark-theme .feature-card p, body.dark-theme .feature-card-subtitle,
+    body.dark-theme .quick-card h4, body.dark-theme .quick-card p, body.dark-theme .feature-card-subtitle,
+    body.dark-theme .notice-item a, body.dark-theme .notice-item span {
+        color: #f8fafc !important;
+    }
+    
+    body.dark-theme .notice-item span.text-muted, body.dark-theme .notice-item span.notice-date {
+        color: #cbd5e1 !important;
+    }
+
+    .notice-tab {
+        background: rgba(255, 255, 255, 0.35);
+        backdrop-filter: blur(8px);
+        border: 1px solid var(--glass-border-light);
+    }
+    body.dark-theme .notice-tab {
+        background: rgba(15, 23, 42, 0.45);
+        border: 1px solid var(--glass-border-dark);
+    }
+
+    /* --- Multi-color Pastel Glassmorphism Cards --- */
+    /* Theme 1: Soft Blue */
+    .stat-card:nth-child(5n+1), .landing-note:nth-child(5n+1), .info-card:nth-child(5n+1), .feature-card:nth-child(5n+1), .quick-card:nth-child(5n+1), .notice-item:nth-child(5n+1) { background: rgba(219, 234, 254, 0.45) !important; border-color: rgba(147, 197, 253, 0.6) !important; }
+    /* Theme 2: Soft Pink */
+    .stat-card:nth-child(5n+2), .landing-note:nth-child(5n+2), .info-card:nth-child(5n+2), .feature-card:nth-child(5n+2), .quick-card:nth-child(5n+2), .notice-item:nth-child(5n+2) { background: rgba(252, 231, 243, 0.45) !important; border-color: rgba(249, 168, 212, 0.6) !important; }
+    /* Theme 3: Soft Green */
+    .stat-card:nth-child(5n+3), .landing-note:nth-child(5n+3), .info-card:nth-child(5n+3), .feature-card:nth-child(5n+3), .quick-card:nth-child(5n+3), .notice-item:nth-child(5n+3) { background: rgba(220, 252, 231, 0.45) !important; border-color: rgba(134, 239, 172, 0.6) !important; }
+    /* Theme 4: Soft Yellow */
+    .stat-card:nth-child(5n+4), .landing-note:nth-child(5n+4), .info-card:nth-child(5n+4), .feature-card:nth-child(5n+4), .quick-card:nth-child(5n+4), .notice-item:nth-child(5n+4) { background: rgba(254, 252, 211, 0.45) !important; border-color: rgba(253, 224, 71, 0.6) !important; }
+    /* Theme 5: Soft Purple */
+    .stat-card:nth-child(5n+5), .landing-note:nth-child(5n+5), .info-card:nth-child(5n+5), .feature-card:nth-child(5n+5), .quick-card:nth-child(5n+5), .notice-item:nth-child(5n+5) { background: rgba(243, 232, 255, 0.45) !important; border-color: rgba(216, 180, 254, 0.6) !important; }
+
+    /* Hover States for Light Mode */
+    .stat-card:nth-child(5n+1):hover, .landing-note:nth-child(5n+1):hover, .info-card:nth-child(5n+1):hover, .feature-card:nth-child(5n+1):hover, .quick-card:nth-child(5n+1):hover, .notice-item:nth-child(5n+1):hover { background: rgba(219, 234, 254, 0.65) !important; }
+    .stat-card:nth-child(5n+2):hover, .landing-note:nth-child(5n+2):hover, .info-card:nth-child(5n+2):hover, .feature-card:nth-child(5n+2):hover, .quick-card:nth-child(5n+2):hover, .notice-item:nth-child(5n+2):hover { background: rgba(252, 231, 243, 0.65) !important; }
+    .stat-card:nth-child(5n+3):hover, .landing-note:nth-child(5n+3):hover, .info-card:nth-child(5n+3):hover, .feature-card:nth-child(5n+3):hover, .quick-card:nth-child(5n+3):hover, .notice-item:nth-child(5n+3):hover { background: rgba(220, 252, 231, 0.65) !important; }
+    .stat-card:nth-child(5n+4):hover, .landing-note:nth-child(5n+4):hover, .info-card:nth-child(5n+4):hover, .feature-card:nth-child(5n+4):hover, .quick-card:nth-child(5n+4):hover, .notice-item:nth-child(5n+4):hover { background: rgba(254, 252, 211, 0.65) !important; }
+    .stat-card:nth-child(5n+5):hover, .landing-note:nth-child(5n+5):hover, .info-card:nth-child(5n+5):hover, .feature-card:nth-child(5n+5):hover, .quick-card:nth-child(5n+5):hover, .notice-item:nth-child(5n+5):hover { background: rgba(243, 232, 255, 0.65) !important; }
+
+    /* Dark Mode Theme Adjustments */
+    body.dark-theme .stat-card:nth-child(5n+1), body.dark-theme .landing-note:nth-child(5n+1), body.dark-theme .info-card:nth-child(5n+1), body.dark-theme .feature-card:nth-child(5n+1), body.dark-theme .quick-card:nth-child(5n+1), body.dark-theme .notice-item:nth-child(5n+1) { background: rgba(59, 130, 246, 0.2) !important; border-color: rgba(59, 130, 246, 0.4) !important; }
+    body.dark-theme .stat-card:nth-child(5n+2), body.dark-theme .landing-note:nth-child(5n+2), body.dark-theme .info-card:nth-child(5n+2), body.dark-theme .feature-card:nth-child(5n+2), body.dark-theme .quick-card:nth-child(5n+2), body.dark-theme .notice-item:nth-child(5n+2) { background: rgba(236, 72, 153, 0.2) !important; border-color: rgba(236, 72, 153, 0.4) !important; }
+    body.dark-theme .stat-card:nth-child(5n+3), body.dark-theme .landing-note:nth-child(5n+3), body.dark-theme .info-card:nth-child(5n+3), body.dark-theme .feature-card:nth-child(5n+3), body.dark-theme .quick-card:nth-child(5n+3), body.dark-theme .notice-item:nth-child(5n+3) { background: rgba(16, 185, 129, 0.2) !important; border-color: rgba(16, 185, 129, 0.4) !important; }
+    body.dark-theme .stat-card:nth-child(5n+4), body.dark-theme .landing-note:nth-child(5n+4), body.dark-theme .info-card:nth-child(5n+4), body.dark-theme .feature-card:nth-child(5n+4), body.dark-theme .quick-card:nth-child(5n+4), body.dark-theme .notice-item:nth-child(5n+4) { background: rgba(245, 158, 11, 0.2) !important; border-color: rgba(245, 158, 11, 0.4) !important; }
+    body.dark-theme .stat-card:nth-child(5n+5), body.dark-theme .landing-note:nth-child(5n+5), body.dark-theme .info-card:nth-child(5n+5), body.dark-theme .feature-card:nth-child(5n+5), body.dark-theme .quick-card:nth-child(5n+5), body.dark-theme .notice-item:nth-child(5n+5) { background: rgba(139, 92, 246, 0.2) !important; border-color: rgba(139, 92, 246, 0.4) !important; }
+
+    /* Hover States for Dark Mode */
+    body.dark-theme .stat-card:nth-child(5n+1):hover, body.dark-theme .landing-note:nth-child(5n+1):hover, body.dark-theme .info-card:nth-child(5n+1):hover, body.dark-theme .feature-card:nth-child(5n+1):hover, body.dark-theme .quick-card:nth-child(5n+1):hover, body.dark-theme .notice-item:nth-child(5n+1):hover { background: rgba(59, 130, 246, 0.35) !important; }
+    body.dark-theme .stat-card:nth-child(5n+2):hover, body.dark-theme .landing-note:nth-child(5n+2):hover, body.dark-theme .info-card:nth-child(5n+2):hover, body.dark-theme .feature-card:nth-child(5n+2):hover, body.dark-theme .quick-card:nth-child(5n+2):hover, body.dark-theme .notice-item:nth-child(5n+2):hover { background: rgba(236, 72, 153, 0.35) !important; }
+    body.dark-theme .stat-card:nth-child(5n+3):hover, body.dark-theme .landing-note:nth-child(5n+3):hover, body.dark-theme .info-card:nth-child(5n+3):hover, body.dark-theme .feature-card:nth-child(5n+3):hover, body.dark-theme .quick-card:nth-child(5n+3):hover, body.dark-theme .notice-item:nth-child(5n+3):hover { background: rgba(16, 185, 129, 0.35) !important; }
+    body.dark-theme .stat-card:nth-child(5n+4):hover, body.dark-theme .landing-note:nth-child(5n+4):hover, body.dark-theme .info-card:nth-child(5n+4):hover, body.dark-theme .feature-card:nth-child(5n+4):hover, body.dark-theme .quick-card:nth-child(5n+4):hover, body.dark-theme .notice-item:nth-child(5n+4):hover { background: rgba(245, 158, 11, 0.35) !important; }
+    body.dark-theme .stat-card:nth-child(5n+5):hover, body.dark-theme .landing-note:nth-child(5n+5):hover, body.dark-theme .info-card:nth-child(5n+5):hover, body.dark-theme .feature-card:nth-child(5n+5):hover, body.dark-theme .quick-card:nth-child(5n+5):hover, body.dark-theme .notice-item:nth-child(5n+5):hover { background: rgba(139, 92, 246, 0.35) !important; }
 </style>
 <?php include('include/header.php'); ?>
 <main class="main-content">
@@ -811,9 +986,9 @@ $page_description = 'Official Zilla Parishad Hingoli portal for inter-department
                 <a href="create_user.php" class="btn btn-outline hero-btn-register">नवीन खाते / Register <i class="fa-solid fa-user-plus ms-2"></i></a>
             </div>
         </div>
-        <div class="hero-visual">
+        <div class="hero-visual" style="text-align: center;">
             <div class="hero-img-wrapper">
-                <img src="assets/digital_governance.png" alt="Digital Governance Illustration" class="hero-main-img">
+                <img src="maha.png" alt="Maharashtra Illustration" class="hero-main-img">
                 <div class="scanline"></div>
                 <div class="glow-overlay"></div>
             </div>
@@ -1034,6 +1209,7 @@ $page_description = 'Official Zilla Parishad Hingoli portal for inter-department
             });
         });
     </script>
-
-    <?php include('include/footer.php'); ?>
+   
 </main>
+ <?php include('include/footer.php'); ?>
+    </body>

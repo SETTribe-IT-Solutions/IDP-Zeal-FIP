@@ -1414,7 +1414,7 @@ if (empty($system_roles)) {
                         confirmButtonColor: '#2563eb',
                         confirmButtonText: 'OK'
                     }).then(function () {
-                        window.location.href = "create_user.php";
+                        window.location.href = "landingpage.php";
                     });
                 });
             </script>
@@ -1577,7 +1577,7 @@ if (empty($system_roles)) {
                     </div>
 
                     <div class="cu-actions">
-                        <button type="reset" class="cu-btn cu-btn-secondary" onclick="resetValidation()"><i
+                        <button type="button" class="cu-btn cu-btn-secondary" onclick="resetValidation(event)"><i
                                 class="fa-solid fa-rotate-left"></i> Reset</button>
                         <button type="submit" class="cu-btn" id="submitBtn"><i class="fa-solid fa-floppy-disk"></i> Save
                             User</button>
@@ -1860,23 +1860,9 @@ if (empty($system_roles)) {
                     });
 
                     // Reset
-                    window.resetValidation = function () {
-                        Object.keys(rules).forEach(function (name) {
-                            var field = form.querySelector('[name="' + name + '"]');
-                            if (field) { field.classList.remove('valid', 'invalid'); clearMsg(name); }
-                        });
-                        var bar = document.getElementById('pwStrengthBar');
-                        if (bar) { bar.style.width = '0%'; bar.style.background = 'transparent'; }
-
-                        document.querySelectorAll('.cu-step').forEach(function (s) { s.classList.remove('active', 'completed'); });
-                        document.querySelectorAll('.cu-pw-req').forEach(function (r) { r.classList.remove('pass', 'fail'); r.querySelector('i').className = 'fa-solid fa-circle'; });
-                        setTimeout(filterVillages, 0);
-                        setTimeout(function () {
-                            if (systemRoleSelect && roleInput) {
-                                roleInput.value = systemRoleSelect.value;
-                                roleInput.readOnly = (systemRoleSelect.value !== '');
-                            }
-                        }, 0);
+                    window.resetValidation = function (e) {
+                        if (e) e.preventDefault();
+                        window.location.href = "create_user.php";
                     };
 
                     // Removed Dynamic department/designation filtering

@@ -1530,6 +1530,39 @@ $user_initials = isset($_SESSION['user_initials']) ? $_SESSION['user_initials'] 
                 <!-- Actions (Language, Theme, Notifications, Profile) -->
                 <div class="header-actions">
 
+                    <!-- Live Date/Time Widget -->
+                    <div class="header-datetime" style="font-size: 13px; font-weight: 500; margin-right: 10px; color: var(--text-muted); display: flex; flex-direction: column; text-align: right; line-height: 1.2; justify-content: center;">
+                        <span id="liveDate" style="font-weight: 600; color: var(--text-primary);"></span>
+                        <span id="liveTime"></span>
+                    </div>
+                    <script>
+                        function updateDateTime() {
+                            const now = new Date();
+                            const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+                            const day = dayNames[now.getDay()];
+                            const d = String(now.getDate()).padStart(2, '0');
+                            const m = String(now.getMonth() + 1).padStart(2, '0');
+                            const y = now.getFullYear();
+                            
+                            let hours = now.getHours();
+                            const minutes = String(now.getMinutes()).padStart(2, '0');
+                            const ampm = hours >= 12 ? 'PM' : 'AM';
+                            hours = hours % 12;
+                            hours = hours ? hours : 12; // the hour '0' should be '12'
+                            const strHours = String(hours).padStart(2, '0');
+                            const strTime = strHours + ':' + minutes + ' ' + ampm;
+                            
+                            const liveDateEl = document.getElementById('liveDate');
+                            const liveTimeEl = document.getElementById('liveTime');
+                            if(liveDateEl && liveTimeEl) {
+                                liveDateEl.innerText = day + ", " + d + "/" + m + "/" + y;
+                                liveTimeEl.innerText = strTime;
+                            }
+                        }
+                        setInterval(updateDateTime, 1000);
+                        // Run once on load
+                        document.addEventListener('DOMContentLoaded', updateDateTime);
+                    </script>
 
 
 

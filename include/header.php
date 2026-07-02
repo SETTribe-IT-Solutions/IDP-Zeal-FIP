@@ -39,7 +39,7 @@ if (!isset($page_description)) {
 $user_name = isset($_SESSION['user_name']) ? $_SESSION['user_name'] : "Shri. Rajesh Patil";
 $user_role = isset($_SESSION['user_role']) ? $_SESSION['user_role'] : "Admin Officer";
 $user_dept = isset($_SESSION['user_dept']) ? $_SESSION['user_dept'] : "Finance Dept";
-$user_initials = isset($_SESSION['user_initials']) ? $_SESSION['user_initials'] : "RP";
+$user_initials = isset($_SESSION['user_initials']) ? $_SESSION['user_initials'] : strtoupper(mb_substr(trim(preg_replace('/^(Shri\.|Smt\.|Mr\.|Mrs\.|Dr\.)\s*/i', '', $user_name)), 0, 1));
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -944,7 +944,8 @@ $user_initials = isset($_SESSION['user_initials']) ? $_SESSION['user_initials'] 
             /* Hide logos, divider, and subtitle — show only the name */
             .brand-logo-img,
             .header-divider,
-            .brand-subtitle {
+            .brand-subtitle,
+            .header-datetime {
                 display: none !important;
             }
 
@@ -1499,17 +1500,16 @@ $user_initials = isset($_SESSION['user_initials']) ? $_SESSION['user_initials'] 
     <header class="idp-header">
         <div class="header-container">
 
-            <?php if (isset($_SESSION['username'])): ?>
-                <!-- Desktop Sidebar Toggle -->
-                <button id="desktopSidebarToggle" title="Toggle Sidebar" aria-label="Toggle Sidebar">&#9776;</button>
+            <!-- Left: Sidebar Toggles & Maharashtra Emblem -->
+            <div class="header-left" style="gap: 10px;">
+                <?php if (isset($_SESSION['username'])): ?>
+                    <!-- Desktop Sidebar Toggle -->
+                    <button id="desktopSidebarToggle" title="Toggle Sidebar" aria-label="Toggle Sidebar">&#9776;</button>
 
-                <!-- Mobile Sidebar Toggle -->
-                <button id="mobileSidebarToggle" class="mobile-sidebar-toggle" title="Open Menu"
-                    aria-label="Open Menu">&#9776;</button>
-            <?php endif; ?>
+                    <!-- Mobile Sidebar Toggle -->
+                    <button id="mobileSidebarToggle" class="mobile-sidebar-toggle" title="Open Menu" aria-label="Open Menu">&#9776;</button>
+                <?php endif; ?>
 
-            <!-- Left: Maharashtra Emblem -->
-            <div class="header-left">
                 <img src="assets/maharashtra-emblem.png" alt="Maharashtra State Emblem" class="brand-emblem-img">
             </div>
 

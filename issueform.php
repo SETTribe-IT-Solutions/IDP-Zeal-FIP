@@ -604,10 +604,10 @@ include 'include/header.php';
 
                 <div class="form-group">
                     <label><i class="fas fa-building"></i>विभाग / पंचायत समिती <span class="required">*</span></label>
-                    <select id="department" name="department" required>
+                   <select id="department" name="department" required>
                         <option value="">-- निवडा विभाग --</option>
                         <?php foreach ($distinct_departments as $dept): ?>
-                            <option value="<?php echo htmlspecialchars($dept); ?>" <?php echo (($is_edit_mode ? ($edit_issue['department'] ?? '') : $user_department) === $dept) ? 'selected' : ''; ?>>
+                            <option value="<?php echo htmlspecialchars($dept); ?>" <?php echo ($is_edit_mode && ($edit_issue['department'] ?? '') === $dept) ? 'selected' : ''; ?>>
                                 <?php echo htmlspecialchars($dept); ?>
                             </option>
                         <?php endforeach; ?>
@@ -650,6 +650,7 @@ include 'include/header.php';
                         required><?php echo htmlspecialchars($is_edit_mode ? ($edit_issue['description'] ?? '') : ''); ?></textarea>
                 </div>
 
+                <!-- ========== PHOTO UPLOAD WITH EXISTING IMAGE PREVIEW ========== -->
                 <div class="form-group full-width">
                     <label><i class="fas fa-image"></i>समस्या ठिकाण फोटो अपलोड करा</label>
                     <div class="file-upload-wrapper">
@@ -658,7 +659,23 @@ include 'include/header.php';
                         <p style="font-size: 12px; color: #a0aec0;">JPG, PNG, GIF (Max 5MB)</p>
                         <input type="file" id="photo" name="photo" accept="image/*">
                     </div>
+
+                    <!-- Display existing photo when editing -->
+                    <?php if ($is_edit_mode && !empty($edit_issue['photo'])): ?>
+                        <div style="margin-top: 12px; padding: 8px 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                            <p style="font-weight: 600; color: #1e293b; margin-bottom: 6px; font-size: 14px;">
+                                <i class="fas fa-image" style="color: #0284c7;"></i> सध्याचा फोटो:
+                            </p>
+                            <img src="<?php echo htmlspecialchars($edit_issue['photo']); ?>" 
+                                 alt="Current Photo" 
+                                 style="max-width: 100%; max-height: 250px; border-radius: 6px; border: 1px solid #e6eef6;">
+                            <p style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
+                                <i class="fas fa-info-circle"></i> हा फोटो बदलण्यासाठी वरील बॉक्समध्ये नवीन फाइल निवडा.
+                            </p>
+                        </div>
+                    <?php endif; ?>
                 </div>
+                <!-- ========== END PHOTO UPLOAD ========== -->
             </div>
 
             <div class="btn-group">
@@ -682,7 +699,7 @@ include 'include/header.php';
             id: <?php echo json_encode($user_id); ?>,
             taluka: <?php echo json_encode($user_taluka); ?>,
             village: <?php echo json_encode($user_village); ?>,
-            department: <?php echo json_encode($user_department); ?>,
+            //department: <?php echo json_encode($user_department); ?>,//
             position: <?php echo json_encode($user_role_display); ?>,
             mobile: <?php echo json_encode($user_mobile); ?>
         };
@@ -866,7 +883,7 @@ include 'include/header.php';
                         // Edit mode – show success and redirect to report page
                         await Swal.fire({
                             title: 'यशस्वी!',
-                            text: result.message,
+                            text: 'यशस्वीरित्या बदल करण्यात आले आहेत.',
                             icon: 'success',
                             confirmButtonColor: '#0284c7',
                             confirmButtonText: 'ठीक आहे'

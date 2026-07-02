@@ -235,7 +235,7 @@ $dashboard_url = getDashboardUrl($role);
                 <a href="<?php echo $dashboard_url; ?>"><i class="fa-solid fa-chart-line"></i>डॅशबोर्ड</a>
             </li>
             <li
-                class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'assign_issues.php' && ($_GET['view'] ?? '') !== 'transfer') ? 'active' : ''; ?>">
+                class="sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'assign_issues.php' && (empty($_GET['view']) || $_GET['view'] === 'assigned')) ? 'active' : ''; ?>">
                 <a href="assign_issues.php?view=assigned"><i class="fa-solid fa-list-check"></i> नियुक्त तक्रारी
                     </a>
             </li>

@@ -106,7 +106,7 @@ try {
                 }
                 $by_lookup_stmt->close();
             }
-            $insert_transfer_stmt->bind_param("issss", $issue_id, $issue_number, $transfer_to_name, $transfer_by_username, $notes);
+            $insert_transfer_stmt->bind_param("issss", $issue_id, $issue_number, $transfer_to_name, $transfer_by_name, $notes);
             $insert_transfer_stmt->execute();
             $insert_transfer_stmt->close();
         }

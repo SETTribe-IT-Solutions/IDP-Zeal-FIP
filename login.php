@@ -27,11 +27,9 @@ include __DIR__ . '/include/header.php';
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 <style>
     :root {
-        --card-width: 380px;
-        --card-radius: 12px;
-        --bg-top: #1f3a47; /* dark teal */
-        --bg-bottom: #2fa5a0; /* light teal */
-        --primary: #0d6efd;
+        --card-width: 420px;
+        --card-radius: 20px;
+        --primary: #005af0;
     }
 
     .main-content {
@@ -40,9 +38,9 @@ include __DIR__ . '/include/header.php';
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 3rem 1rem;
-        background: linear-gradient(135deg, rgba(15, 23, 42, 0.72), rgba(30, 58, 138, 0.78)), url('assets/hingoli_building.png');
-        background-size: cover;
+        padding: 2rem 1rem;
+        background: url('assets/login_background.png');
+        background-size: 100% 100%;
         background-position: center;
         background-repeat: no-repeat;
         transition: background var(--transition-normal);
@@ -51,74 +49,124 @@ include __DIR__ . '/include/header.php';
     .login-card {
         width: 100%;
         max-width: var(--card-width);
-        background: rgba(255, 255, 255, 0.92);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
+        background: rgba(235, 240, 248, 0.94);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
         border-radius: var(--card-radius);
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
-        padding: 2.2rem 2rem;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+        padding: 2.5rem 2.2rem;
         z-index: 10;
-        border: 1px solid rgba(255, 255, 255, 0.35);
+        border: 1px solid rgba(255, 255, 255, 0.4);
     }
 
     .portal-title {
+        font-family: var(--font-heading), sans-serif;
         font-weight: 700;
-        font-size: 1.25rem;
+        font-size: 1.6rem;
         text-align: center;
-        margin-bottom: 0.25rem;
-        color: #1f2937;
+        margin-bottom: 0.2rem;
+        color: #0f2942;
     }
 
     .portal-sub {
         font-size: 0.95rem;
         text-align: center;
-        color: #6b7280;
-        margin-bottom: 1rem;
+        color: #5a6e85;
+        margin-bottom: 1.8rem;
     }
 
     .form-label {
         font-weight: 600;
-        font-size: 0.95rem;
+        font-size: 0.9rem;
+        color: #0f2942;
+        margin-bottom: 0.4rem;
     }
 
-    .form-control {
-        height: 48px;
-        font-size: 1rem;
-        border-radius: 8px;
+    .input-group {
+        border: 1px solid #d1d5db;
+        border-radius: 10px;
+        overflow: hidden;
+        background: #ffffff;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .input-group:focus-within {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(0, 90, 240, 0.15);
     }
 
     .input-group-text {
-        background: #fff;
-        border-right: 0;
+        background: transparent;
+        border: none;
+        color: #5a6e85;
+        font-size: 1.1rem;
+        padding-left: 1rem;
+        padding-right: 0.5rem;
+    }
+
+    .form-control {
+        background: transparent !important;
+        border: none !important;
+        height: 50px;
+        font-size: 0.95rem;
+        color: #0f2942 !important;
+        box-shadow: none !important;
+        padding-left: 0.5rem;
+    }
+
+    .form-control::placeholder {
+        color: #94a3b8;
+    }
+
+    #togglePassword {
+        background: transparent;
+        border: none;
+        color: #5a6e85;
+        padding-right: 1rem;
+        cursor: pointer;
     }
 
     .btn-login {
         background: var(--primary);
-        border-color: var(--primary);
-        font-weight: 700;
-        padding: 0.6rem;
+        border: none;
+        font-weight: 600;
+        height: 50px;
         font-size: 1rem;
+        border-radius: 10px;
+        color: #ffffff;
+        transition: background-color 0.2s, transform 0.1s;
     }
 
     .btn-login:hover {
-        background: #0b5ed7;
-        border-color: #0b5ed7;
+        background: #004ecc;
+    }
+
+    .btn-login:active {
+        transform: scale(0.98);
     }
 
     .forgot-link {
         display: block;
         text-align: center;
-        margin-top: .75rem;
+        margin-top: 1.2rem;
         font-size: 0.9rem;
-        color: #2563eb;
+        color: var(--primary);
+        font-weight: 500;
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+
+    .forgot-link:hover {
+        color: #004ecc;
+        text-decoration: underline;
     }
 
     .divider {
         display: flex;
         align-items: center;
-        gap: .75rem;
-        margin: 1rem 0;
-        color: #9ca3af;
+        gap: 0.75rem;
+        margin: 1.5rem 0;
+        color: #94a3b8;
         font-size: 0.85rem;
     }
 
@@ -127,27 +175,31 @@ include __DIR__ . '/include/header.php';
         content: '';
         flex: 1;
         height: 1px;
-        background: #e5e7eb;
+        background: #d1d5db;
     }
 
     .btn-register {
-        display: block;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         width: 100%;
-        background: transparent;
-        border: 2px solid #2fa5a0;
-        color: #1f3a47;
-        font-weight: 700;
-        padding: 0.55rem;
+        background: rgba(0, 90, 240, 0.08);
+        border: 1px solid var(--primary);
+        color: #0f2942;
+        font-weight: 600;
+        padding: 0.75rem;
+        height: 50px;
         font-size: 0.95rem;
-        border-radius: 8px;
+        border-radius: 10px;
         text-align: center;
         text-decoration: none;
-        transition: background 0.2s, color 0.2s;
+        transition: background 0.2s, color 0.2s, border-color 0.2s;
     }
 
     .btn-register:hover {
-        background: #2fa5a0;
-        color: #fff;
+        background: rgba(0, 90, 240, 0.15);
+        color: var(--primary);
+        border-color: var(--primary);
     }
 
     .error-box {
@@ -161,68 +213,65 @@ include __DIR__ . '/include/header.php';
         text-align: center;
     }
 
-    @media (max-width: 420px) {
-        .form-control {
-            height: 56px;
-            font-size: 1.05rem;
+    @media (max-width: 480px) {
+        .login-card {
+            padding: 2rem 1.5rem;
+            margin: 1rem;
         }
-
         .portal-title {
-            font-size: 1.1rem;
-        }
-
-        .portal-sub {
-            font-size: 0.95rem;
-        }
-
-        .btn-login {
-            font-size: 1.05rem;
+            font-size: 1.4rem;
         }
     }
 
     /* --- Dark Theme Integration --- */
     body.dark-theme .main-content {
-        background: linear-gradient(135deg, rgba(11, 15, 25, 0.82), rgba(15, 23, 42, 0.88)), url('assets/hingoli_building.png');
-        background-size: cover;
+        background: url('assets/login_background.png');
+        background-size: 100% 100%;
         background-position: center;
         background-repeat: no-repeat;
     }
 
     body.dark-theme .login-card {
-        background: rgba(15, 23, 42, 0.85) !important;
-        color: var(--text-primary) !important;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        background: rgba(15, 23, 42, 0.92) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6) !important;
     }
 
     body.dark-theme .portal-title {
-        color: var(--text-primary) !important;
+        color: #f8fafc !important;
     }
 
     body.dark-theme .portal-sub {
-        color: var(--text-secondary) !important;
+        color: #94a3b8 !important;
+    }
+
+    body.dark-theme .form-label {
+        color: #f8fafc !important;
+    }
+
+    body.dark-theme .input-group {
+        background: #1e293b !important;
+        border-color: #334155 !important;
+    }
+
+    body.dark-theme .input-group:focus-within {
+        border-color: var(--primary) !important;
     }
 
     body.dark-theme .form-control {
-        background-color: var(--bg-input) !important;
-        color: var(--text-primary) !important;
-        border-color: var(--border-color) !important;
-    }
-
-    body.dark-theme .input-group-text {
-        background-color: var(--bg-input) !important;
-        color: var(--text-secondary) !important;
-        border-color: var(--border-color) !important;
+        color: #f8fafc !important;
     }
 
     body.dark-theme .btn-register {
-        border-color: var(--border-color);
-        color: var(--text-primary);
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-color: #475569 !important;
+        color: #cbd5e1 !important;
     }
 
     body.dark-theme .btn-register:hover {
-        background: var(--bg-hover);
-        color: var(--text-primary);
+        background: rgba(255, 255, 255, 0.1) !important;
+        border-color: #94a3b8 !important;
+        color: #fff !important;
     }
 </style>
 
